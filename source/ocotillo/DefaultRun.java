@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.SwingUtilities;
-import ocotillo.customrun.CustomRun;
+
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.extra.DyGraphDiscretiser;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
@@ -32,6 +32,7 @@ import ocotillo.dygraph.rendering.Animation;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
 import ocotillo.gui.quickview.DyQuickView;
+import ocotillo.run.customrun.CustomRun;
 import ocotillo.samples.DyGraphSamples;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.serialization.ParserTools;

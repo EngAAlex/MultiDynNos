@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package ocotillo.customrun;
+package ocotillo.run.customrun;
 
 import java.util.ArrayList;
 import java.util.List;
