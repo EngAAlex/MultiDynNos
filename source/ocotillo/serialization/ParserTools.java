@@ -124,7 +124,7 @@ public class ParserTools {
          * @return an unused, unreserved character.
          */
         private String findUnusedChar(String String) {
-            char unusedChar = 'ยง';
+            char unusedChar = 'ย';
             while (String.contains(Character.toString(unusedChar))
                     || Rules.containsReservedCharacters(Character.toString(unusedChar))) {
                 unusedChar++;
