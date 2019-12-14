@@ -151,6 +151,20 @@ public abstract class GraphWithHierarchy<T extends GraphWithHierarchy<?>> extend
         changedSubGraphs.add(subGraph);
         notifyObservers();
     }
+    
+    /**
+     * Removes a subgraph from this graph and deletes its nodes and edges from the graph.
+     *
+     * @param subGraph the subgraph to be removed.
+     */
+    @SuppressWarnings("unchecked")
+    public void nukeSubgraph(T subGraph) {
+        removeSubGraph(subGraph);
+        for(Edge e: subGraph.edges())
+        	this.remove(e);        
+        for(Node n: subGraph.nodes())
+        	this.remove(n);
+    }
 
     @Override
     public Node newNode(String id) {

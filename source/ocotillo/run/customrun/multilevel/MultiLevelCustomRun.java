@@ -99,6 +99,7 @@ public class MultiLevelCustomRun extends CustomRun {
         gc.computeCoarsening();
         Graph currentGraph = gc.getCoarserGraph();
         int currentLevel = gc.getHierarchyDepth();
+        Graph rootGraph = currentGraph.rootGraph();
         do {
         	System.out.println("Displaying level " + currentLevel);
         	System.out.println("Nodes:");
@@ -118,7 +119,7 @@ public class MultiLevelCustomRun extends CustomRun {
         	
         	Graph parentGraph = currentGraph.parentGraph();
         	if(parentGraph != null) {
-	        	parentGraph.removeSubGraph(currentGraph);        	
+        		rootGraph.nukeSubgraph(currentGraph);        	
 	        	currentLevel--;
         	}
         	currentGraph = parentGraph;        
