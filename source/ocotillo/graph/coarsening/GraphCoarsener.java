@@ -1,5 +1,6 @@
 package ocotillo.graph.coarsening;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import ocotillo.graph.Edge;
@@ -13,6 +14,8 @@ public abstract class GraphCoarsener {
 
 	//protected final Graph rootGraph;
 	protected Graph coarserGraph;	
+	protected Map<String, String> currentLevelEdgeAssociations = new HashMap<String, String>();
+
 
 	protected int current_level = 0;
 
@@ -66,7 +69,43 @@ public abstract class GraphCoarsener {
 			coarserGraph = enclosedSubgraph;
 		}
 	}
+	
+	private Graph computeNewLevel(Graph lastLevel) {
+		currentLevelEdgeAssociations.clear();
+		Graph newLevel = computeNewVertexSet(lastLevel);
+		if(newLevel.nodeCount() == lastLevel.nodeCount()) 
+			return null;
+		generateEdges(lastLevel, newLevel);
+		return newLevel;
+	}
 
+	private void generateEdges(Graph lastLevel, Graph newLevel) {
+		//## SANITY CHECK: IF NODE COUNT DID NOT DECREASE -- PROBABLY A LOOP
+		EdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
+		
+		EdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);
+			
+		for(Node sourceUpperLevelNode : newLevel.nodes())  {
+			Node homologue = lastLevel.getNode(getTranslatedNodeId(sourceUpperLevelNode.id(), current_level - 1));
+			for(Edge e : lastLevel.inOutEdges(homologue)) {
+				Node neighbor = e.otherEnd(homologue);	
+				for(Edge innerEdge : lastLevel.outEdges(neighbor)) {
+					Node innerNeighbor = innerEdge.otherEnd(neighbor);
+					if(innerNeighbor.equals(homologue))
+						continue;
+					Node targetUpperLevelNode = newLevel.getNode(currentLevelEdgeAssociations.get(innerNeighbor.id()));
+					
+					Edge newLevelEdge = newLevel.betweenEdge(sourceUpperLevelNode, targetUpperLevelNode);
+					if(newLevelEdge == null) {
+						newLevelEdge = newLevel.newEdge(sourceUpperLevelNode.id()+"-"+targetUpperLevelNode.id(), sourceUpperLevelNode, targetUpperLevelNode);
+						newLevelEdgeWeight.set(newLevelEdge, lastLevelEdgeWeight.get(innerEdge));
+					}else
+						newLevelEdgeWeight.set(newLevelEdge, newLevelEdgeWeight.get(newLevelEdge) + lastLevelEdgeWeight.get(innerEdge));					
+				}
+			}
+		}	
+	}
+	
 	public int getHierarchyDepth() {
 		return current_level;
 	}
@@ -75,11 +114,11 @@ public abstract class GraphCoarsener {
 		return coarserGraph;
 	}
 
+	protected abstract Graph computeNewVertexSet(Graph lastLevel);	
+		
 	protected abstract void saveOptions(Map<String, ?> opts);
 
 	protected abstract boolean stoppingCondition();	
-
-	protected abstract Graph computeNewLevel(Graph lastLevel);
 
 	public static String getTranslatedNodeId(String nodeId, int level) {
 		return nodeId.split("__")[0]+"__"+level;
