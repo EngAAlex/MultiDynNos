@@ -1,10 +1,11 @@
-package ocotillo.graph.coarsening;
+package ocotillo.multilevel.coarsening;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -74,7 +75,8 @@ public class IndependentSet extends GraphCoarsener {
 			Node newLevelNode = new Node(getTranslatedNodeId(topNode.id(), current_level));			
 
 			currentLevelEdgeAssociations.put(topNode.id(), newLevelNode.id());
-
+			HashSet<String> newLevelNodeGroup = new HashSet<String>();
+			newLevelNodeGroup.add(topNode.id());
 			double totalWeight = lastLevelNodeWeight.get(topNode);
 			for(Edge e : getCollectionOfNeighbors(lastLevel.inOutEdges(topNode), lastLevelEdgeWeight)) {
 				Node neighbor = e.otherEnd(topNode);
@@ -83,10 +85,12 @@ public class IndependentSet extends GraphCoarsener {
 					totalWeight += lastLevelEdgeWeight.get(e);
 					totalWeight += lastLevelNodeWeight.get(neighbor);
 					currentLevelEdgeAssociations.put(neighbor.id(), newLevelNode.id());
+					newLevelNodeGroup.add(e.id());
 				}
 			}
 			newLevel.add(newLevelNode);
 			newLevelNodeWeight.set(newLevelNode, totalWeight);
+			currentLevelNodeGroups.put(newLevelNode.id(), newLevelNodeGroup);
 		}		
 
 		return newLevel;
@@ -98,7 +102,7 @@ public class IndependentSet extends GraphCoarsener {
 	}
 
 
-	public class WalshawIndependentSet extends IndependentSet{
+	public static class WalshawIndependentSet extends IndependentSet{
 
 		public WalshawIndependentSet(Graph original, Map<String, ?> opts) {
 			super(original, opts);

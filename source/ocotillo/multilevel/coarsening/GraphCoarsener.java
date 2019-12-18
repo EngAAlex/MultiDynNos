@@ -1,7 +1,8 @@
-package ocotillo.graph.coarsening;
+package ocotillo.multilevel.coarsening;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import ocotillo.graph.Edge;
 import ocotillo.graph.EdgeAttribute;
@@ -15,7 +16,10 @@ public abstract class GraphCoarsener {
 	//protected final Graph rootGraph;
 	protected Graph coarserGraph;	
 	protected Map<String, String> currentLevelEdgeAssociations = new HashMap<String, String>();
+	protected Map<String, Set<String>> currentLevelNodeGroups = new HashMap<String, Set<String>>();
 
+	
+	protected Map<String, Set<String>> groupingMasterMap = new HashMap<String, Set<String>>();
 
 	protected int current_level = 0;
 
@@ -71,11 +75,15 @@ public abstract class GraphCoarsener {
 	}
 	
 	private Graph computeNewLevel(Graph lastLevel) {
-		currentLevelEdgeAssociations.clear();
 		Graph newLevel = computeNewVertexSet(lastLevel);
 		if(newLevel.nodeCount() == lastLevel.nodeCount()) 
-			return null;
-		generateEdges(lastLevel, newLevel);
+			newLevel = null;
+		else {
+			generateEdges(lastLevel, newLevel);
+			groupingMasterMap.putAll(currentLevelNodeGroups);
+		}
+		currentLevelEdgeAssociations.clear();
+		currentLevelNodeGroups.clear();		
 		return newLevel;
 	}
 
@@ -112,6 +120,10 @@ public abstract class GraphCoarsener {
 
 	public Graph getCoarserGraph() {
 		return coarserGraph;
+	}
+	
+	public Set<String> getGroupMembers(String id){
+		return groupingMasterMap.get(id);
 	}
 
 	protected abstract Graph computeNewVertexSet(Graph lastLevel);	

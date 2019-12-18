@@ -10,6 +10,7 @@ import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
 import ocotillo.dygraph.Function;
+import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
 import ocotillo.graph.EdgeAttribute;
@@ -17,8 +18,9 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
-import ocotillo.graph.coarsening.GraphCoarsener;
-import ocotillo.graph.coarsening.IndependentSet;
+import ocotillo.multilevel.coarsening.GraphCoarsener;
+import ocotillo.multilevel.coarsening.IndependentSet;
+import ocotillo.multilevel.placement.MultilevelNodePlacement.IdentityNodePlacement;
 import ocotillo.run.customrun.CustomRun;
 
 public class MultiLevelCustomRun extends CustomRun {
@@ -95,8 +97,30 @@ public class MultiLevelCustomRun extends CustomRun {
         
         opts.put("threshold", new Long(2));
         
-        GraphCoarsener gc = new IndependentSet(this.appearanceGraph, opts);
+        GraphCoarsener gc = new IndependentSet.WalshawIndependentSet(this.appearanceGraph, opts);
         gc.computeCoarsening();
+
+        testGraphPlacement(gc);
+        testGraphDisplay(gc);
+        	             
+	}
+	
+	public void testGraphPlacement(GraphCoarsener gc) {
+        Graph currentGraph = gc.getCoarserGraph();
+        int currentLevel = gc.getHierarchyDepth();
+        
+        NodeAttribute<Coordinates> coarserCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
+        
+        for(Node n: currentGraph.nodes())
+        	coarserCoordinates.set(n, new Coordinates(Math.random(), Math.random()));
+        
+        IdentityNodePlacement in = new IdentityNodePlacement(null);
+        
+        while(currentLevel >= 1)
+        	in.placeVertices(currentGraph.parentGraph(), currentGraph, gc);
+	}
+	
+	public void testGraphDisplay(GraphCoarsener gc) {
         Graph currentGraph = gc.getCoarserGraph();
         int currentLevel = gc.getHierarchyDepth();
         Graph rootGraph = currentGraph.rootGraph();
@@ -105,10 +129,11 @@ public class MultiLevelCustomRun extends CustomRun {
         	System.out.println("Nodes:");
         	
         	NodeAttribute<Double> currentLevelNodeWeight = currentGraph.nodeAttribute(StdAttribute.weight);
+        	NodeAttribute<Double> currentLevelNodeCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
     		EdgeAttribute<Double> currentLevelEdgeWeight = currentGraph.edgeAttribute(StdAttribute.weight);
         	
         	for(Node n : currentGraph.nodes()) 
-        		System.out.println(n.id() + " weight " + currentLevelNodeWeight.get(n));
+        		System.out.println(n.id() + " weight " + currentLevelNodeWeight.get(n) + " position " + currentLevelNodeCoordinates.get(n));
         	
         	System.out.println("Edges:");
 
