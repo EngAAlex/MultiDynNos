@@ -12,7 +12,7 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 
 public abstract class GraphCoarsener {
-
+	
 	//protected final Graph rootGraph;
 	protected Graph coarserGraph;	
 	protected Map<String, String> currentLevelEdgeAssociations = new HashMap<String, String>();
@@ -22,8 +22,8 @@ public abstract class GraphCoarsener {
 	protected Map<String, Set<String>> groupingMasterMap = new HashMap<String, Set<String>>();
 
 	protected int current_level = 0;
-
-	public GraphCoarsener(Graph original, Map<String, ?> opts) {
+	
+	public GraphCoarsener(Graph original) {
 		//Copy the original graph into the state
 		coarserGraph = new Graph();
 		for(Node n : original.nodes())
@@ -40,9 +40,8 @@ public abstract class GraphCoarsener {
 		coarserGraphNodeWeight.copy(originalNodeWeight);
 		coarserGraphEdgeWeight.copy(originalEdgeWeight);
 
-		saveOptions(opts);
 	}
-	
+			
 	public void computeCoarsening() {
 		computeCoarsening(false);
 	}
@@ -128,8 +127,6 @@ public abstract class GraphCoarsener {
 
 	protected abstract Graph computeNewVertexSet(Graph lastLevel);	
 		
-	protected abstract void saveOptions(Map<String, ?> opts);
-
 	protected abstract boolean stoppingCondition();	
 
 	public static String getTranslatedNodeId(String nodeId, int level) {

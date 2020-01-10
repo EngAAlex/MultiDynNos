@@ -17,23 +17,19 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.options.MultiLevelOption;
 
 public class IndependentSet extends GraphCoarsener {
+		
+	public final static long DEFAULT_THRESHOLD = 5;
 
-	private final long DEFAULT_THRESHOLD = 5;
-	private long threshold;
+	private final long threshold;
 
-	public IndependentSet(Graph original, Map<String, ?> opts) {
-		super(original, opts);
+	public IndependentSet(Graph original, long threshold) {
+		super(original);
+		this.threshold = threshold;
 	}
-
-	@Override
-	protected void saveOptions(Map<String, ?> opts) {
-		if(opts != null && opts.get("threshold") != null)
-			threshold = (long) opts.get("threshold");
-		else
-			threshold = DEFAULT_THRESHOLD;
-	}
+	
 
 	@Override
 	protected boolean stoppingCondition() {
@@ -104,8 +100,8 @@ public class IndependentSet extends GraphCoarsener {
 
 	public static class WalshawIndependentSet extends IndependentSet{
 
-		public WalshawIndependentSet(Graph original, Map<String, ?> opts) {
-			super(original, opts);
+		public WalshawIndependentSet(Graph original, long threshold) {
+			super(original, threshold);
 		}
 
 		@Override
@@ -131,6 +127,7 @@ public class IndependentSet extends GraphCoarsener {
 		}
 
 	}
+
 }	
 
 

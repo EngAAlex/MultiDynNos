@@ -16,10 +16,10 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 
-public abstract class MultilevelNodePlacement {
+public abstract class MultilevelNodePlacementStrategy {
 
-	public MultilevelNodePlacement(Map<String, ?> opts) {
-		saveOptions(opts);
+	public MultilevelNodePlacementStrategy() {
+
 	}
 
 	public void placeVertices(Graph finerLevel, Graph upperLevel, GraphCoarsener nodeGroups) {
@@ -33,28 +33,28 @@ public abstract class MultilevelNodePlacement {
 
 	protected abstract void assignCoordinates(Coordinates upperClusterCoordinates, Graph finerLevel, Set<String> nodeGroup);
 
-	protected abstract void saveOptions(Map<String, ?> opts);
+	public static class IdentityNodePlacement extends MultilevelNodePlacementStrategy {
 
-	public static class IdentityNodePlacement extends MultilevelNodePlacement {
+		protected double fuzzyness = 0;
+		
+		public IdentityNodePlacement() {
 
-		public IdentityNodePlacement(Map<String, ?> opts) {
-			super(opts);
+		}
+			
+		public void setFuzzyness(double fuzzyness) {
+			this.fuzzyness = fuzzyness;
 		}
 
 		@Override
 		protected void assignCoordinates(Coordinates upperClusterCoordinates, Graph finerLevel, Set<String> nodeGroup) {
-			NodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);
-
-			for(String id : nodeGroup)
-				finerLevelNodeCoordinates.set(finerLevel.getNode(id), upperClusterCoordinates);
+			NodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);		
+			
+			for(String id : nodeGroup) {				
+				finerLevelNodeCoordinates.set(finerLevel.getNode(id), 
+						new Coordinates(upperClusterCoordinates.x() + Math.random()*fuzzyness, upperClusterCoordinates.y() + Math.random()*fuzzyness));
+			}
 
 		}
-
-		@Override
-		protected void saveOptions(Map<String, ?> opts) {
-			//NO-OP
-		}
-
 	}
 }
 

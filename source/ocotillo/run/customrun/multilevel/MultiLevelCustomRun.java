@@ -20,7 +20,8 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.coarsening.IndependentSet;
-import ocotillo.multilevel.placement.MultilevelNodePlacement.IdentityNodePlacement;
+import ocotillo.multilevel.coarsening.IndependentSet.WalshawIndependentSet;
+import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy.IdentityNodePlacement;
 import ocotillo.run.customrun.CustomRun;
 
 public class MultiLevelCustomRun extends CustomRun {
@@ -97,7 +98,7 @@ public class MultiLevelCustomRun extends CustomRun {
         
         opts.put("threshold", new Long(2));
         
-        GraphCoarsener gc = new IndependentSet.WalshawIndependentSet(this.appearanceGraph, opts);
+        GraphCoarsener gc = new IndependentSet.WalshawIndependentSet(this.appearanceGraph, WalshawIndependentSet.DEFAULT_THRESHOLD);
         gc.computeCoarsening();
 
         testGraphPlacement(gc);
@@ -114,7 +115,7 @@ public class MultiLevelCustomRun extends CustomRun {
         for(Node n: currentGraph.nodes())
         	coarserCoordinates.set(n, new Coordinates(Math.random(), Math.random()));
         
-        IdentityNodePlacement in = new IdentityNodePlacement(null);
+        IdentityNodePlacement in = new IdentityNodePlacement();
         
         while(currentLevel >= 1)
         	in.placeVertices(currentGraph.parentGraph(), currentGraph, gc);
