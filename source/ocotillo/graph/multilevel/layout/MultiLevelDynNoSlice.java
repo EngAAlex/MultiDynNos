@@ -13,6 +13,8 @@ import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
+import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
+import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
 import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
@@ -42,7 +44,7 @@ public abstract class MultiLevelDynNoSlice {
 
 	
 	
-	protected HashMap<String, DynamicLayoutParameter> optionsMap;
+	protected HashMap<String, DynamicLayoutParameter> parametersMap;
 	
 	protected GraphCoarsener gc;
 	protected MultilevelNodePlacementStrategy placement;
@@ -52,13 +54,13 @@ public abstract class MultiLevelDynNoSlice {
 
 	public MultiLevelDynNoSlice(DyGraph original, double tau, double delta) {
 		dynamicGraph = original;
-		optionsMap = new HashMap<String, DynamicLayoutParameter>();
+		parametersMap = new HashMap<String, DynamicLayoutParameter>();
 		this.tau = tau;
 		this.delta = delta;		
 	}
 	
 	public MultiLevelDynNoSlice addOption(String key, DynamicLayoutParameter par) {
-		optionsMap.put(key, par);
+		parametersMap.put(key, par);
 		return this;
 	}
 	
@@ -90,20 +92,15 @@ public abstract class MultiLevelDynNoSlice {
 		
 		gc.computeCoarsening();				
 		Graph currentGraph = gc.getCoarserGraph();		
-		computeLayout(currentGraph);			
+		computeStaticLayout(currentGraph);			
 		
-		do {
-			NodeAttribute<Coordinates> coarserCoordinatesAttribute = currentGraph.nodeAttribute(StdAttribute.nodePosition);
-	        
-	        for(Node n: currentGraph.nodes())
-	        	coarserCoordinatesAttribute.set(n, new Coordinates(Math.random(), Math.random()));
-	        	        
+		do {			       	       
         	Graph finerGraph = currentGraph.parentGraph();
         	placement.placeVertices(finerGraph, currentGraph, gc);
         	
         	updateThermostats();
         	
-    		computeLayout(finerGraph);
+    		//computeDynamicLayout(finerGraph);
     		currentGraph = finerGraph;
         	
 	    }while(currentGraph.parentGraph() != null);
@@ -111,23 +108,29 @@ public abstract class MultiLevelDynNoSlice {
 		
 	}
 
+	private void computeStaticLayout(Graph currentGraph) {
+		SfdpBuilder sfdp = new SfdpBuilder();
+		SfdpExecutor sfdpInstance = sfdp.build();
+		sfdpInstance.execute(currentGraph);		
+	}
+
 	private void updateThermostats() {
-		for(DynamicLayoutParameter mt : optionsMap.values())
+		for(DynamicLayoutParameter mt : parametersMap.values())
 			mt.coolDown(current_iteration);
 	}
 
-	private void computeLayout(Graph currentGraph) {
+	private void computeDynamicLayout(DyGraph currentGraph) {
 		DyModularFdl algorithm = new DyModularFdl.DyModularFdlBuilder(currentGraph, tau)
                 .withForce(new DyModularForce.TimeStraightning(delta))
                 .withForce(new DyModularForce.Gravity())
                 .withForce(new DyModularForce.ConnectionAttraction(delta))
                 .withForce(new DyModularForce.EdgeRepulsion(delta))
-                .withConstraint(new ModularConstraint.DecreasingMaxMovement(2 * delta))
-                .withConstraint(new ModularConstraint.MovementAcceleration(2 * delta, Geom.e3D))
-                .withPostProcessing(new FlexibleTimeTrajectories(delta * 1.5, delta * 2.0, Geom.e3D))
+                .withConstraint(new ModularConstraint.DecreasingMaxMovement(parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue()))
+                .withConstraint(new ModularConstraint.MovementAcceleration(parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue(), Geom.e3D))
+                .withPostProcessing(new FlexibleTimeTrajectories(parametersMap.get(CONTRACT_DISTANCE).getCurrentValue(), parametersMap.get(EXPAND_DISTANCE).getCurrentValue(), Geom.e3D))
                 .build();
 
-        algorithm.iterate(defaultNumberOfIterations);		
+        algorithm.iterate((int) parametersMap.get(MAX_ITERATIONS).getCurrentValue());		
 	}
 	
 	
