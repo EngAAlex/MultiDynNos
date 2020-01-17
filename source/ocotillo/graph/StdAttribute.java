@@ -48,7 +48,7 @@ public enum StdAttribute {
     labelOffset(Coordinates.class),
     graphics(String.class),
     background(Color.class),
-    weight(Double.class), //Used to indicate a static graph    
+    weight(Double.class),    
     dyPresence(Boolean.class);
 
     /**

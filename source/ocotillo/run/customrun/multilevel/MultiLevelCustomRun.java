@@ -75,8 +75,8 @@ public class MultiLevelCustomRun extends CustomRun {
         	Node tgt = dyE.target();
         	
         	Edge e = graph.newEdge(
-        				graph.getNode(GraphCoarsener.createTranslatedNodeId(src.id(), 0)),
-        				graph.getNode(GraphCoarsener.createTranslatedNodeId(tgt.id(), 0)));
+        				graph.getNode(GraphCoarsener.translateNodeId(src.id(), 0)),
+        				graph.getNode(GraphCoarsener.translateNodeId(tgt.id(), 0)));
         	
         	
         	double presence = 0.0;

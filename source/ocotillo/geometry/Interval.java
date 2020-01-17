@@ -24,16 +24,16 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode
 public class Interval {
-
+	
     /**
      * A global interval.
      */
     static public final Interval global = Interval.newOpen(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
 
-    private final double leftBound;
-    private final double rightBound;
-    private final boolean leftClosed;
-    private final boolean rightClosed;
+    private double leftBound;
+    private double rightBound;
+    private boolean leftClosed;
+    private boolean rightClosed;
 
     /**
      * Builds a new open interval.
@@ -130,6 +130,20 @@ public class Interval {
     public double leftBound() {
         return leftBound;
     }
+    
+    /**
+     * Update the left bound of the interval.
+     * 
+     * @param leftBound. Pass NEGATIVE_INFINITY to open the interval to the left.
+     */
+    public void setLeftBound(double leftBound) {
+    	if(leftBound == Double.NEGATIVE_INFINITY)
+    		leftClosed = false;
+    	else {
+    		leftClosed = true;
+    		this.leftBound = leftBound;
+    	}
+    }
 
     /**
      * Gets the right bound of the interval.
@@ -138,6 +152,20 @@ public class Interval {
      */
     public double rightBound() {
         return rightBound;
+    }
+    
+    /**
+     * Update the right bound of the interval.
+     * 
+     * @param leftBound. Pass POSITIVE_INFINITY to open the interval to the right.     
+     */
+    public void setRightBound(double rightBound) {
+    	if(rightBound == Double.POSITIVE_INFINITY)
+    		rightClosed = false;
+    	else {
+    		rightClosed = true;
+    		this.rightBound = rightBound;
+    	}
     }
 
     /**
@@ -171,6 +199,40 @@ public class Interval {
             return (leftClosed && Geom.eXD.almostEqual(leftBound, point))
                     || (rightClosed && Geom.eXD.almostEqual(rightBound, point));
         }
+    }
+    
+    /**
+     * Computes the union with another overlapping interval.
+     *
+     * @param other the other interval.
+     * @return their union.
+     */
+    public Interval overlappingUnion(Interval other) {
+        double[] rangeInt = Geom.e1D.rangesUnion(leftBound, rightBound, other.leftBound, other.rightBound);
+        if (rangeInt != null) {
+
+            boolean unionLeftClosed = true;
+            if (Geom.eXD.almostEqual(leftBound, rangeInt[0]) && !leftClosed) {
+                unionLeftClosed = false;
+            }
+            if (Geom.eXD.almostEqual(other.leftBound, rangeInt[0]) && !other.leftClosed) {
+                unionLeftClosed = false;
+            }
+
+            boolean unionRightClosed = true;
+            if (Geom.eXD.almostEqual(rightBound, rangeInt[1]) && !rightClosed) {
+                unionRightClosed = false;
+            }
+            if (Geom.eXD.almostEqual(other.rightBound, rangeInt[1]) && !other.rightClosed) {
+                unionRightClosed = false;
+            }
+
+            if (!Geom.eXD.almostEqual(rangeInt[0], rangeInt[1])
+                    || unionLeftClosed || unionRightClosed) {
+                return Interval.newCustom(rangeInt[0], rangeInt[1], unionLeftClosed, unionRightClosed);
+            }
+        }
+        return null;
     }
 
     /**

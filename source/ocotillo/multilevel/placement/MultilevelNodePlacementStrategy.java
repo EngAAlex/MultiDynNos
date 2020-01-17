@@ -1,15 +1,8 @@
 package ocotillo.multilevel.placement;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Map;
 import java.util.Set;
 
-import org.mockito.internal.util.collections.Sets;
-
 import ocotillo.geometry.Coordinates;
-import ocotillo.graph.Edge;
 import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
