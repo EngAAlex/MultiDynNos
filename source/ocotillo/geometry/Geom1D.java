@@ -69,4 +69,15 @@ public class Geom1D extends GeomXD {
             return null;
         }
     }
+
+    public double[] rangesUnion(double firstLeft, double firstRight, double secondLeft, double secondRight) {
+        assert (firstLeft <= firstRight && secondLeft <= secondRight) : "The left indexes must be smaller or equal to the right ones";
+        double left = Math.max(firstLeft, secondLeft);
+        double right = Math.min(firstRight, secondRight);
+        if (left <= right) {
+            return new double[]{left, right};
+        } else {
+            return null;
+        }
+	}
 }

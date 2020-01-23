@@ -6,20 +6,14 @@ import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeTrajectories;
-import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.Graph;
-import ocotillo.graph.Node;
-import ocotillo.graph.NodeAttribute;
-import ocotillo.graph.StdAttribute;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
-import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
 import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
-import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
-import ocotillo.multilevel.options.MultiLevelOption;
+import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.run.customrun.CustomRun;
 
@@ -48,6 +42,7 @@ public abstract class MultiLevelDynNoSlice {
 	
 	protected GraphCoarsener gc;
 	protected MultilevelNodePlacementStrategy placement;
+	protected DyGraphFlattener flattener;
 
 	private int current_iteration;
 	
@@ -82,6 +77,11 @@ public abstract class MultiLevelDynNoSlice {
 		return this;
 	}
 	
+	public MultiLevelDynNoSlice setFlattener(DyGraphFlattener flattener) {
+		this.flattener = flattener;
+		return this;
+	}
+	
 	protected abstract void preprocess();
 		
 	public void runMultiLevelLayout() {
@@ -91,11 +91,12 @@ public abstract class MultiLevelDynNoSlice {
 		current_iteration = 0;
 		
 		gc.computeCoarsening();				
-		Graph currentGraph = gc.getCoarserGraph();		
-		computeStaticLayout(currentGraph);			
+		DyGraph currentGraph = gc.getCoarserGraph();		
+		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
+    	placement.placeVertices(currentGraph, initialPositionedGraph, gc);		
 		
 		do {			       	       
-        	Graph finerGraph = currentGraph.parentGraph();
+        	DyGraph finerGraph = currentGraph.parentGraph();
         	placement.placeVertices(finerGraph, currentGraph, gc);
         	
         	updateThermostats();
@@ -108,10 +109,11 @@ public abstract class MultiLevelDynNoSlice {
 		
 	}
 
-	private void computeStaticLayout(Graph currentGraph) {
+	private Graph computeStaticLayout(Graph currentGraph) {
 		SfdpBuilder sfdp = new SfdpBuilder();
 		SfdpExecutor sfdpInstance = sfdp.build();
-		sfdpInstance.execute(currentGraph);		
+		sfdpInstance.execute(currentGraph);	
+		return currentGraph;
 	}
 
 	private void updateThermostats() {

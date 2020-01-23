@@ -1,31 +1,23 @@
 package ocotillo.multilevel.coarsening;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import ocotillo.dygraph.DyAttribute;
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
-import ocotillo.dygraph.Function;
-import ocotillo.dygraph.FunctionRect;
-import ocotillo.dygraph.Interpolation;
 import ocotillo.dygraph.Evolution.EvolutionMergeValue;
+import ocotillo.dygraph.Function;
+import ocotillo.dygraph.Interpolation;
 import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
-import ocotillo.graph.EdgeAttribute;
-import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
-import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 
 public abstract class GraphCoarsener {
@@ -45,7 +37,7 @@ public abstract class GraphCoarsener {
 		//coarserGraph = original;
 		coarserGraph = new DyGraph();
 
-		/*COPY AND SETUP OF THE ORIGINAL GRAPH*/
+		/*COPY AND SETUP OF THE ORIGINAL GRAPH -- NECESSARY FOR NODE ID TRANSLATION*/
 
 		for(Node n : original.nodes()) {
 			Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
@@ -79,7 +71,6 @@ public abstract class GraphCoarsener {
 
 		preprocess();
 
-		//Graph coarserGraph = rootGraph.rootGraph();
 		current_level = 1;
 		boolean breakCondition = false;
 		while(!breakCondition && !stoppingCondition()) {
@@ -92,11 +83,8 @@ public abstract class GraphCoarsener {
 
 			DyGraph enclosedSubgraph = coarserGraph.newSubGraph(subgraph.nodes(), subgraph.edges());
 
-			enclosedSubgraph.nodeAttributes().putAll(subgraph.nodeAttributes());
-			enclosedSubgraph.edgeAttributes().putAll(subgraph.edgeAttributes());
-
-			/*enclosedSubgraph.nodeAttribute(StdAttribute.weight).merge(subgraph.nodeAttribute(StdAttribute.weight));
-			enclosedSubgraph.edgeAttribute(StdAttribute.weight).merge(subgraph.edgeAttribute(StdAttribute.weight));*/
+			/*enclosedSubgraph.nodeAttributes().putAll(subgraph.nodeAttributes());
+			enclosedSubgraph.edgeAttributes().putAll(subgraph.edgeAttributes());*/
 
 			if(createInterLevelEdges)
 				for(Node source : subgraph.nodes()) {
@@ -116,9 +104,9 @@ public abstract class GraphCoarsener {
 		if(newLevel.nodeCount() == lastLevel.nodeCount()) 
 			newLevel = null;
 		else {
-			updateNodeWeights(newLevel, lastLevel);
-			mergeNodePresence(newLevel, lastLevel, new Evolution.EvolutionORMerge());
+			mergeNodePresenceAndWeight(newLevel, lastLevel, new Evolution.EvolutionORMerge());
 			generateEdges(lastLevel, newLevel); //#COMPLETE
+			mergeNodePresenceAndWeight(newLevel, lastLevel, new Evolution.EvolutionORMerge());			
 			//mergeEdgePresence
 			groupingMasterMap.putAll(currentLevelNodeGroups);
 		}
@@ -127,46 +115,45 @@ public abstract class GraphCoarsener {
 		return newLevel;
 	}
 
-	private void updateNodeWeights(DyGraph newLevel, DyGraph lastLevel) {
-		//###TODO
-		//double totalWeight = lastLevelNodeWeight.get(lastLevelTopNode).getDefaultValue();	
-		//totalWeight += lastLevelNodeWeight.get(lastLevelGroupNode).getDefaultValue();
-
-	}
-
-	protected void mergeNodePresence(DyGraph newLevel, DyGraph lastLevel, EvolutionMergeValue<Boolean> eval) {
+	protected void mergeNodePresenceAndWeight(DyGraph newLevel, DyGraph lastLevel, EvolutionMergeValue<Boolean> eval) {
 		DyNodeAttribute<Boolean> lastLevelPresence = lastLevel.nodeAttribute(StdAttribute.dyPresence);
 		DyNodeAttribute<Boolean> newLevelPresence = newLevel.nodeAttribute(StdAttribute.dyPresence);
+
+		DyNodeAttribute<Double> lastLevelNodeWeight = lastLevel.nodeAttribute(StdAttribute.weight);
+		DyNodeAttribute<Double> newLevelNodeWeight = newLevel.nodeAttribute(StdAttribute.weight);
+		
 
 		for(String s : currentLevelNodeGroups.keySet()) {
 			Node newLevelNode = newLevel.getNode(s);
 			Node lastLevelTopNode = lastLevel.getNode(getTranslatedNodeId(s, current_level-1));
 			newLevelPresence.set(newLevelNode, lastLevelPresence.get(lastLevelTopNode));
-
+			double totalWeight = lastLevelNodeWeight.get(lastLevelTopNode).getDefaultValue();	
 			Evolution<Boolean> newNodePresence = lastLevelPresence.get(lastLevelTopNode);
 			for(String n : currentLevelNodeGroups.get(s)) {
 				Node lastLevelGroupNode = lastLevel.getNode(n);
+				totalWeight += lastLevelNodeWeight.get(lastLevelGroupNode).getDefaultValue();				
 				Evolution<Boolean> lastNodePresence = lastLevelPresence.get(lastLevelGroupNode);
 				computeMergedPresence(newNodePresence, lastNodePresence, eval);
 			}
+			newLevelNodeWeight.set(newLevelNode, new Evolution<Double>(totalWeight));
 		}
 	}
-
-	private void computeMergedPresence(Evolution<Boolean> newNodePresence, Evolution<Boolean> lastNodePresence, EvolutionMergeValue<Boolean> eval){
+	
+	private void computeMergedPresence(Evolution<Boolean> newPresence, Evolution<Boolean> lastPresence, EvolutionMergeValue<Boolean> eval){
 		//Obtain the last level segments that overlap with any of the segments on the new level
-		List<Function<Boolean>> lastLevelOverlapping = new ArrayList<Function<Boolean>>(lastNodePresence.getOverlappingIntervals(newNodePresence));
+		List<Function<Boolean>> lastLevelOverlapping = new ArrayList<Function<Boolean>>(lastPresence.getOverlappingIntervals(newPresence));
 
 		//if no overlaps exist, just add all the previous intervals into the new presence function
 		if(lastLevelOverlapping.isEmpty())
-			newNodePresence.insertAll(lastNodePresence.getAllIntervals());
+			newPresence.insertAll(lastPresence.getAllIntervals());
 		else {
 			//Add to the presence function all the elements that do not overlap
-			Collection<Function<Boolean>> elementsWithNoConflicts = lastNodePresence.getAllIntervals();
+			Collection<Function<Boolean>> elementsWithNoConflicts = lastPresence.getAllIntervals();
 			elementsWithNoConflicts.removeAll(lastLevelOverlapping);
-			newNodePresence.insertAll(elementsWithNoConflicts);
+			newPresence.insertAll(elementsWithNoConflicts);
 
 			lastLevelOverlapping.sort(new BooleanFunctionComparator());					
-						
+
 			/*
 			 * For all the remaining:
 			 * 1. Obtain the elements in the NEW tree that overlap with the interval provided from the OLD tree
@@ -176,9 +163,9 @@ public abstract class GraphCoarsener {
 			 * 3b. Compute the values at the edges
 			 * */
 
-			List<Function<Boolean>> newLevelOverlapping = new ArrayList<Function<Boolean>>(newNodePresence.getOverlappingIntervals(lastNodePresence));
+			List<Function<Boolean>> newLevelOverlapping = new ArrayList<Function<Boolean>>(newPresence.getOverlappingIntervals(lastPresence));
 			newLevelOverlapping.sort(new BooleanFunctionComparator());
-			
+
 			List<Function<Boolean>> mergedPresences = new ArrayList<Function<Boolean>>();
 
 			int newT = 0, oldT = 0;
@@ -195,8 +182,8 @@ public abstract class GraphCoarsener {
 					leftBound = Math.min(currentLastLevelOverlapInterval.leftBound(), currentNewLevelOverlapInterval.leftBound());
 				if(intersectionInterval.isRightClosed())
 					rightBound = intersectionInterval.leftBound();//Math.min(currentLastLevelOverlapInterval.rightBound(), currentNewLevelOverlapInterval.rightBound());
-				boolean leftValue = eval.left(newNodePresence.valueAt(leftBound), lastNodePresence.valueAt(leftBound));
-				boolean rightValue = eval.right(newNodePresence.valueAt(rightBound), lastNodePresence.valueAt(rightBound));
+				boolean leftValue = eval.left(newPresence.valueAt(leftBound), lastPresence.valueAt(leftBound));
+				boolean rightValue = eval.right(newPresence.valueAt(rightBound), lastPresence.valueAt(rightBound));
 
 				ocotillo.dygraph.FunctionRect.Boolean lefty = new ocotillo.dygraph.FunctionRect.Boolean(
 						Interval.newCustom(leftBound, rightBound, leftBound == Double.NEGATIVE_INFINITY, rightBound == Double.POSITIVE_INFINITY),
@@ -210,8 +197,8 @@ public abstract class GraphCoarsener {
 					break;
 
 				//COMPUTE INTERSECTION INTERVAL
-				leftValue = eval.left(newNodePresence.valueAt(intersectionInterval.leftBound()), lastNodePresence.valueAt(intersectionInterval.leftBound()));
-				rightValue = eval.left(newNodePresence.valueAt(intersectionInterval.rightBound()), lastNodePresence.valueAt(intersectionInterval.rightBound()));
+				leftValue = eval.left(newPresence.valueAt(intersectionInterval.leftBound()), lastPresence.valueAt(intersectionInterval.leftBound()));
+				rightValue = eval.left(newPresence.valueAt(intersectionInterval.rightBound()), lastPresence.valueAt(intersectionInterval.rightBound()));
 				ocotillo.dygraph.FunctionRect.Boolean intersection = new ocotillo.dygraph.FunctionRect.Boolean(
 						intersectionInterval,
 						leftValue,
@@ -234,6 +221,27 @@ public abstract class GraphCoarsener {
 					oldT++;
 				}
 
+				if(newT == newLevelOverlapping.size()) {
+					mergedPresences.add( new ocotillo.dygraph.FunctionRect.Boolean(
+							Interval.newCustom(
+									leftBound, currentLastLevelOverlapInterval.rightBound(), 
+									false, currentLastLevelOverlapInterval.isRightClosed()),
+							leftValue,
+							rightValue, Interpolation.Std.constant)							
+							);	
+					oldT++;
+					break;
+				}else if(oldT == lastLevelOverlapping.size()) {
+					mergedPresences.add( new ocotillo.dygraph.FunctionRect.Boolean(
+							Interval.newCustom(
+									leftBound, currentNewLevelOverlapInterval.rightBound(), 
+									false, currentNewLevelOverlapInterval.isRightClosed()),
+							leftValue,
+							rightValue, Interpolation.Std.constant)
+							);	
+					newT++;
+					break;
+				}
 				newLevelCarryOn = null;
 				oldLevelCarryOn = null;
 
@@ -249,17 +257,19 @@ public abstract class GraphCoarsener {
 
 			}
 
-			newNodePresence.deleteAll(newLevelOverlapping);
-			newNodePresence.insertAll(mergedPresences);
+			newPresence.deleteAll(newLevelOverlapping);
+			newPresence.insertAll(mergedPresences);
 		}
 
 	}
 
 	private void generateEdges(DyGraph lastLevel, DyGraph newLevel) {
-		/*EdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
+		 DyEdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
+		 DyEdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);
 
-		EdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);*/
-
+		 DyEdgeAttribute<Boolean> lastLevelEdgePresence = lastLevel.edgeAttribute(StdAttribute.dyPresence);
+		 DyEdgeAttribute<Boolean> newLevelEdgePresence = newLevel.edgeAttribute(StdAttribute.dyPresence);
+		 
 		for(Node sourceUpperLevelNode : newLevel.nodes())  {
 			Node homologue = lastLevel.getNode(getTranslatedNodeId(sourceUpperLevelNode.id(), current_level - 1));
 			for(Edge e : lastLevel.inOutEdges(homologue)) {
@@ -274,8 +284,11 @@ public abstract class GraphCoarsener {
 					if(newLevelEdge == null) {
 						newLevelEdge = newLevel.newEdge(sourceUpperLevelNode.id()+"-"+targetUpperLevelNode.id(), sourceUpperLevelNode, targetUpperLevelNode);
 						newLevelEdgeWeight.set(newLevelEdge, lastLevelEdgeWeight.get(innerEdge));
+						newLevelEdgePresence.set(newLevelEdge, lastLevelEdgePresence.get(innerEdge));
 					}else
-						newLevelEdgeWeight.set(newLevelEdge, newLevelEdgeWeight.get(newLevelEdge) + lastLevelEdgeWeight.get(innerEdge));					
+						newLevelEdgeWeight.get(newLevelEdge).setDefaultValue(
+								newLevelEdgeWeight.get(newLevelEdge).getDefaultValue() + lastLevelEdgeWeight.get(innerEdge).getDefaultValue());
+					computeMergedPresence(newLevelEdgePresence.get(newLevelEdge), lastLevelEdgePresence.get(innerEdge), new Evolution.EvolutionORMerge());
 				}
 			}
 		}	

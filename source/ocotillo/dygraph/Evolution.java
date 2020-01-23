@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import lombok.EqualsAndHashCode;
@@ -94,6 +95,11 @@ public class Evolution<T> implements Iterable<Function<T>> {
 	 */
 	public boolean isDefinedAt(double x) {
 		return intervalTree.getAnyContaining(x) != null;
+	}
+	
+	public T getLastValue() {
+		List<Function<T>> orderedList = intervalTree.inOrderTraversal();
+		return orderedList.get(orderedList.size()-1).rightValue();
 	}
 
 	/**
