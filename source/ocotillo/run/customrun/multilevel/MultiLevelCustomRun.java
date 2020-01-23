@@ -10,6 +10,7 @@ import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
 import ocotillo.dygraph.Function;
+import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
@@ -18,10 +19,15 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.graph.layout.fdl.modular.ModularFdl;
+import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.coarsening.IndependentSet.WalshawIndependentSet;
+import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy.IdentityNodePlacement;
+import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
 
 public class MultiLevelCustomRun extends CustomRun {
@@ -36,92 +42,40 @@ public class MultiLevelCustomRun extends CustomRun {
 	@Override
 	protected void run() {
 		DyGraph dyGraph = createDynamicGraph();
-        generateAppearanceGraph(dyGraph);		
+        MultiLevelDynNoSlice multiDyn = 
+        		new MultiLevelDynNoSlice(dyGraph, Run.defaultTau, Run.defaultDelta)
+        			.setCoarsener(new WalshawIndependentSet())
+        			.setPlacementStrategy(new IdentityNodePlacement())
+        			.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
+        			.defaultOptions();
 	}
 	
 	public MultiLevelCustomRun(String[] argv) {
 		super(argv);
 	}		
-
-	public void generateAppearanceGraph(DyGraph dygraph) {
-		Graph graph = new Graph();
-        //NodeAttribute<String> label = graph.nodeAttribute(StdAttribute.label);
-		//DyNodeAttribute<Coordinates> position = graph.nodeAttribute(StdAttribute.nodePosition);
-        NodeAttribute<Double> nodeWeight = graph.nodeAttribute(StdAttribute.weight);
-        EdgeAttribute<Double> edgeWeight = graph.edgeAttribute(StdAttribute.weight);	
-        
-        DyNodeAttribute<Boolean> nodePresence = dygraph.nodeAttribute(StdAttribute.dyPresence);
-        DyEdgeAttribute<Boolean> edgePresence = dygraph.edgeAttribute(StdAttribute.dyPresence);
-        
-        for(Node dyN : dygraph.nodes()) {
-        	Node n;
-        	if(!graph.hasNode(dyN.id()))
-        		n = graph.newNode(dyN.id()+"__0");
-        	else
-        		n = graph.getNode(dyN.id()+"__0");
-        	double presence = 0.0;
-        	Iterator<Function<Boolean>> it = nodePresence.get(dyN).iterator(); 
-        	while(it.hasNext()) {
-        		Function<Boolean> f = it.next();
-        		Interval currInterval = f.interval();
-        		presence += currInterval.rightBound() - currInterval.leftBound(); 
-        	}
-        	nodeWeight.set(n, presence);
-        	System.out.println("Reconstructed Node " + n.id() + " with presence " + nodeWeight.get(n));
-        }            
-        
-        for(Edge dyE : dygraph.edges()) {               
-        	Node src = dyE.source();
-        	Node tgt = dyE.target();
-        	
-        	Edge e = graph.newEdge(
-        				graph.getNode(GraphCoarsener.translateNodeId(src.id(), 0)),
-        				graph.getNode(GraphCoarsener.translateNodeId(tgt.id(), 0)));
-        	
-        	
-        	double presence = 0.0;
-        	Iterator<Function<Boolean>> it = edgePresence.get(dyE).iterator(); 
-        	while(it.hasNext()) {
-        		Function<Boolean> f = it.next();
-        		Interval currInterval = f.interval();
-        		presence += currInterval.rightBound() - currInterval.leftBound(); 
-        	}
-        	edgeWeight.set(e, presence);
-        	System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with presence " + edgeWeight.get(e));
-        }
-               
-        this.appearanceGraph = graph;
-        
-		System.out.println("Reconstructed graph has " + this.appearanceGraph.nodeCount() + " nodes and " + this.appearanceGraph.edgeCount() + "edges");
-        
-        Map<String, Long> opts = new HashMap<String, Long>();
-        
-        opts.put("threshold", new Long(2));
-        
-        GraphCoarsener gc = new IndependentSet.WalshawIndependentSet(this.appearanceGraph, WalshawIndependentSet.DEFAULT_THRESHOLD);
-        gc.computeCoarsening();
-
-        testGraphPlacement(gc);
-        testGraphDisplay(gc);
-        	             
-	}
 	
-	public void testGraphPlacement(GraphCoarsener gc) {
-        Graph currentGraph = gc.getCoarserGraph();
-        int currentLevel = gc.getHierarchyDepth();
+	
+	public void testGraphPlacement(MultiLevelDynNoSlice multiDyn) {
+        DyGraph currentGraph = multiDyn.runCoarsening();
         
-        NodeAttribute<Coordinates> coarserCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
+        NodeAttribute<Evolution<Coordinates>> coarserCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
         
         for(Node n: currentGraph.nodes())
-        	coarserCoordinates.set(n, new Coordinates(Math.random(), Math.random()));
+        	coarserCoordinates.set(n, new Evolution<Coordinates>(new Coordinates(Math.random(), Math.random())));
         
-        IdentityNodePlacement in = new IdentityNodePlacement();
+        multiDyn.placeVertices(currentGraph.parentGraph(), currentGraph);
         
-        while(currentLevel >= 1)
-        	in.placeVertices(currentGraph.parentGraph(), currentGraph, gc);
+        do {
+        	multiDyn.placeVertices(currentGraph.parentGraph(), currentGraph);
+        }while(currentGraph.parentGraph() != null);
+        
 	}
 	
-	public void testGraphDisplay(GraphCoarsener gc) {
+	public void testGraphCoarsening(MultiLevelDynNoSlice multiDyn) {
+		multiDyn.runCoarsening();		
+	}
+	
+	public void outputGraphOnTerminal(MultiLevelDynNoSlice multiDyn) {
         Graph currentGraph = gc.getCoarserGraph();
         int currentLevel = gc.getHierarchyDepth();
         Graph rootGraph = currentGraph.rootGraph();
@@ -129,10 +83,14 @@ public class MultiLevelCustomRun extends CustomRun {
         	System.out.println("Displaying level " + currentLevel);
         	System.out.println("Nodes:");
         	
-        	NodeAttribute<Double> currentLevelNodeWeight = currentGraph.nodeAttribute(StdAttribute.weight);
-        	NodeAttribute<Double> currentLevelNodeCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
-    		EdgeAttribute<Double> currentLevelEdgeWeight = currentGraph.edgeAttribute(StdAttribute.weight);
+        	NodeAttribute<Evolution<Double>> currentLevelNodeWeight = dynG.nodeAttribute(StdAttribute.weight);
+    		EdgeAttribute<Evolution<Double>> currentLevelEdgeWeight = dynG.edgeAttribute(StdAttribute.weight);
         	
+        	NodeAttribute<Evolution<Double>> currentLevelNodeCoordinates = dynG.nodeAttribute(StdAttribute.nodePosition);
+    		
+    		NodeAttribute<Evolution<Double>> currentLevelNodePresence = dynG.nodeAttribute(StdAttribute.dyPresence);
+    		EdgeAttribute<Evolution<Double>> currentLevelEdgePresence = dynG.edgeAttribute(StdAttribute.dyPresence);
+    		
         	for(Node n : currentGraph.nodes()) 
         		System.out.println(n.id() + " weight " + currentLevelNodeWeight.get(n) + " position " + currentLevelNodeCoordinates.get(n));
         	

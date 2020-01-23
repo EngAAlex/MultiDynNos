@@ -26,9 +26,14 @@ public class IndependentSet extends GraphCoarsener {
 
 	private final long threshold;
 
-	public IndependentSet(DyGraph original, long threshold) {
-		super(original);
+	public IndependentSet(long threshold) {
+		super();
 		this.threshold = threshold;
+	}
+	
+	public IndependentSet() {
+		super();
+		this.threshold = DEFAULT_THRESHOLD;
 	}
 
 
@@ -100,8 +105,12 @@ public class IndependentSet extends GraphCoarsener {
 
 	public static class WalshawIndependentSet extends IndependentSet{
 
-		public WalshawIndependentSet(DyGraph original, long threshold) {
-			super(original, threshold);
+		public WalshawIndependentSet() {
+			super();
+		}
+		
+		public WalshawIndependentSet(long threshold) {
+			super(threshold);
 		}
 
 		@Override

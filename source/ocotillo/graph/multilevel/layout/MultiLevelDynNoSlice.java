@@ -17,7 +17,7 @@ import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.run.customrun.CustomRun;
 
-public abstract class MultiLevelDynNoSlice {
+public class MultiLevelDynNoSlice {
 	
 	private final double tau;
 	private final double delta;
@@ -35,8 +35,6 @@ public abstract class MultiLevelDynNoSlice {
 	
 	
 	DyGraph dynamicGraph;
-
-	
 	
 	protected HashMap<String, DynamicLayoutParameter> parametersMap;
 	
@@ -44,8 +42,7 @@ public abstract class MultiLevelDynNoSlice {
 	protected MultilevelNodePlacementStrategy placement;
 	protected DyGraphFlattener flattener;
 
-	private int current_iteration;
-	
+	private int current_iteration;	
 
 	public MultiLevelDynNoSlice(DyGraph original, double tau, double delta) {
 		dynamicGraph = original;
@@ -59,12 +56,13 @@ public abstract class MultiLevelDynNoSlice {
 		return this;
 	}
 	
-	public void defaultOptions() {
+	public MultiLevelDynNoSlice defaultOptions() {
 		addOption(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new LinearCoolingStrategy(-.1)))
 			.addOption(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.1)))
 			.addOption(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new LinearCoolingStrategy(-.1)))
 			.addOption(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.1)))
 			.addOption(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.1)));
+		return this;
 	}		
 	
 	public MultiLevelDynNoSlice setCoarsener(GraphCoarsener gc) {
@@ -82,8 +80,24 @@ public abstract class MultiLevelDynNoSlice {
 		return this;
 	}
 	
-	protected abstract void preprocess();
+	protected void preprocess() {
+		gc.setGraph(dynamicGraph);
+	}
+	
+	public Graph runFlattener() {
+		return computeStaticLayout(flattener.flattenDyGraph(gc.getCoarserGraph()));
+	}
+	
+	public DyGraph runCoarsening() {
+		gc.computeCoarsening();
+		return gc.getCoarserGraph();
+	}
 		
+	public DyGraph placeVertices(DyGraph finerGraph, DyGraph currentGraph) {
+		placement.placeVertices(finerGraph, currentGraph, gc);
+		return finerGraph;
+	}
+	
 	public void runMultiLevelLayout() {
 	
 		preprocess();
@@ -96,16 +110,14 @@ public abstract class MultiLevelDynNoSlice {
     	placement.placeVertices(currentGraph, initialPositionedGraph, gc);		
 		
 		do {			       	       
-        	DyGraph finerGraph = currentGraph.parentGraph();
-        	placement.placeVertices(finerGraph, currentGraph, gc);
+        	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
         	
         	updateThermostats();
         	
-    		//computeDynamicLayout(finerGraph);
+    		computeDynamicLayout(finerGraph);
     		currentGraph = finerGraph;
         	
 	    }while(currentGraph.parentGraph() != null);
-		
 		
 	}
 
@@ -134,8 +146,6 @@ public abstract class MultiLevelDynNoSlice {
 
         algorithm.iterate((int) parametersMap.get(MAX_ITERATIONS).getCurrentValue());		
 	}
-	
-	
-	
+
 	
 }

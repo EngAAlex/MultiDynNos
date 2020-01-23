@@ -32,35 +32,39 @@ public abstract class GraphCoarsener {
 
 	protected int current_level = 0;
 
-	public GraphCoarsener(DyGraph original) {
+	public GraphCoarsener() {
+					
+	}
+	
+	public void setGraph(DyGraph original) {
 		//Copy the original graph into the state
-		//coarserGraph = original;
-		coarserGraph = new DyGraph();
+				//coarserGraph = original;
+				coarserGraph = new DyGraph();
 
-		/*COPY AND SETUP OF THE ORIGINAL GRAPH -- NECESSARY FOR NODE ID TRANSLATION*/
+				/*COPY AND SETUP OF THE ORIGINAL GRAPH -- NECESSARY FOR NODE ID TRANSLATION*/
 
-		for(Node n : original.nodes()) {
-			Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
-			for(String s : original.nodeAttributes().keySet()) {
-				DyNodeAttribute<Object> newAttribute = coarserGraph.nodeAttribute(s);
-				DyNodeAttribute<Object> originalAttr = original.nodeAttribute(s);
-				newAttribute.set(newNode, originalAttr.get(n));
-			}
-		}
-		for(Edge e : original.edges()) {
-			Edge newEdge = coarserGraph.newEdge(coarserGraph.getNode(translateNodeId(e.source().id(), 0)), 
-					coarserGraph.getNode(translateNodeId(e.target().id(), 0)));
-			for(String s : original.edgeAttributes().keySet()) {
-				DyEdgeAttribute<Object> newAttribute = coarserGraph.edgeAttribute(s);
-				DyEdgeAttribute<Object> originalAttr = original.edgeAttribute(s);
-				newAttribute.set(newEdge, originalAttr.get(e));
-			}			
-			coarserGraph.edgeAttributes().put(newEdge.id(), original.edgeAttributes().get(e.id()));
-		}
+				for(Node n : original.nodes()) {
+					Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
+					for(String s : original.nodeAttributes().keySet()) {
+						DyNodeAttribute<Object> newAttribute = coarserGraph.nodeAttribute(s);
+						DyNodeAttribute<Object> originalAttr = original.nodeAttribute(s);
+						newAttribute.set(newNode, originalAttr.get(n));
+					}
+				}
+				for(Edge e : original.edges()) {
+					Edge newEdge = coarserGraph.newEdge(coarserGraph.getNode(translateNodeId(e.source().id(), 0)), 
+							coarserGraph.getNode(translateNodeId(e.target().id(), 0)));
+					for(String s : original.edgeAttributes().keySet()) {
+						DyEdgeAttribute<Object> newAttribute = coarserGraph.edgeAttribute(s);
+						DyEdgeAttribute<Object> originalAttr = original.edgeAttribute(s);
+						newAttribute.set(newEdge, originalAttr.get(e));
+					}			
+					coarserGraph.edgeAttributes().put(newEdge.id(), original.edgeAttributes().get(e.id()));
+				}
 
-		coarserGraph.graphAttributes().putAll(original.graphAttributes());
+				coarserGraph.graphAttributes().putAll(original.graphAttributes());
 
-		/* COPY END */			
+				/* COPY END */
 	}
 
 	public void computeCoarsening() {
