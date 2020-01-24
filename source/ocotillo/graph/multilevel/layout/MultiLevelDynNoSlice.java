@@ -98,7 +98,7 @@ public class MultiLevelDynNoSlice {
 		return finerGraph;
 	}
 	
-	public void runMultiLevelLayout() {
+	public DyGraph runMultiLevelLayout() {
 	
 		preprocess();
 		
@@ -115,9 +115,14 @@ public class MultiLevelDynNoSlice {
         	updateThermostats();
         	
     		computeDynamicLayout(finerGraph);
+    		
+    		finerGraph.nukeSubgraph(currentGraph);
+
     		currentGraph = finerGraph;
-        	
+    		        	
 	    }while(currentGraph.parentGraph() != null);
+		
+		return gc.getCoarserGraph();
 		
 	}
 

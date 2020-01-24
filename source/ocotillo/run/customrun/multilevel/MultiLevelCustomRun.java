@@ -48,6 +48,12 @@ public class MultiLevelCustomRun extends CustomRun {
         			.setPlacementStrategy(new IdentityNodePlacement())
         			.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
         			.defaultOptions();
+        
+        outputGraphOnTerminal(testGraphCoarsening(multiDyn));
+        
+        outputGraphOnTerminal(testGraphPlacement(multiDyn));
+        
+        outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
 	}
 	
 	public MultiLevelCustomRun(String[] argv) {
@@ -55,7 +61,7 @@ public class MultiLevelCustomRun extends CustomRun {
 	}		
 	
 	
-	public void testGraphPlacement(MultiLevelDynNoSlice multiDyn) {
+	public DyGraph testGraphPlacement(MultiLevelDynNoSlice multiDyn) {
         DyGraph currentGraph = multiDyn.runCoarsening();
         
         NodeAttribute<Evolution<Coordinates>> coarserCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
@@ -68,43 +74,49 @@ public class MultiLevelCustomRun extends CustomRun {
         do {
         	multiDyn.placeVertices(currentGraph.parentGraph(), currentGraph);
         }while(currentGraph.parentGraph() != null);
-        
+
+        return currentGraph;
 	}
 	
-	public void testGraphCoarsening(MultiLevelDynNoSlice multiDyn) {
-		multiDyn.runCoarsening();		
+	public DyGraph testGraphCoarsening(MultiLevelDynNoSlice multiDyn) {
+		return multiDyn.runCoarsening();		
 	}
 	
-	public void outputGraphOnTerminal(MultiLevelDynNoSlice multiDyn) {
-        Graph currentGraph = gc.getCoarserGraph();
-        int currentLevel = gc.getHierarchyDepth();
-        Graph rootGraph = currentGraph.rootGraph();
+	public void outputGraphOnTerminal(DyGraph currentGraph) {
+		int currentLevel = 0;
         do {
         	System.out.println("Displaying level " + currentLevel);
         	System.out.println("Nodes:");
         	
-        	NodeAttribute<Evolution<Double>> currentLevelNodeWeight = dynG.nodeAttribute(StdAttribute.weight);
-    		EdgeAttribute<Evolution<Double>> currentLevelEdgeWeight = dynG.edgeAttribute(StdAttribute.weight);
+        	DyNodeAttribute<Double> currentLevelNodeWeight = currentGraph.nodeAttribute(StdAttribute.weight);
+        	DyEdgeAttribute<Double> currentLevelEdgeWeight = currentGraph.edgeAttribute(StdAttribute.weight);
         	
-        	NodeAttribute<Evolution<Double>> currentLevelNodeCoordinates = dynG.nodeAttribute(StdAttribute.nodePosition);
+        	DyNodeAttribute<Evolution<Double>> currentLevelNodeCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
     		
-    		NodeAttribute<Evolution<Double>> currentLevelNodePresence = dynG.nodeAttribute(StdAttribute.dyPresence);
-    		EdgeAttribute<Evolution<Double>> currentLevelEdgePresence = dynG.edgeAttribute(StdAttribute.dyPresence);
+        	DyNodeAttribute<Boolean> currentLevelNodePresence = currentGraph.nodeAttribute(StdAttribute.dyPresence);
+        	DyEdgeAttribute<Boolean> currentLevelEdgePresence = currentGraph.edgeAttribute(StdAttribute.dyPresence);
     		
-        	for(Node n : currentGraph.nodes()) 
-        		System.out.println(n.id() + " weight " + currentLevelNodeWeight.get(n) + " position " + currentLevelNodeCoordinates.get(n));
-        	
+        	for(Node n : currentGraph.nodes()) {
+        		System.out.println(n.id() + "\n\tWeight " + currentLevelNodeWeight.get(n).getDefaultValue() + "\n\tPosition " + currentLevelNodeCoordinates.get(n).getLastValue());
+        		Evolution<Boolean> nodePresence = currentLevelNodePresence.get(n);
+        		for(Function<Boolean> f : nodePresence.getAllIntervals())
+        			System.out.println("Exists from " + f.interval().leftBound() + " to " + f.interval().rightBound());        		
+        	}
         	System.out.println("Edges:");
 
-        	for(Edge e: currentGraph.edges())
-            	System.out.println(e.id() + " weight " + currentLevelEdgeWeight.get(e));
+        	for(Edge e: currentGraph.edges()) {        		
+            	System.out.println("From " + e.source().id() + " to " + e.target().id() + "\n\tWeight " + currentLevelEdgeWeight.get(e).getDefaultValue());
+        		Evolution<Boolean> edgePresence = currentLevelEdgePresence.get(e);
+        		for(Function<Boolean> f : edgePresence.getAllIntervals())
+        			System.out.println("Exists from " + f.interval().leftBound() + " to " + f.interval().rightBound());    
+        	}
         	
-        	System.out.println("Done\n\n");
+        	System.out.println("\n\n");
         	
-        	Graph parentGraph = currentGraph.parentGraph();
+        	DyGraph parentGraph = currentGraph.parentGraph();
         	if(parentGraph != null) {
-        		rootGraph.nukeSubgraph(currentGraph);        	
-	        	currentLevel--;
+        		parentGraph.nukeSubgraph(currentGraph);        	
+	        	currentLevel++;
         	}
         	currentGraph = parentGraph;        
 
