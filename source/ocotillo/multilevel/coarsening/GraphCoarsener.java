@@ -174,9 +174,27 @@ public abstract class GraphCoarsener {
 
 			int newT = 0, oldT = 0;
 			Interval newLevelCarryOn = null, oldLevelCarryOn = null;
-			while(newT<newLevelOverlapping.size() && oldT < lastLevelOverlapping.size()) {
-				Interval currentLastLevelOverlapInterval = oldLevelCarryOn == null ? oldLevelCarryOn : lastLevelOverlapping.get(oldT).interval();
-				Interval currentNewLevelOverlapInterval = newLevelCarryOn == null ? newLevelCarryOn : newLevelOverlapping.get(newT).interval(); 																				
+			while(newT<newLevelOverlapping.size() || oldT < lastLevelOverlapping.size()) {
+				Interval currentLastLevelOverlapInterval = oldLevelCarryOn != null ? oldLevelCarryOn : 
+																					 (oldT < lastLevelOverlapping.size() ? lastLevelOverlapping.get(oldT).interval() : null);
+				Interval currentNewLevelOverlapInterval = newLevelCarryOn != null ? newLevelCarryOn : 
+					 																(newT < newLevelOverlapping.size() ? newLevelOverlapping.get(newT).interval() : null); 																				
+				//Check if the old interval is null 
+				if(currentLastLevelOverlapInterval == null) {
+					mergedPresences.add(newLevelOverlapping.get(newT));
+					oldLevelCarryOn = null;
+					newT++;
+					continue;
+				}	
+				
+				//Check if the two are the same interval
+				if(currentLastLevelOverlapInterval.equals(currentNewLevelOverlapInterval) || 
+						currentLastLevelOverlapInterval.isContainedIn(currentNewLevelOverlapInterval)) {
+					oldT++;
+					newLevelCarryOn = currentNewLevelOverlapInterval;
+					continue;
+				}					
+				
 				Interval intersectionInterval = currentLastLevelOverlapInterval.intersection(currentNewLevelOverlapInterval);
 
 				//COMPUTE LEFT INTERVAL 
@@ -219,10 +237,10 @@ public abstract class GraphCoarsener {
 				leftBound = intersectionInterval.rightBound();
 
 				if(currentLastLevelOverlapInterval.rightBound() == leftBound) {
-					newT++;
+					oldT++;
 				}
 				if(currentNewLevelOverlapInterval.rightBound() == leftBound) {
-					oldT++;
+					newT++;
 				}
 
 				if(newT == newLevelOverlapping.size()) {

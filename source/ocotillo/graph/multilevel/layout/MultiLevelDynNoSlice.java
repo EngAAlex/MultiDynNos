@@ -85,10 +85,14 @@ public class MultiLevelDynNoSlice {
 	}
 	
 	public Graph runFlattener() {
+		preprocess();
+
 		return computeStaticLayout(flattener.flattenDyGraph(gc.getCoarserGraph()));
 	}
 	
 	public DyGraph runCoarsening() {
+		preprocess();
+
 		gc.computeCoarsening();
 		return gc.getCoarserGraph();
 	}

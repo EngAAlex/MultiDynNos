@@ -99,6 +99,8 @@ public class Evolution<T> implements Iterable<Function<T>> {
 	
 	public T getLastValue() {
 		List<Function<T>> orderedList = intervalTree.inOrderTraversal();
+		if(orderedList.size() == 0)
+			return getDefaultValue();
 		return orderedList.get(orderedList.size()-1).rightValue();
 	}
 

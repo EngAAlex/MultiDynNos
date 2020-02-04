@@ -10,19 +10,14 @@ import java.util.List;
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
-import ocotillo.dygraph.Evolution;
 import ocotillo.graph.Edge;
-import ocotillo.graph.EdgeAttribute;
-import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
-import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
-import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 
 public class IndependentSet extends GraphCoarsener {
 
-	public final static long DEFAULT_THRESHOLD = 5;
+	public final static long DEFAULT_THRESHOLD = 1;
 
 	private final long threshold;
 

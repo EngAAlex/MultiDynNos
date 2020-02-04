@@ -51,9 +51,9 @@ public class MultiLevelCustomRun extends CustomRun {
         
         outputGraphOnTerminal(testGraphCoarsening(multiDyn));
         
-        outputGraphOnTerminal(testGraphPlacement(multiDyn));
+        //outputGraphOnTerminal(testGraphPlacement(multiDyn));
         
-        outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
+        //outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
 	}
 	
 	public MultiLevelCustomRun(String[] argv) {

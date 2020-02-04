@@ -103,7 +103,7 @@ public abstract class DyGraphFlattener {
 			
 			for(Node dyN : toFlatten.nodes()) {				
 				nodeWeight.set(dyN, new Evolution<Double>(yieldNodeAggregatedPresenceValue(nodePresence, dyN)));
-				System.out.println("Reconstructed Node " + dyN.id() + " with presence " + nodeWeight.get(dyN));
+				System.out.println("Reconstructed Node " + dyN.id() + " with aggregated presence (weight) " + nodeWeight.get(dyN).getDefaultValue());
 			}            
 
 			for(Edge dyE : toFlatten.edges()) {               
@@ -111,7 +111,7 @@ public abstract class DyGraphFlattener {
 				Node tgt = dyE.target();
 				
 				edgeWeight.set(dyE, new Evolution<Double>(yieldEdgeAggregatedPresenceValue(edgePresence, dyE)));
-				System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with presence " + edgeWeight.get(dyE));
+				System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with aggregated presence (weight) " + edgeWeight.get(dyE).getDefaultValue());
 			}
 			
 			return toFlatten;
