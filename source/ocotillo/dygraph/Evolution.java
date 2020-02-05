@@ -227,4 +227,10 @@ public class Evolution<T> implements Iterable<Function<T>> {
 			list.add(it.next());
 		return list;
 	}
+	
+	public void copyFrom(Evolution<T> other) {
+		intervalTree.clear();
+		intervalTree.insertAll(other.getAllIntervals());
+	}
+	
 }

@@ -160,10 +160,29 @@ public abstract class GraphWithHierarchy<T extends GraphWithHierarchy<?>> extend
     @SuppressWarnings("unchecked")
     public void nukeSubgraph(T subGraph) {
         removeSubGraph(subGraph);
-        for(Edge e: subGraph.edges())
-        	this.remove(e);        
-        for(Node n: subGraph.nodes())
+        for(Edge e: subGraph.edges()) {
+        	this.remove(e);    
+    		if(rootGraph().has(e))
+    			rootGraph().remove(e);        	
+			for(GraphWithHierarchy<?> subSubGraph : rootGraph().subGraphs()) {
+        		if(subSubGraph.has(e))
+        			subSubGraph.remove(e);
+                changedSubGraphs.add((T) subSubGraph);
+                notifyObservers();        		
+        	}
+        	
+        }
+        for(Node n: subGraph.nodes()) {
         	this.remove(n);
+    		if(rootGraph().has(n))        	
+        		rootGraph().remove(n);
+			for(GraphWithHierarchy<?> subSubGraph : rootGraph().subGraphs()) {
+        		if(rootGraph().has(n))
+        			subSubGraph.remove(n);
+                changedSubGraphs.add((T) subSubGraph);
+                notifyObservers();        		
+        	}
+        }
     }
 
     @Override

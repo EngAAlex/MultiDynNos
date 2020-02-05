@@ -34,7 +34,7 @@ public class IndependentSet extends GraphCoarsener {
 
 	@Override
 	protected boolean stoppingCondition() {
-		return coarserGraph.nodeCount() < threshold;
+		return coarserGraph.nodeCount() <= threshold;
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class IndependentSet extends GraphCoarsener {
 
 		while(!nodes.isEmpty()) {
 			Node topNode = nodes.remove(0);
-			Node newLevelNode = new Node(getTranslatedNodeId(topNode.id(), current_level));			
+			Node newLevelNode = newLevel.newNode((getTranslatedNodeId(topNode.id(), current_level)));			
 
 			currentLevelEdgeAssociations.put(topNode.id(), newLevelNode.id());
 			HashSet<String> newLevelNodeGroup = new HashSet<String>();

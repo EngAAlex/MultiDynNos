@@ -82,8 +82,10 @@ public class MultiLevelCustomRun extends CustomRun {
 		return multiDyn.runCoarsening();		
 	}
 	
-	public void outputGraphOnTerminal(DyGraph currentGraph) {
+	public void outputGraphOnTerminal(DyGraph startGraph) {
 		int currentLevel = 0;
+		
+		DyGraph currentGraph = startGraph;
         do {
         	System.out.println("Displaying level " + currentLevel);
         	System.out.println("Nodes:");
@@ -111,11 +113,11 @@ public class MultiLevelCustomRun extends CustomRun {
         			System.out.println("Exists from " + f.interval().leftBound() + " to " + f.interval().rightBound());    
         	}
         	
-        	System.out.println("\n\n");
+        	System.out.println("\n");
         	
         	DyGraph parentGraph = currentGraph.parentGraph();
         	if(parentGraph != null) {
-        		parentGraph.nukeSubgraph(currentGraph);        	
+        		parentGraph.nukeSubgraph(currentGraph);        		
 	        	currentLevel++;
         	}
         	currentGraph = parentGraph;        
