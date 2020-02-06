@@ -75,7 +75,7 @@ public abstract class DyGraphFlattener {
 					n = flattenedGraph.newNode(dyN.id());
 				else
 					n = flattenedGraph.getNode(dyN.id());				
-				nodeWeight.set(n, yieldNodeAggregatedPresenceValue(nodePresence, n));
+				nodeWeight.set(n, yieldNodeAggregatedPresenceValue(nodePresence, dyN));
 				System.out.println("Reconstructed Node " + n.id() + " with presence " + nodeWeight.get(n));
 			}            
 
@@ -84,10 +84,10 @@ public abstract class DyGraphFlattener {
 				Node tgt = dyE.target();
 
 				Edge e = flattenedGraph.newEdge(
-						flattenedGraph.getNode(GraphCoarsener.translateNodeId(src.id(), 0)),
-						flattenedGraph.getNode(GraphCoarsener.translateNodeId(tgt.id(), 0)));
+						flattenedGraph.getNode(src.id()),
+						flattenedGraph.getNode(tgt.id()));
 				
-				edgeWeight.set(e, yieldEdgeAggregatedPresenceValue(edgePresence, e));
+				edgeWeight.set(e, yieldEdgeAggregatedPresenceValue(edgePresence, dyE));
 				System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with presence " + edgeWeight.get(e));
 			}
 			return flattenedGraph;

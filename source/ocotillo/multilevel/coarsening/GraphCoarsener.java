@@ -286,11 +286,61 @@ public abstract class GraphCoarsener {
 			}
 
 			newPresence.deleteAll(newLevelOverlapping);
-			newPresence.insertAll(mergedPresences);
+			newPresence.insertAll(postProcessIntervals(mergedPresences));
 		}
 
 	}
+	
+	/**
+	 * A method to merge together intervals that are adjacent (left bound === right bound)
+	 * @param list The list of intervals to examine
+	 * @return The list of merged intervals
+	 */
+	private List<Function<Boolean>> postProcessIntervals(List<Function<Boolean>> list) {
+		List<Function<Boolean>> merged = new ArrayList<Function<Boolean>>();
+		List<Function<Boolean>> currentPot = new ArrayList<Function<Boolean>>();
+		Function<Boolean> lastInterval = null;
+		for(Function<Boolean> current : list) {
+			if(currentPot.size() == 0) {
+				currentPot.add(current); 
+				lastInterval = current;
+			} else {
+				currentPot.add(current);
+				if(current.interval().leftBound() == lastInterval.interval().rightBound()) {
+					lastInterval = current;
+				}else {
+					merged.add(mergeAdjacentIntervals(currentPot));
+					currentPot.clear();
+				}
+			}
+		}
+		if(currentPot.size() != 0)
+			merged.add(mergeAdjacentIntervals(currentPot));
+				
+		return merged;
+	}
+	
+	/**
+	 * Method that merges together the list of Intervals provided into one interval that spans from the 
+	 * left bound of the first in the list to the right bound of the last.
+	 * @param temp The list of intervals
+	 * @return The merged interval.
+	 */
+	private Function<Boolean> mergeAdjacentIntervals(List<Function<Boolean>> temp){
+		Interval left = temp.get(0).interval();
+		Interval right = temp.get(temp.size()-1).interval();
+		return new ocotillo.dygraph.FunctionRect.Boolean(
+				Interval.newCustom(left.leftBound(), right.rightBound(), left.isLeftClosed(), right.isRightClosed()),
+				temp.get(0).leftValue(),
+				temp.get(0).rightValue(), Interpolation.Std.constant
+				);
+	}
 
+	/**
+	 * Method to create the edges of the new level starting from the nodes of the new level
+	 * @param newLevel The new level graph -- now it only contains the new vertices.
+	 * @param lastLevel The current level graph.
+	 */
 	private void generateEdges(DyGraph newLevel, DyGraph lastLevel) {
 		 DyEdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
 		 DyEdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);
@@ -323,20 +373,44 @@ public abstract class GraphCoarsener {
 		}	
 	}
 
+	
+	/**
+	 * Get how many levels the hierarchy has. 
+	 * @return
+	 */
 	public int getHierarchyDepth() {
 		return current_level;
 	}
 
-	public DyGraph getCoarserGraph() {
+	
+	/**
+	 * Get the coarsest graph in the hierarchy.
+	 * @return
+	 */
+	public DyGraph getCoarsestGraph() {
 		return coarserGraph;
 	}
 
+	/**
+	 * When a node on level n+1 is created, it will represent a group of nodes from level n. With this function, the members of that group can be recovered.  
+	 * @param id The node of the id to look for.
+	 * @return The members of the group belonging to the provided node.
+	 */
 	public Set<String> getGroupMembers(String id){
 		return groupingMasterMap.get(id);
 	}
 
+	/**
+	 * This function yields the new set of nodes that will be part of the new (n+1) level. 
+	 * @param lastLevel The graph at level n
+	 * @return The graph containing the nodes of the new nevel
+	 */
 	protected abstract DyGraph computeNewVertexSet(DyGraph lastLevel);	
 
+	/**
+	 * A method to evaluate whether or not to continue the coarsening.
+	 * @return Whether the coarsening should stop or a new level should be created
+	 */
 	protected abstract boolean stoppingCondition();	
 
 	protected abstract Iterable<Edge> getCollectionOfNeighbors(Collection<Edge> inOutEdges,

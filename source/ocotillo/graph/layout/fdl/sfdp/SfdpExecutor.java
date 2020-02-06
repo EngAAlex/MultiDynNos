@@ -22,6 +22,7 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.serialization.dot.DotReader;
 import ocotillo.serialization.dot.DotReader.DotReaderBuilder;
+import ocotillo.serialization.dot.DotValueConverter;
 import ocotillo.serialization.dot.DotWriter;
 import ocotillo.serialization.dot.DotWriter.DotWriterBuilder;
 import ocotillo.serialization.dot.DotValueConverter.PositionConverter;
@@ -41,6 +42,8 @@ import org.apache.commons.exec.PumpStreamHandler;
  */
 public class SfdpExecutor {
 
+	private final static String COMMAND_LINE = "wsl sfdp";
+	
     private final String[] arguments;
     private final DotReader dotReader;
     private final DotWriter dotWriter;
@@ -71,6 +74,9 @@ public class SfdpExecutor {
                     .convert(StdAttribute.nodePosition, "pos")
                     .convert(StdAttribute.nodeSize, "width", new SizeDimensionConverter(0))
                     .convert(StdAttribute.nodeSize, "height", new SizeDimensionConverter(1));
+            
+            writerBuilder.edgeAttributes
+            		.convert(StdAttribute.weight, "weight", new DotValueConverter.DoubleConverter());
             dotWriter = writerBuilder.build();
         }
 
@@ -140,7 +146,7 @@ public class SfdpExecutor {
         try {
             DefaultExecutor executor = new DefaultExecutor();
             executor.setStreamHandler(new PumpStreamHandler(new ByteArrayOutputStream()));
-            executor.execute(CommandLine.parse("sfdp -V"));
+            executor.execute(CommandLine.parse(COMMAND_LINE + " -V"));
         } catch (IOException ex) {
             throw new IllegalStateException("sfdp executable has not been found.");
         }
@@ -174,7 +180,7 @@ public class SfdpExecutor {
             assert (argment.startsWith("-") && !argment.startsWith("-o") && !argment.startsWith("-O")) : "Arguments that control the input/ouput streams cannot be used here.";
         }
 
-        CommandLine cmdLine = new CommandLine("sfdp");
+        CommandLine cmdLine = new CommandLine(CommandLine.parse(COMMAND_LINE));
         cmdLine.addArguments(arguments);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(listToString(dotInput).getBytes());
@@ -188,6 +194,7 @@ public class SfdpExecutor {
         } catch (IOException ex) {
             System.err.println("ERROR: " + errorStream.toString() + "\n");
             System.out.println("OUTPUT: " + outputStream.toString() + "\n");
+            ex.printStackTrace();            
             throw new IllegalStateException("Error while executing sfdp.");
         }
 

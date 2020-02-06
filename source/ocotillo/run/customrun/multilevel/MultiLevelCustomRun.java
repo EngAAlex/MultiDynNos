@@ -1,31 +1,19 @@
 package ocotillo.run.customrun.multilevel;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
 import ocotillo.dygraph.Function;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.geometry.Coordinates;
-import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
-import ocotillo.graph.EdgeAttribute;
 import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
-import ocotillo.graph.layout.fdl.modular.ModularFdl;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
-import ocotillo.multilevel.coarsening.GraphCoarsener;
-import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.coarsening.IndependentSet.WalshawIndependentSet;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
-import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy.IdentityNodePlacement;
 import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
@@ -49,9 +37,10 @@ public class MultiLevelCustomRun extends CustomRun {
         			.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
         			.defaultOptions();
         
-        outputGraphOnTerminal(testGraphCoarsening(multiDyn));
+        //outputGraphOnTerminal(testGraphCoarsening(multiDyn));        
+        //outputGraphOnTerminal(testGraphPlacement(multiDyn, true));
         
-        //outputGraphOnTerminal(testGraphPlacement(multiDyn));
+        outputGraphOnTerminal(testGraphPlacement(multiDyn, false));
         
         //outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
 	}
@@ -61,21 +50,25 @@ public class MultiLevelCustomRun extends CustomRun {
 	}		
 	
 	
-	public DyGraph testGraphPlacement(MultiLevelDynNoSlice multiDyn) {
-        DyGraph currentGraph = multiDyn.runCoarsening();
+	public DyGraph testGraphPlacement(MultiLevelDynNoSlice multiDyn, boolean randomCoordinates) {
+        DyGraph coarsenedGraph = testGraphCoarsening(multiDyn);
         
-        NodeAttribute<Evolution<Coordinates>> coarserCoordinates = currentGraph.nodeAttribute(StdAttribute.nodePosition);
+        if(randomCoordinates) {
+        NodeAttribute<Evolution<Coordinates>> coarserCoordinates = coarsenedGraph.nodeAttribute(StdAttribute.nodePosition);
         
-        for(Node n: currentGraph.nodes())
+        for(Node n: coarsenedGraph.nodes())
         	coarserCoordinates.set(n, new Evolution<Coordinates>(new Coordinates(Math.random(), Math.random())));
+        }else
+			multiDyn.nodesFirstPlacement();
         
-        multiDyn.placeVertices(currentGraph.parentGraph(), currentGraph);
-        
+		DyGraph parentGraph = coarsenedGraph.parentGraph();
         do {
-        	multiDyn.placeVertices(currentGraph.parentGraph(), currentGraph);
-        }while(currentGraph.parentGraph() != null);
+        	multiDyn.placeVertices(parentGraph, coarsenedGraph);
+        	coarsenedGraph = parentGraph;
+        	parentGraph = parentGraph.parentGraph();        	
+        }while(parentGraph != null);
 
-        return currentGraph;
+        return multiDyn.getCoarsestGraph();
 	}
 	
 	public DyGraph testGraphCoarsening(MultiLevelDynNoSlice multiDyn) {

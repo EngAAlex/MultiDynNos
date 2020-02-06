@@ -87,19 +87,29 @@ public class MultiLevelDynNoSlice {
 	public Graph runFlattener() {
 		preprocess();
 
-		return computeStaticLayout(flattener.flattenDyGraph(gc.getCoarserGraph()));
+		return computeStaticLayout(flattener.flattenDyGraph(gc.getCoarsestGraph()));
 	}
 	
 	public DyGraph runCoarsening() {
 		preprocess();
 
 		gc.computeCoarsening();
-		return gc.getCoarserGraph();
+		return gc.getCoarsestGraph();
 	}
 		
+	public DyGraph getCoarsestGraph() {
+		return gc.getCoarsestGraph();
+	}
+	
 	public DyGraph placeVertices(DyGraph finerGraph, DyGraph currentGraph) {
 		placement.placeVertices(finerGraph, currentGraph, gc);
 		return finerGraph;
+	}
+	
+	public void nodesFirstPlacement() {
+		DyGraph currentGraph = gc.getCoarsestGraph();		
+		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
+    	placement.placeVertices(currentGraph, initialPositionedGraph, gc);
 	}
 	
 	public DyGraph runMultiLevelLayout() {
@@ -109,10 +119,10 @@ public class MultiLevelDynNoSlice {
 		current_iteration = 0;
 		
 		gc.computeCoarsening();				
-		DyGraph currentGraph = gc.getCoarserGraph();		
-		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
-    	placement.placeVertices(currentGraph, initialPositionedGraph, gc);		
+		nodesFirstPlacement();
 		
+		DyGraph currentGraph = gc.getCoarsestGraph();		
+
 		do {			       	       
         	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
         	
@@ -126,7 +136,7 @@ public class MultiLevelDynNoSlice {
     		        	
 	    }while(currentGraph.parentGraph() != null);
 		
-		return gc.getCoarserGraph();
+		return gc.getCoarsestGraph();
 		
 	}
 
