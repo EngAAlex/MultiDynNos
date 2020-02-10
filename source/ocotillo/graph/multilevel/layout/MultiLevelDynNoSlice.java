@@ -123,20 +123,20 @@ public class MultiLevelDynNoSlice {
 		
 		DyGraph currentGraph = gc.getCoarsestGraph();		
 
-		do {			       	       
+		do {		
+			
+    		computeDynamicLayout(currentGraph);    		
+			
         	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
-        	
-        	updateThermostats();
-        	
-    		computeDynamicLayout(finerGraph);
-    		
     		finerGraph.nukeSubgraph(currentGraph);
-
     		currentGraph = finerGraph;
-    		        	
+
+        	updateThermostats();
+        	    		        	
 	    }while(currentGraph.parentGraph() != null);
 		
-		return gc.getCoarsestGraph();
+		//return gc.getCoarsestGraph();
+		return currentGraph;
 		
 	}
 

@@ -15,6 +15,7 @@ import ocotillo.dygraph.Evolution;
 import ocotillo.dygraph.Evolution.EvolutionMergeValue;
 import ocotillo.dygraph.Function;
 import ocotillo.dygraph.Interpolation;
+import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
 import ocotillo.graph.Node;
@@ -87,12 +88,13 @@ public abstract class GraphCoarsener {
 
 			DyGraph enclosedSubgraph = coarserGraph.newSubGraph(subgraph.nodes(), subgraph.edges());
 
-			enclosedSubgraph.nodeAttribute(StdAttribute.weight).merge(subgraph.nodeAttribute(StdAttribute.weight));
-			enclosedSubgraph.nodeAttribute(StdAttribute.dyPresence).merge(subgraph.nodeAttribute(StdAttribute.dyPresence));
-
-			enclosedSubgraph.edgeAttribute(StdAttribute.weight).merge(subgraph.edgeAttribute(StdAttribute.weight));
-			enclosedSubgraph.edgeAttribute(StdAttribute.dyPresence).merge(subgraph.edgeAttribute(StdAttribute.dyPresence));			
-
+			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.weight, 0.0).merge(subgraph.nodeAttribute(StdAttribute.weight));
+			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.dyPresence, false).merge(subgraph.nodeAttribute(StdAttribute.dyPresence));
+			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.nodePosition, new Evolution<>(new Coordinates(0, 0)));
+			
+			enclosedSubgraph.newLocalEdgeAttribute(StdAttribute.weight, 0.0).merge(subgraph.edgeAttribute(StdAttribute.weight));
+			enclosedSubgraph.newLocalEdgeAttribute(StdAttribute.dyPresence, false).merge(subgraph.edgeAttribute(StdAttribute.dyPresence));			
+			
 			if(createInterLevelEdges)
 				for(Node source : subgraph.nodes()) {
 					Node target = coarserGraph.getNode(getTranslatedNodeId(source.id(), current_level - 1));

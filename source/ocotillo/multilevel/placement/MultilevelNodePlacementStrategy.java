@@ -18,12 +18,15 @@ public abstract class MultilevelNodePlacementStrategy {
 
 	}
 	
-	public void placeVertices(DyGraph finerLevel, Graph upperLevel, GraphCoarsener nodeGroups) {
-		NodeAttribute<Coordinates> upperLevelNodeCoordinates = upperLevel.nodeAttribute(StdAttribute.nodePosition);
-
-		for(Node n : upperLevel.nodes()) {				
+	public void placeVertices(DyGraph coarsestLevel, Graph staticGraph, GraphCoarsener nodeGroups) {
+		NodeAttribute<Coordinates> upperLevelNodeCoordinates = staticGraph.nodeAttribute(StdAttribute.nodePosition);
+		DyNodeAttribute<Coordinates> coarsestLevelCoordinates = coarsestLevel.nodeAttribute(StdAttribute.nodePosition);
+		
+		for(Node n : staticGraph.nodes()) {				
 			Coordinates upperClusterCoordinates = upperLevelNodeCoordinates.get(n);
-			assignCoordinates(upperClusterCoordinates, finerLevel, nodeGroups.getGroupMembers(n.id()));
+			coarsestLevelCoordinates.set(coarsestLevel.getNode(n.id()), 
+					new Evolution<Coordinates>(computeNewCoordinates(upperClusterCoordinates)));
+			//assignCoordinates(upperClusterCoordinates, coarsestLevel, nodeGroups.getGroupMembers(n.id()));
 		}
 	}
 
@@ -32,11 +35,22 @@ public abstract class MultilevelNodePlacementStrategy {
 
 		for(Node n : upperLevel.nodes()) {				
 			Coordinates upperClusterCoordinates = upperLevelNodeCoordinates.get(n).getLastValue();
+			if(Double.isNaN(upperClusterCoordinates.x()) || Double.isNaN(upperClusterCoordinates.y()))
+				upperClusterCoordinates = upperLevelNodeCoordinates.get(n).getDefaultValue();
 			assignCoordinates(upperClusterCoordinates, finerLevel, nodeGroups.getGroupMembers(n.id()));
 		}
 	}
 
-	protected abstract void assignCoordinates(Coordinates upperClusterCoordinates, DyGraph finerLevel, Set<String> nodeGroup);
+	protected void assignCoordinates(Coordinates upperClusterCoordinates, DyGraph finerLevel, Set<String> nodeGroup) {
+		DyNodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);		
+		
+		for(String id : nodeGroup) {				
+			finerLevelNodeCoordinates.set(finerLevel.getNode(id), new Evolution<Coordinates>(
+					computeNewCoordinates(upperClusterCoordinates)));
+		}
+	}
+	
+	protected abstract Coordinates computeNewCoordinates(Coordinates input);
 
 	public static class IdentityNodePlacement extends MultilevelNodePlacementStrategy {
 
@@ -51,14 +65,8 @@ public abstract class MultilevelNodePlacementStrategy {
 		}
 
 		@Override
-		protected void assignCoordinates(Coordinates upperClusterCoordinates, DyGraph finerLevel, Set<String> nodeGroup) {
-			DyNodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);		
-			
-			for(String id : nodeGroup) {				
-				finerLevelNodeCoordinates.set(finerLevel.getNode(id), new Evolution<Coordinates>(
-						new Coordinates(upperClusterCoordinates.x() + Math.random()*fuzzyness, upperClusterCoordinates.y() + Math.random()*fuzzyness)));
-			}
-
+		protected Coordinates computeNewCoordinates(Coordinates input) {
+			return new Coordinates(input.x() + Math.random()*fuzzyness, input.y() + Math.random()*fuzzyness);
 		}
 	}
 }

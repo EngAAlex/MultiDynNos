@@ -17,7 +17,7 @@ import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener
 
 public class IndependentSet extends GraphCoarsener {
 
-	public final static long DEFAULT_THRESHOLD = 2;
+	public final static long DEFAULT_THRESHOLD = 1;
 
 	private final long threshold;
 
