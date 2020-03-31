@@ -249,29 +249,26 @@ public abstract class GraphCoarsener {
 		 DyEdgeAttribute<Boolean> lastLevelEdgePresence = lastLevel.edgeAttribute(StdAttribute.dyPresence);
 		 DyEdgeAttribute<Boolean> newLevelEdgePresence = newLevel.edgeAttribute(StdAttribute.dyPresence);
 		 
-		for(Node sourceUpperLevelNode : newLevel.nodes())  {
-			Node homologue = lastLevel.getNode(getTranslatedNodeId(sourceUpperLevelNode.id(), current_level - 1));
-			for(Edge e : lastLevel.inOutEdges(homologue)) {
-				Node neighbor = e.otherEnd(homologue);	
-				for(Edge innerEdge : lastLevel.outEdges(neighbor)) {
-					Node innerNeighbor = innerEdge.otherEnd(neighbor);
-					if(innerNeighbor.equals(homologue)) //Eventual edges/attributes are ignored here?
-						continue;
-					Node targetUpperLevelNode = newLevel.getNode(currentLevelEdgeAssociations.get(innerNeighbor.id()));
-
-					Edge newLevelEdge = newLevel.betweenEdge(sourceUpperLevelNode, targetUpperLevelNode);
-					if(newLevelEdge == null) {
-						newLevelEdge = newLevel.newEdge(sourceUpperLevelNode.id()+"-"+targetUpperLevelNode.id(), sourceUpperLevelNode, targetUpperLevelNode);
-						newLevelEdgeWeight.set(newLevelEdge, lastLevelEdgeWeight.get(innerEdge));
-						newLevelEdgePresence.set(newLevelEdge, lastLevelEdgePresence.get(innerEdge));
-					}else {
-						newLevelEdgeWeight.get(newLevelEdge).setDefaultValue(
-								newLevelEdgeWeight.get(newLevelEdge).getDefaultValue() + lastLevelEdgeWeight.get(innerEdge).getDefaultValue());
-						computeMergedPresence(newLevelEdgePresence.get(newLevelEdge), lastLevelEdgePresence.get(innerEdge), new Evolution.EvolutionORMerge());
-					}
+		for(Node sourceLowerNode : lastLevel.nodes()) {
+			Node sourceUpperNode = newLevel.getNode(currentLevelEdgeAssociations.get(sourceLowerNode.id()));
+			for(Edge e : lastLevel.outEdges(sourceLowerNode)) {
+				Node targetLowerNode = e.otherEnd(sourceLowerNode);
+				Node targetUpperNode = newLevel.getNode(currentLevelEdgeAssociations.get(targetLowerNode.id()));
+				if(sourceUpperNode.equals(targetUpperNode))
+					continue;
+				Edge newLevelEdge = newLevel.betweenEdge(sourceUpperNode, targetUpperNode);
+				
+				if(newLevelEdge == null) {
+					newLevelEdge = newLevel.newEdge(sourceUpperNode.id()+"-"+targetUpperNode.id(), sourceUpperNode, targetUpperNode);
+					newLevelEdgeWeight.set(newLevelEdge, lastLevelEdgeWeight.get(e));
+					newLevelEdgePresence.set(newLevelEdge, lastLevelEdgePresence.get(e));
+				}else {
+					newLevelEdgeWeight.get(newLevelEdge).setDefaultValue(
+							newLevelEdgeWeight.get(newLevelEdge).getDefaultValue() + lastLevelEdgeWeight.get(e).getDefaultValue());
+					computeMergedPresence(newLevelEdgePresence.get(newLevelEdge), lastLevelEdgePresence.get(e), new Evolution.EvolutionORMerge());
 				}
 			}
-		}	
+		}
 	}
 
 	

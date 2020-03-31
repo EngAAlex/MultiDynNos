@@ -15,8 +15,6 @@
  */
 package ocotillo.run.customrun;
 
-import java.util.List;
-
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;

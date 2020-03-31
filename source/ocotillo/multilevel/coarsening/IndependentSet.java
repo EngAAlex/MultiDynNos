@@ -78,7 +78,7 @@ public class IndependentSet extends GraphCoarsener {
 			currentLevelEdgeAssociations.put(topNode.id(), newLevelNode.id());
 			HashSet<String> newLevelNodeGroup = new HashSet<String>();
 			newLevelNodeGroup.add(topNode.id());
-			for(Edge e : getCollectionOfNeighbors(lastLevel.inOutEdges(topNode), lastLevelEdgeWeight)) {
+			for(Edge e : getCollectionOfNeighbors(lastLevel.outEdges(topNode), lastLevelEdgeWeight)) {
 				Node neighbor = e.otherEnd(topNode);
 				if(nodes.contains(neighbor)) {
 					nodes.remove(neighbor);
@@ -93,8 +93,8 @@ public class IndependentSet extends GraphCoarsener {
 
 	}
 
-	protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> inOutEdges, DyEdgeAttribute<Double> edgeWeights) {
-		return inOutEdges;
+	protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> outEdges, DyEdgeAttribute<Double> edgeWeights) {
+		return outEdges;
 	}
 
 
@@ -109,8 +109,8 @@ public class IndependentSet extends GraphCoarsener {
 		}
 
 		@Override
-		protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> inOutEdges, DyEdgeAttribute<Double> edgeWeights) {
-			List<Edge> edges = new ArrayList<Edge>(inOutEdges);
+		protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> outEdges, DyEdgeAttribute<Double> edgeWeights) {
+			List<Edge> edges = new ArrayList<Edge>(outEdges);
 
 			if(edges.isEmpty())
 				return edges;

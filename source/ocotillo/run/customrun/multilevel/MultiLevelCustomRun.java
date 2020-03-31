@@ -23,6 +23,8 @@ import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy.IdentityNod
 import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
 import ocotillo.samples.parsers.Commons.Mode;
+import ocotillo.samples.parsers.InfoVisCitations;
+import ocotillo.samples.parsers.NewcombFraternity;
 import ocotillo.samples.parsers.VanDeBunt;
 
 public class MultiLevelCustomRun extends CustomRun {
@@ -35,6 +37,8 @@ public class MultiLevelCustomRun extends CustomRun {
 		args = argv;
 		preloadedGraphs = new HashMap<String, Integer>();
 		preloadedGraphs.put("vandebunt", 0);
+		preloadedGraphs.put("newcomb", 1);
+		preloadedGraphs.put("infovis", 2);
 		MultiLevelCustomRun mlcr = new MultiLevelCustomRun(argv);
 		mlcr.run();
 	}
@@ -43,10 +47,13 @@ public class MultiLevelCustomRun extends CustomRun {
 	protected void run() {
 		
 		DyGraph dyGraph = null;
+		String filename = "output";
 		
 		if(preloadedGraphs.containsKey(args[0]))
 			switch(preloadedGraphs.get(args[0])) {
-				case 0: dyGraph = VanDeBunt.parseGraph(new File("data/van_De_Bunt/"), Mode.keepAppearedNode); break;
+				case 0: dyGraph = VanDeBunt.parseGraph(new File("data/van_De_Bunt/"), Mode.keepAppearedNode); filename = args[0]; break;
+				case 1: dyGraph = NewcombFraternity.parseGraph(new File("data/Newcomb"), Mode.keepAppearedNode); filename = args[0]; break;
+				case 2: dyGraph = InfoVisCitations.parseGraph(new File("data/InfoVis_citations/data.txt"), Mode.keepAppearedNode); filename = args[0]; break;
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
 		else
@@ -66,7 +73,7 @@ public class MultiLevelCustomRun extends CustomRun {
         
         //outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
         
-        outputAsGml(multiDyn.runMultiLevelLayout());
+        outputAsGml(multiDyn.runMultiLevelLayout(), filename);
 	}
 	
 	public MultiLevelCustomRun(String[] argv) {
@@ -99,13 +106,13 @@ public class MultiLevelCustomRun extends CustomRun {
 		return multiDyn.runCoarsening();		
 	}
 	
-	public void outputAsGml(DyGraph graph) {
-
+	public void outputAsGml(DyGraph graph, String filename) {
+		
 		System.out.println("Writing output as gml");
 		
 		PrintWriter pw = null;
 		try {
-			pw = new PrintWriter(new File(new File(this.output).getParentFile()+File.pathSeparator+"output.gml"));
+			pw = new PrintWriter(new File(new File(this.output).getParentFile()+File.pathSeparator+filename+".gml"));
 		} catch (FileNotFoundException e1) {
 			System.err.println("Can't find output file");
 			e1.printStackTrace();
