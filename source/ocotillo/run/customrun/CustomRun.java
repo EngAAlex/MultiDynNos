@@ -53,9 +53,11 @@ public class CustomRun extends Run{
     }
     
 	@Override
-	protected void completeSetup() {      
-        checkNodeAppearanceCorrectness(nodeDataSet);
-        checkEdgeAppearanceCorrectness(edgeDataSet);		
+	protected void completeSetup() {    
+		if(nodeDataSet != null && edgeDataSet != null) {
+			checkNodeAppearanceCorrectness(nodeDataSet);
+        	checkEdgeAppearanceCorrectness(edgeDataSet);
+		}
 	}
 
 	@Override
@@ -76,6 +78,19 @@ public class CustomRun extends Run{
      */
     public CustomRun(String[] argv) {
     	super(argv);
+    }
+    
+    /**
+     * Custom run constructor.
+     *
+     * @param the preloaded graph dataset.
+     * @param delta the delta parameter.
+     * @param tau the tau parameter.
+     * @param output the path of the output file.
+     * @param graphpreloaded if the graph has already been loaded (no need to parse from command line input)
+     */
+    public CustomRun(String[] argv, boolean graphpreloaded) {
+    	super(argv, graphpreloaded);
     }
 
 

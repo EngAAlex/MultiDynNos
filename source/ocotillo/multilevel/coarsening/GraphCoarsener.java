@@ -47,7 +47,13 @@ public abstract class GraphCoarsener {
 				for(Node n : original.nodes()) {
 					Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
 					for(String s : original.nodeAttributes().keySet()) {
-						DyNodeAttribute<Object> newAttribute = coarserGraph.nodeAttribute(s);
+						DyNodeAttribute<Object> newAttribute;
+						try{
+							newAttribute = coarserGraph.nodeAttribute(s);
+						}catch(IllegalArgumentException ill) {
+							/*The attribute is not among the default ones*/
+							newAttribute = coarserGraph.newNodeAttribute(s, original.nodeAttribute(s).getDefault());
+						}
 						DyNodeAttribute<Object> originalAttr = original.nodeAttribute(s);
 						newAttribute.set(newNode, originalAttr.get(n));
 					}
@@ -56,7 +62,13 @@ public abstract class GraphCoarsener {
 					Edge newEdge = coarserGraph.newEdge(coarserGraph.getNode(translateNodeId(e.source().id(), 0)), 
 							coarserGraph.getNode(translateNodeId(e.target().id(), 0)));
 					for(String s : original.edgeAttributes().keySet()) {
-						DyEdgeAttribute<Object> newAttribute = coarserGraph.edgeAttribute(s);
+						DyEdgeAttribute<Object> newAttribute;
+						try{
+							/*The attribute is not among the default ones*/
+							newAttribute = coarserGraph.edgeAttribute(s);
+						}catch(IllegalArgumentException ill) {
+							newAttribute = coarserGraph.newEdgeAttribute(s, original.edgeAttribute(s).getDefault());
+						}
 						DyEdgeAttribute<Object> originalAttr = original.edgeAttribute(s);
 						newAttribute.set(newEdge, originalAttr.get(e));
 					}			
@@ -66,6 +78,8 @@ public abstract class GraphCoarsener {
 				coarserGraph.graphAttributes().putAll(original.graphAttributes());
 								
 				/* COPY END */
+				
+				System.out.println("Set up graph with " + coarserGraph.nodeCount() + " nodes and " + coarserGraph.edgeCount() + " edges");
 	}
 
 	public void computeCoarsening() {
@@ -151,158 +165,43 @@ public abstract class GraphCoarsener {
 		}
 	}
 	
-	private void computeMergedPresence(Evolution<Boolean> newPresence, Evolution<Boolean> lastPresence, EvolutionMergeValue<Boolean> eval){
-		//Obtain the last level segments that overlap with any of the segments on the new level
-		List<Function<Boolean>> lastLevelOverlapping = new ArrayList<Function<Boolean>>(lastPresence.getOverlappingIntervals(newPresence));
-
-		//if no overlaps exist, just add all the previous intervals into the new presence function
-		if(lastLevelOverlapping.isEmpty())
-			newPresence.insertAll(lastPresence.getAllIntervals());
-		else {
-			//Add to the presence function all the elements that do not overlap
-			Collection<Function<Boolean>> elementsWithNoConflicts = lastPresence.getAllIntervals();
-			elementsWithNoConflicts.removeAll(lastLevelOverlapping);
-			newPresence.insertAll(elementsWithNoConflicts);
-
-			lastLevelOverlapping.sort(new BooleanFunctionComparator());					
-
-			/*
-			 * For all the remaining:
-			 * 1. Obtain the elements in the NEW tree that overlap with the interval provided from the OLD tree
-			 * 2. Compute the intersection(s)
-			 * 3. For each intersection:
-			 * 3a. Crop the existing interval
-			 * 3b. Compute the values at the edges
-			 * */
-
-			List<Function<Boolean>> newLevelOverlapping = new ArrayList<Function<Boolean>>(newPresence.getOverlappingIntervals(lastPresence));
-			newLevelOverlapping.sort(new BooleanFunctionComparator());
-
-			List<Function<Boolean>> mergedPresences = new ArrayList<Function<Boolean>>();
-
-			int newT = 0, oldT = 0;
-			Interval newLevelCarryOn = null, oldLevelCarryOn = null;
-			while(newT<newLevelOverlapping.size() || oldT < lastLevelOverlapping.size()) {
-				Interval currentLastLevelOverlapInterval = oldLevelCarryOn != null ? oldLevelCarryOn : 
-																					 (oldT < lastLevelOverlapping.size() ? lastLevelOverlapping.get(oldT).interval() : null);
-				Interval currentNewLevelOverlapInterval = newLevelCarryOn != null ? newLevelCarryOn : 
-					 																(newT < newLevelOverlapping.size() ? newLevelOverlapping.get(newT).interval() : null); 																				
-				//Check if the old interval is null 
-				if(currentLastLevelOverlapInterval == null) {
-					mergedPresences.add(newLevelOverlapping.get(newT));
-					oldLevelCarryOn = null;
-					newT++;
-					continue;
-				}	
-				
-				//Check if the two are the same interval
-				if(currentLastLevelOverlapInterval.equals(currentNewLevelOverlapInterval) || 
-						currentLastLevelOverlapInterval.isContainedIn(currentNewLevelOverlapInterval)) {
-					oldT++;
-					newLevelCarryOn = currentNewLevelOverlapInterval;
-					continue;
-				}					
-				
-				Interval intersectionInterval = currentLastLevelOverlapInterval.intersection(currentNewLevelOverlapInterval);
-
-				//COMPUTE LEFT INTERVAL 
-				double leftBound = Double.NEGATIVE_INFINITY;
-				double rightBound = Double.POSITIVE_INFINITY;
-				if(currentLastLevelOverlapInterval.isLeftClosed() && currentNewLevelOverlapInterval.isLeftClosed())
-					leftBound = Math.min(currentLastLevelOverlapInterval.leftBound(), currentNewLevelOverlapInterval.leftBound());
-				if(intersectionInterval.isRightClosed())
-					rightBound = intersectionInterval.leftBound();//Math.min(currentLastLevelOverlapInterval.rightBound(), currentNewLevelOverlapInterval.rightBound());
-				boolean leftValue = eval.left(newPresence.valueAt(leftBound), lastPresence.valueAt(leftBound));
-				boolean rightValue = eval.right(newPresence.valueAt(rightBound), lastPresence.valueAt(rightBound));
-
-				ocotillo.dygraph.FunctionRect.Boolean lefty = new ocotillo.dygraph.FunctionRect.Boolean(
-						Interval.newCustom(leftBound, rightBound, leftBound != Double.NEGATIVE_INFINITY, rightBound != Double.POSITIVE_INFINITY),
-						leftValue,
-						rightValue, Interpolation.Std.constant
-						);
-
-				mergedPresences.add(lefty);
-
-				if(rightBound == Double.POSITIVE_INFINITY)
-					break;
-
-				//COMPUTE INTERSECTION INTERVAL
-				leftValue = eval.left(newPresence.valueAt(intersectionInterval.leftBound()), lastPresence.valueAt(intersectionInterval.leftBound()));
-				rightValue = eval.left(newPresence.valueAt(intersectionInterval.rightBound()), lastPresence.valueAt(intersectionInterval.rightBound()));
-				ocotillo.dygraph.FunctionRect.Boolean intersection = new ocotillo.dygraph.FunctionRect.Boolean(
-						intersectionInterval,
-						leftValue,
-						rightValue, Interpolation.Std.constant
-						);
-
-				mergedPresences.add(intersection);
-
-				if(intersectionInterval.rightBound() == Double.POSITIVE_INFINITY)
-					break;
-
-				//CALCULATE REMAINING SEGMENT FOR NEXT ITERATION	
-
-				leftBound = intersectionInterval.rightBound();
-
-				if(currentLastLevelOverlapInterval.rightBound() == leftBound) {
-					oldT++;
+	private void computeMergedPresence(Evolution<Boolean> newPresence, Evolution<Boolean> lastPresence, EvolutionMergeValue<Boolean> eval) { 	
+		List<Function<Boolean>> all = new ArrayList<Function<Boolean>>();
+		all.addAll(newPresence.getAllIntervals()); 
+		all.addAll(lastPresence.getAllIntervals());
+		all.sort(new BooleanFunctionComparator());
+		List<Function<Boolean>> merged = new ArrayList<Function<Boolean>>();
+		List<Function<Boolean>> currentPot = new ArrayList<Function<Boolean>>();
+		Function<Boolean> lastInterval = null;
+		for(Function<Boolean> current : all) {			
+			if(currentPot.size() == 0) {
+				currentPot.add(current); 
+				lastInterval = current;
+			} else {
+				currentPot.add(current);
+				if(current.interval().leftBound() == lastInterval.interval().rightBound()) {
+					lastInterval = current;
+				}else {
+					merged.add(mergeAdjacentIntervals(currentPot));
+					currentPot.clear();
 				}
-				if(currentNewLevelOverlapInterval.rightBound() == leftBound) {
-					newT++;
-				}
-
-				if(newT == newLevelOverlapping.size()) {
-					mergedPresences.add( new ocotillo.dygraph.FunctionRect.Boolean(
-							Interval.newCustom(
-									leftBound, currentLastLevelOverlapInterval.rightBound(), 
-									true, currentLastLevelOverlapInterval.isRightClosed()),
-							leftValue,
-							rightValue, Interpolation.Std.constant)							
-							);	
-					oldT++;
-					break;
-				}else if(oldT == lastLevelOverlapping.size()) {
-					mergedPresences.add( new ocotillo.dygraph.FunctionRect.Boolean(
-							Interval.newCustom(
-									leftBound, currentNewLevelOverlapInterval.rightBound(), 
-									true, currentNewLevelOverlapInterval.isRightClosed()),
-							leftValue,
-							rightValue, Interpolation.Std.constant)
-							);	
-					newT++;
-					break;
-				}
-				newLevelCarryOn = null;
-				oldLevelCarryOn = null;
-
-				if(newT > oldT) {
-					newLevelCarryOn = Interval.newCustom(
-							leftBound, currentNewLevelOverlapInterval.rightBound(), 
-							false, false);
-				}else if(oldT < newT) {
-					oldLevelCarryOn = Interval.newCustom(
-							leftBound, currentLastLevelOverlapInterval.rightBound(), 
-							false, false);							
-				}
-
 			}
-
-			newPresence.deleteAll(newLevelOverlapping);
-			newPresence.insertAll(postProcessIntervals(mergedPresences));
 		}
-
+		if(currentPot.size() != 0)
+			merged.add(mergeAdjacentIntervals(currentPot));
+				
+		newPresence.clear();
+		newPresence.insertAll(merged);
 	}
 	
-	/**
-	 * A method to merge together intervals that are adjacent (left bound === right bound)
-	 * @param list The list of intervals to examine
-	 * @return The list of merged intervals
-	 */
+	
+	
+
 	private List<Function<Boolean>> postProcessIntervals(List<Function<Boolean>> list) {
 		List<Function<Boolean>> merged = new ArrayList<Function<Boolean>>();
 		List<Function<Boolean>> currentPot = new ArrayList<Function<Boolean>>();
 		Function<Boolean> lastInterval = null;
-		for(Function<Boolean> current : list) {
+		for(Function<Boolean> current : list) {			
 			if(currentPot.size() == 0) {
 				currentPot.add(current); 
 				lastInterval = current;

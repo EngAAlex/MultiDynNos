@@ -31,54 +31,75 @@ public abstract class Run {
 	protected final String output;
 
 	public Run(String[] argv) {
-		if (argv.length < 2) {
+		this(argv, true);
+	}
+	
+	public Run(String[] argv, boolean loadGraphFromArgs) {
+		
+		int startPoint = loadGraphFromArgs ? 2 : 1;
+		
+		if (argv.length < startPoint) {
 			showHelp();
 		}
-
-		File nodeDataSetFile = new File(argv[0]);
-		if (!nodeDataSetFile.exists()) {
-			System.err.println("The node data set file \"" + argv[0] + "\" does not exist. \n");
-			showHelp();
+		
+		if(loadGraphFromArgs) {
+			File nodeDataSetFile = new File(argv[0]);
+			if (!nodeDataSetFile.exists()) {
+				System.err.println("The node data set file \"" + argv[0] + "\" does not exist. \n");
+				showHelp();
+			}
+			List<String> nodeDataSetLines = ParserTools.readFileLines(nodeDataSetFile);
+	
+			File edgeDataSetFile = new File(argv[1]);
+			if (!edgeDataSetFile.exists()) {
+				System.err.println("The node edge set file \"" + argv[1] + "\" does not exist. \n");
+				showHelp();
+			}
+			List<String> edgeDataSetLines = ParserTools.readFileLines(edgeDataSetFile);
+			
+	        this.nodeDataSet = NodeAppearance.parseDataSet(nodeDataSetLines);
+	        this.edgeDataSet = EdgeAppearance.parseDataSet(edgeDataSetLines);  
+		}else {
+			this.nodeDataSet = null;
+			this.edgeDataSet = null;
 		}
-		List<String> nodeDataSetLines = ParserTools.readFileLines(nodeDataSetFile);
-
-		File edgeDataSetFile = new File(argv[1]);
-		if (!edgeDataSetFile.exists()) {
-			System.err.println("The node edge set file \"" + argv[1] + "\" does not exist. \n");
-			showHelp();
-		}
-		List<String> edgeDataSetLines = ParserTools.readFileLines(edgeDataSetFile);
-
+		
+		startPoint++;
+		
 		double delta = defaultDelta;
-		if (argv.length >= 3) {
+		if (argv.length >= startPoint) {
 			try {
 				double possibleDelta = Double.parseDouble(argv[2]);
 				delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
+				System.out.println("Set delta " + delta);
 			} catch (Exception e) {
-				System.err.println("Cannot parse delta correctly. \n");
-				showHelp();
+				//System.err.println("Cannot parse delta correctly. \n");
+				//showHelp();
 			} 
 		}
 
+		startPoint++;
+		
 		double tau = defaultTau;
-		if (argv.length >= 4) {
+		if (argv.length >= startPoint) {
 			try {
 				double possibleTau = Double.parseDouble(argv[3]);
 				tau = possibleTau >= 0 ? possibleTau : defaultTau;
+				System.out.println("Set tau " + tau);
 			} catch (Exception e) {
-				System.err.println("Cannot parse tau correctly. \n");
-				showHelp();
+				//System.err.println("Cannot parse tau correctly. \n");
+				//showHelp();
 			}
 		}
+		
+		startPoint++;
 
-		if (argv.length >= 5) {
+		if (argv.length >= startPoint) {
 			System.out.println("Carramba");
 			this.output = argv[4];
 		}else
 			this.output = defaultOutput;
 
-        this.nodeDataSet = NodeAppearance.parseDataSet(nodeDataSetLines);
-        this.edgeDataSet = EdgeAppearance.parseDataSet(edgeDataSetLines);  
 		this.tau = tau;
 		this.delta = delta;
         

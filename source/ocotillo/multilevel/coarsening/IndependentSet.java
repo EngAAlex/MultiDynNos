@@ -112,6 +112,9 @@ public class IndependentSet extends GraphCoarsener {
 		protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> inOutEdges, DyEdgeAttribute<Double> edgeWeights) {
 			List<Edge> edges = new ArrayList<Edge>(inOutEdges);
 
+			if(edges.isEmpty())
+				return edges;
+			
 			Collections.sort(edges, new Comparator<Edge>(){
 				public int compare(Edge a, Edge b) {
 					double weightA = edgeWeights.get(a).getDefaultValue();

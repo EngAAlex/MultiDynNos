@@ -14,7 +14,6 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
-import ocotillo.multilevel.coarsening.GraphCoarsener;
 
 public abstract class DyGraphFlattener {
 
@@ -76,7 +75,7 @@ public abstract class DyGraphFlattener {
 				else
 					n = flattenedGraph.getNode(dyN.id());				
 				nodeWeight.set(n, yieldNodeAggregatedPresenceValue(nodePresence, dyN));
-				System.out.println("Reconstructed Node " + n.id() + " with presence " + nodeWeight.get(n));
+				//System.out.println("Reconstructed Node " + n.id() + " with presence " + nodeWeight.get(n));
 			}            
 
 			for(Edge dyE : toFlatten.edges()) {               
@@ -88,7 +87,7 @@ public abstract class DyGraphFlattener {
 						flattenedGraph.getNode(tgt.id()));
 				
 				edgeWeight.set(e, yieldEdgeAggregatedPresenceValue(edgePresence, dyE));
-				System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with presence " + edgeWeight.get(e));
+				//System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with presence " + edgeWeight.get(e));
 			}
 			return flattenedGraph;
 		}
@@ -103,15 +102,15 @@ public abstract class DyGraphFlattener {
 			
 			for(Node dyN : toFlatten.nodes()) {				
 				nodeWeight.set(dyN, new Evolution<Double>(yieldNodeAggregatedPresenceValue(nodePresence, dyN)));
-				System.out.println("Reconstructed Node " + dyN.id() + " with aggregated presence (weight) " + nodeWeight.get(dyN).getDefaultValue());
+				//System.out.println("Reconstructed Node " + dyN.id() + " with aggregated presence (weight) " + nodeWeight.get(dyN).getDefaultValue());
 			}            
 
 			for(Edge dyE : toFlatten.edges()) {               
-				Node src = dyE.source();
-				Node tgt = dyE.target();
+				//Node src = dyE.source();
+				//Node tgt = dyE.target();
 				
 				edgeWeight.set(dyE, new Evolution<Double>(yieldEdgeAggregatedPresenceValue(edgePresence, dyE)));
-				System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with aggregated presence (weight) " + edgeWeight.get(dyE).getDefaultValue());
+				//System.out.println("Reconstructed Edge From " + src.id() + " to " + tgt.id() + " with aggregated presence (weight) " + edgeWeight.get(dyE).getDefaultValue());
 			}
 			
 			return toFlatten;

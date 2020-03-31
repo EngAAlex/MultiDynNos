@@ -48,7 +48,33 @@ public abstract class MultiLevelCoolingStrategy {
 		@Override
 		protected double cooldownCurrentValue(int iteration) {
 			return m*iteration + 1;
+		}	
+	}
+	
+	public static class InverseExponentialCoolingStrategy extends MultiLevelCoolingStrategy{
+
+		public static final double DEFAULT_ALPHA = -.12;
+		private final double alpha;
+		
+		public InverseExponentialCoolingStrategy() {
+			super();
+			alpha = DEFAULT_ALPHA;
 		}
 		
+		public InverseExponentialCoolingStrategy(double alpha) {
+			super();
+			if(alpha < 1)
+				if(alpha > 0)
+					this.alpha = -1*alpha;
+				else
+					this.alpha  = alpha;
+			else
+				this.alpha = DEFAULT_ALPHA;
+		}
+
+		@Override
+		protected double cooldownCurrentValue(int iteration) {
+			return Math.pow(Math.E, alpha*iteration);
+		}	
 	}
 }
