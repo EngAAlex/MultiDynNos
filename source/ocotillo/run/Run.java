@@ -20,7 +20,7 @@ public abstract class Run {
 
 	public static final double defaultDelta = 5.0;
 	public static final double defaultTau = 1.0;
-	public static final int defaultNumberOfIterations = 100;
+	public static final int defaultNumberOfIterations = 20;
 	public static final String defaultOutput = "output.txt";
 
 	protected final List<NodeAppearance> nodeDataSet;

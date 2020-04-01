@@ -115,11 +115,15 @@ public class MultiLevelDynNoSlice {
 	
 	public DyGraph runMultiLevelLayout() {
 	
+		System.out.println("Preprocessing...");
 		preprocess();
 		
 		current_iteration = 1;
 		
-		gc.computeCoarsening();				
+		System.out.println("Executing Coarsening");
+		gc.computeCoarsening();
+		
+		System.out.println("Computing default node positioning");
 		nodesFirstPlacement();
 		
 		DyGraph currentGraph = gc.getCoarsestGraph();		

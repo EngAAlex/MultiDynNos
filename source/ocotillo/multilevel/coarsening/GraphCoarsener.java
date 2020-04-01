@@ -23,6 +23,8 @@ import ocotillo.graph.StdAttribute;
 
 public abstract class GraphCoarsener {
 
+	public final static long DEFAULT_THRESHOLD = 15;
+	
 	//protected final Graph rootGraph;
 	protected DyGraph coarserGraph;	
 	protected Map<String, String> currentLevelEdgeAssociations = new HashMap<String, String>();
@@ -311,9 +313,6 @@ public abstract class GraphCoarsener {
 	 */
 	protected abstract boolean stoppingCondition();	
 
-	protected abstract Iterable<Edge> getCollectionOfNeighbors(Collection<Edge> inOutEdges,
-			DyEdgeAttribute<Double> lastLevelEdgeWeight);
-
 	public static String getTranslatedNodeId(String nodeId, int level) {
 		return nodeId.split("__")[0]+"__"+level;
 	}
@@ -325,6 +324,40 @@ public abstract class GraphCoarsener {
 	public static String nodeIdInverseTranslation(String nodeId) {
 		return nodeId.split("__")[0];
 	} 
+	
+	public static class NodeWeightComparator implements Comparator<Node>{
+
+		private final DyGraph lastLevel;
+		private final DyNodeAttribute<Double> lastLevelNodeWeight;
+		private final DyEdgeAttribute<Double> lastLevelEdgeWeight;
+		
+		public NodeWeightComparator(DyGraph lastLevel, DyEdgeAttribute<Double> lastLevelEdgeWeight,
+				ocotillo.dygraph.DyNodeAttribute<Double> lastLevelNodeWeight) {
+			this.lastLevel = lastLevel;
+			this.lastLevelEdgeWeight = lastLevelEdgeWeight;
+			this.lastLevelNodeWeight = lastLevelNodeWeight;
+		}
+
+		@Override
+		public int compare(Node a, Node b) {
+			double weightA = lastLevelNodeWeight.get(a).getDefaultValue();
+			double weightB = lastLevelNodeWeight.get(b).getDefaultValue();
+
+			for(Edge e : lastLevel.outEdges(a))
+				weightA += lastLevelEdgeWeight.get(e).getDefaultValue();
+
+			for(Edge e : lastLevel.outEdges(b))
+				weightB += lastLevelEdgeWeight.get(e).getDefaultValue();
+
+			if(weightA > weightB)
+				return -1;
+			else if(weightA < weightB)
+				return 1;				
+			return 0;				
+		}
+	
+	}
+
 
 	public static class BooleanFunctionComparator implements Comparator<Function<Boolean>>{
 

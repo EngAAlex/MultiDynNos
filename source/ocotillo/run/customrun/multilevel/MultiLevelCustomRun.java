@@ -18,6 +18,7 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.multilevel.coarsening.IndependentSet.WalshawIndependentSet;
+import ocotillo.multilevel.coarsening.SolarMerger;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy.IdentityNodePlacement;
 import ocotillo.run.Run;
@@ -61,7 +62,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		
         MultiLevelDynNoSlice multiDyn = 
         		new MultiLevelDynNoSlice(dyGraph, Run.defaultTau, Run.defaultDelta)
-        			.setCoarsener(new WalshawIndependentSet())
+        			.setCoarsener(new SolarMerger()) //WalshawIndependentSet
         			.setPlacementStrategy(new IdentityNodePlacement())
         			.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
         			.defaultOptions();

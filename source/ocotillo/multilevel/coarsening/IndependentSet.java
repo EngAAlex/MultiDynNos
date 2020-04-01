@@ -17,8 +17,6 @@ import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener
 
 public class IndependentSet extends GraphCoarsener {
 
-	public final static long DEFAULT_THRESHOLD = 1;
-
 	private final long threshold;
 
 	public IndependentSet(long threshold) {
@@ -50,24 +48,7 @@ public class IndependentSet extends GraphCoarsener {
 
 		List<Node> nodes = new ArrayList<Node>(lastLevel.nodes());
 
-		Collections.sort(nodes, new Comparator<Node>(){
-			public int compare(Node a, Node b) {
-				double weightA = lastLevelNodeWeight.get(a).getDefaultValue();
-				double weightB = lastLevelNodeWeight.get(b).getDefaultValue();
-
-				for(Edge e : lastLevel.outEdges(a))
-					weightA += lastLevelEdgeWeight.get(e).getDefaultValue();
-
-				for(Edge e : lastLevel.outEdges(b))
-					weightB += lastLevelEdgeWeight.get(e).getDefaultValue();
-
-				if(weightA > weightB)
-					return -1;
-				else if(weightA < weightB)
-					return 1;				
-				return 0;				
-			}
-		});
+		Collections.sort(nodes, new GraphCoarsener.NodeWeightComparator(lastLevel, lastLevelEdgeWeight, lastLevelNodeWeight));
 
 		DyGraph newLevel = new DyGraph();
 
@@ -89,8 +70,6 @@ public class IndependentSet extends GraphCoarsener {
 			currentLevelNodeGroups.put(newLevelNode.id(), newLevelNodeGroup);
 		}
 		return newLevel;
-
-
 	}
 
 	protected Collection<Edge> getCollectionOfNeighbors(Collection<Edge> outEdges, DyEdgeAttribute<Double> edgeWeights) {
