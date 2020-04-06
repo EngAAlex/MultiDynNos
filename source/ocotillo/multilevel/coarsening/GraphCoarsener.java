@@ -32,6 +32,7 @@ public abstract class GraphCoarsener {
 
 
 	protected Map<String, Set<String>> groupingMasterMap = new HashMap<String, Set<String>>();
+	protected Map<String, String> edgeAssociationMasterMap = new HashMap<String, String>();
 
 	protected int current_level = 0;
 
@@ -133,6 +134,7 @@ public abstract class GraphCoarsener {
 			generateEdges(newLevel, lastLevel);
 
 			groupingMasterMap.putAll(currentLevelNodeGroups);
+			edgeAssociationMasterMap.putAll(currentLevelEdgeAssociations);
 		}
 		currentLevelEdgeAssociations.clear();
 		currentLevelNodeGroups.clear();		
@@ -301,6 +303,15 @@ public abstract class GraphCoarsener {
 	}
 
 	/**
+	 * A method to get, from the current coarsening, which is the group leader of the parameter node.
+	 * @param id the node whose group leader we are looking for
+	 * @return the group leader id
+	 */
+	public String getGroupLeader(String id) {
+		return edgeAssociationMasterMap.get(id);
+	}
+
+	/**
 	 * This function yields the new set of nodes that will be part of the new (n+1) level. 
 	 * @param lastLevel The graph at level n
 	 * @return The graph containing the nodes of the new nevel
@@ -324,6 +335,16 @@ public abstract class GraphCoarsener {
 	public static String nodeIdInverseTranslation(String nodeId) {
 		return nodeId.split("__")[0];
 	} 
+	
+	/**
+	 * Check if two nodes are homologues across two adjacent levels
+	 * @param nodeIdA
+	 * @param nodeIdB
+	 * @return
+	 */
+	public static boolean checkNodeIdEquivalence(String nodeIdA, String nodeIdB) {
+		return nodeIdInverseTranslation(nodeIdA).equals(nodeIdInverseTranslation(nodeIdB));
+	}
 	
 	public static class NodeWeightComparator implements Comparator<Node>{
 

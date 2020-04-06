@@ -23,6 +23,7 @@ public class MultiLevelDynNoSlice {
 	private final double tau;
 	private final double delta;
 	
+	public static final String NOT_NUKE_HIERARCHY = "notNuke";
 	public static final String DESIRED_DISTANCE = "ddistance";
 	//public static final double DESIRED_DISTANCE_DEFAULT = CustomRun.defaultDelta;
 	public static final String INITIAL_MAX_MOVEMENT = "mMovement";
@@ -81,6 +82,11 @@ public class MultiLevelDynNoSlice {
 		return this;
 	}
 	
+	public MultiLevelDynNoSlice build() {
+		placement.setCoarsener(gc);
+		return this;
+	}
+	
 	protected void preprocess() {
 		gc.setGraph(dynamicGraph);
 	}
@@ -103,14 +109,14 @@ public class MultiLevelDynNoSlice {
 	}
 	
 	public DyGraph placeVertices(DyGraph finerGraph, DyGraph currentGraph) {
-		placement.placeVertices(finerGraph, currentGraph, gc);
+		placement.placeVertices(finerGraph, currentGraph);
 		return finerGraph;
 	}
 	
 	public void nodesFirstPlacement() {
 		DyGraph currentGraph = gc.getCoarsestGraph();		
 		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
-    	placement.placeVertices(currentGraph, initialPositionedGraph, gc);
+    	placement.placeVertices(currentGraph, initialPositionedGraph);
 	}
 	
 	public DyGraph runMultiLevelLayout() {
@@ -126,25 +132,34 @@ public class MultiLevelDynNoSlice {
 		System.out.println("Computing default node positioning");
 		nodesFirstPlacement();
 		
-		DyGraph currentGraph = gc.getCoarsestGraph();		
-
-		do {		
+		DyGraph currentGraph = gc.getCoarsestGraph();	
+		
+		System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
+		printParameters();
+		computeDynamicLayout(currentGraph);  
+    	current_iteration++;
+    	System.out.println("Round complete!");
+    	
+		while(currentGraph.parentGraph() != null) {
+			
+        	updateThermostats();
+        	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
+        	if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
+        		finerGraph.nukeSubgraph(currentGraph);
+    		currentGraph = finerGraph;
+    		
 			System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
 			printParameters();
-    		computeDynamicLayout(currentGraph);    		
-			
-        	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
-    		finerGraph.nukeSubgraph(currentGraph);
-    		currentGraph = finerGraph;
+    		computeDynamicLayout(currentGraph);    
 
-        	updateThermostats();
-        	    		        
         	current_iteration++;
         	System.out.println("Round complete!");
-        }while(currentGraph.parentGraph() != null);
+        }
 		
-		//return gc.getCoarsestGraph();
-		return currentGraph;
+    	if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
+    		return currentGraph;
+    	else
+    		return gc.getCoarsestGraph();
 		
 	}
 
