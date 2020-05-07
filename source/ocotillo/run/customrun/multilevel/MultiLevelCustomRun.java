@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.function.Consumer;
@@ -15,7 +16,9 @@ import ocotillo.dygraph.Evolution;
 import ocotillo.dygraph.Function;
 import ocotillo.dygraph.extra.SpaceTimeCubeSynchroniser;
 import ocotillo.dygraph.extra.SpaceTimeCubeSynchroniser.StcsBuilder;
+import ocotillo.dygraph.rendering.Animation;
 import ocotillo.geometry.Coordinates;
+import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
 import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
@@ -64,6 +67,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		String filename = "output";
 		DyDataSet data = null;
 		final double timeFactor;
+		final Interval suggestedInterval;
 
 		if(preloadedGraphs.containsKey(args[0])) {
 			switch(preloadedGraphs.get(args[0])) {
@@ -79,9 +83,11 @@ public class MultiLevelCustomRun extends CustomRun {
 			}	
 			dyGraph = data.dygraph; filename = args[0];
 			timeFactor = data.suggestedTimeFactor;
+			suggestedInterval = data.suggestedInterval;
 		}else {
 			dyGraph = createDynamicGraph();
 			timeFactor = Run.defaultTau;
+			suggestedInterval = Interval.newClosed(0, 30);
 		}
 
 		MultiLevelDynNoSlice multiDyn = 
@@ -93,18 +99,16 @@ public class MultiLevelCustomRun extends CustomRun {
 
 		//outputGraphOnTerminal(testGraphCoarsening(multiDyn));        
 		//outputGraphOnTerminal(testGraphPlacement(multiDyn, true));
-
 		//outputGraphOnTerminal(testGraphPlacement(multiDyn, false));
-
 		//outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
-
 		//outputAsGml(multiDyn.runMultiLevelLayout(), filename);
 		
 		long timeStart = System.nanoTime();
 		DyGraph result = multiDyn.runMultiLevelLayout();
 		long timeEnd = System.nanoTime();
 
-		outputFullLevels(result, (DyGraph g) -> showGraphOnWindow(g, timeFactor));
+		//outputFullLevels(result, (DyGraph g) -> showGraphOnWindow(g, timeFactor));
+		outputFullLevels(result, (DyGraph g) -> animateGraphOnWindow(g, timeFactor, suggestedInterval));
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((timeEnd - timeStart)/Math.pow(10, 9)) + "s");
 	}
 
@@ -163,6 +167,14 @@ public class MultiLevelCustomRun extends CustomRun {
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
 		QuickView window = new QuickView(stcs.mirrorGraph());
 		window.showNewWindow();
+	}
+	
+	private void animateGraphOnWindow(DyGraph graph, double timing, Interval interval) {
+
+//		DyQuickView window = new DyQuickView(graph, timing);
+		DyQuickView dyWindow = new DyQuickView(graph, timing);
+		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
+		dyWindow.showNewWindow();
 	}
 	
 	private void showGraphOnTerminal(DyGraph currentGraph) {

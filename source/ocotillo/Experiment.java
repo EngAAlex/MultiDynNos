@@ -49,7 +49,13 @@ import ocotillo.graph.layout.fdl.modular.ModularConstraint;
 import ocotillo.graph.layout.fdl.modular.ModularMetric;
 import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
 import ocotillo.graph.layout.fdl.modular.ModularStatistics;
+import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.gui.quickview.DyQuickView;
+import ocotillo.multilevel.coarsening.IndependentSet;
+import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.options.MultiLevelDrawingOption;
+import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
+import ocotillo.run.Run;
 import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
@@ -186,6 +192,39 @@ public abstract class Experiment {
 
         return builder.build();
     }
+    
+    public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
+		MultiLevelDynNoSlice multiDyn = 
+				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
+				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
+				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
+				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
+				.disableFlexibleTrajectories()
+				.defaultOptions();
+		
+        if (postProcessing != null) 
+        	multiDyn.addLayerPostProcessingDrawingOption(
+        			new MultiLevelDrawingOption<ModularPostProcessing>(postProcessing));
+		
+        multiDyn.build();    
+		return multiDyn;
+    }
+    
+    public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
+		MultiLevelDynNoSlice multiDyn = 
+				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
+				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
+				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
+				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
+				.defaultOptions();
+		
+        if (postProcessing != null) 
+        	multiDyn.addLayerPostProcessingDrawingOption(
+        			new MultiLevelDrawingOption<ModularPostProcessing>(postProcessing));
+		
+        multiDyn.build();    
+		return multiDyn;
+    }
 
     /**
      * Compute the metrics for the current experiment.
@@ -211,6 +250,8 @@ public abstract class Experiment {
         SpaceTimeCubeSynchroniser contSyncro = contAlgorithm.getSyncro();
         ModularStatistics contStats = contAlgorithm.iterate(100);
         double contTime = computeRunningTime(contStats);
+        
+        
 
         List<Double> snapTimes = readSnapTimes(discGraph);
         double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);

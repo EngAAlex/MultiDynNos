@@ -1,20 +1,32 @@
 package ocotillo.graph.multilevel.layout;
 
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
+import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
 import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeTrajectories;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
+import ocotillo.graph.layout.fdl.modular.ModularMetric;
+import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
+import ocotillo.graph.layout.fdl.modular.ModularPreMovement;
+import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
+import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
+import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
+import ocotillo.multilevel.MultilevelMetrics.LayoutTime;
+import ocotillo.multilevel.MultilevelMetrics.MultiLevelPreProcessTime;
+import ocotillo.multilevel.MultilevelMetrics.PlacementTime;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
-import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.IdentityCoolingStrategy;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.run.customrun.CustomRun;
 
@@ -43,8 +55,14 @@ public class MultiLevelDynNoSlice {
 	protected GraphCoarsener gc;
 	protected MultilevelNodePlacementStrategy placement;
 	protected DyGraphFlattener flattener;
+	
+	protected HashSet<MultiLevelDrawingOption<ModularPostProcessing>> fdlPostProcessingOptions;
+	protected HashSet<MultiLevelDrawingOption<ModularPreMovement>> fdlPreMovementOptions;
 
 	private int current_iteration;	
+	private boolean disableFlexibleTrajectories = false;
+	
+	private ModularStatistics lastRoundStats;
 
 	public MultiLevelDynNoSlice(DyGraph original, double tau, double delta) {
 		dynamicGraph = original;
@@ -58,6 +76,22 @@ public class MultiLevelDynNoSlice {
 		return this;
 	}
 	
+	public MultiLevelDynNoSlice addLayerPostProcessingDrawingOption(MultiLevelDrawingOption<ModularPostProcessing> opt) {
+		if(fdlPostProcessingOptions != null)
+			fdlPostProcessingOptions = new HashSet<MultiLevelDrawingOption<ModularPostProcessing>>();
+		fdlPostProcessingOptions.add(opt);
+		return this;
+		
+	}
+	
+	public MultiLevelDynNoSlice addLayerPreMovementDrawingOption(MultiLevelDrawingOption<ModularPreMovement> opt) {
+		if(fdlPostProcessingOptions != null)
+			fdlPreMovementOptions = new HashSet<MultiLevelDrawingOption<ModularPreMovement>>();
+		fdlPreMovementOptions.add(opt);
+		return this;
+		
+	}	
+	
 	public MultiLevelDynNoSlice defaultOptions() {
 		addOption(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new LinearCoolingStrategy(-.07)))
 			.addOption(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
@@ -65,7 +99,12 @@ public class MultiLevelDynNoSlice {
 			.addOption(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
 			.addOption(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
 		return this;
-	}		
+	}
+	
+	public MultiLevelDynNoSlice disableFlexibleTrajectories() {
+		disableFlexibleTrajectories = true;
+		return this;
+	}
 	
 	public MultiLevelDynNoSlice setCoarsener(GraphCoarsener gc) {
 		this.gc = gc;
@@ -120,23 +159,59 @@ public class MultiLevelDynNoSlice {
 	}
 	
 	public DyGraph runMultiLevelLayout() {
-	
+		
+		lastRoundStats = new ModularStatistics(new HashSet<ModularMetric>());
+		long addedNanos = 0;
+		//HashSet<ModularMetric> computationMetrics = new HashSet<ModularMetric>();
+		//ModularStatistics iterationTimes = new ModularStatistics(new HashSet<ModularMetric>());
+		
+		long startTime = System.nanoTime();
+		//double initialTime = startTime;
+		
 		System.out.println("Preprocessing...");
 		preprocess();
+		MultiLevelPreProcessTime mp = new MultiLevelPreProcessTime();
+		long endTime = System.nanoTime();
+		addedNanos += endTime - startTime;
+		mp.values().add(endTime - startTime);
+		lastRoundStats.addMetric(mp);
+		startTime = endTime;
 		
 		current_iteration = 1;
 		
 		System.out.println("Executing Coarsening");
+		CoarseningTime cp = new CoarseningTime();
 		gc.computeCoarsening();
+		endTime = System.nanoTime();
+		addedNanos += endTime - startTime;
+		cp.values().add(endTime - startTime);
+		lastRoundStats.addMetric(cp);
+		startTime = endTime;
+		HierarchyDepth hd = new HierarchyDepth();
+		hd.values().add(gc.getHierarchyDepth());
+		lastRoundStats.addMetric(hd);
+		
+		PlacementTime pt = new PlacementTime();
+		lastRoundStats.addMetric(pt);
 		
 		System.out.println("Computing default node positioning");
 		nodesFirstPlacement();
+		endTime = System.nanoTime();
+		addedNanos += endTime - startTime;		
+		pt.values().add(endTime - startTime);
+		startTime = endTime;
 		
 		DyGraph currentGraph = gc.getCoarsestGraph();	
 		
+		//LayoutTime lt = new LayoutTime(); 
+
 		System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
 		printParameters();
-		computeDynamicLayout(currentGraph);  
+		computeDynamicLayout(currentGraph);
+		endTime = System.nanoTime();
+		addedNanos += endTime - startTime;				
+		lastRoundStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
+		startTime = endTime;
     	current_iteration++;
     	System.out.println("Round complete!");
     	
@@ -144,6 +219,11 @@ public class MultiLevelDynNoSlice {
 			
         	updateThermostats();
         	DyGraph finerGraph = placeVertices(currentGraph.parentGraph(), currentGraph);
+    		endTime = System.nanoTime();
+    		addedNanos += endTime - startTime;    		
+    		pt.values().add(endTime - startTime);
+    		startTime = endTime;
+    		
         	if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
         		finerGraph.nukeSubgraph(currentGraph);
     		currentGraph = finerGraph;
@@ -151,10 +231,16 @@ public class MultiLevelDynNoSlice {
 			System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
 			printParameters();
     		computeDynamicLayout(currentGraph);    
+    		endTime = System.nanoTime();
+    		addedNanos += endTime - startTime;		    		
+    		lastRoundStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
+    		startTime = endTime;
 
         	current_iteration++;
         	System.out.println("Round complete!");
         }
+		
+		lastRoundStats.runAtComputationEnd(Duration.ofNanos(addedNanos));
 		
     	if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
     		return currentGraph;
@@ -184,17 +270,38 @@ public class MultiLevelDynNoSlice {
 	}
 
 	private void computeDynamicLayout(DyGraph currentGraph) {
-		DyModularFdl algorithm = new DyModularFdl.DyModularFdlBuilder(currentGraph, tau)
+		DyModularFdlBuilder algorithmBuilder = new DyModularFdl.DyModularFdlBuilder(currentGraph, tau)
                 .withForce(new DyModularForce.TimeStraightning(delta))
                 .withForce(new DyModularForce.Gravity())
                 .withForce(new DyModularForce.ConnectionAttraction(delta))
                 .withForce(new DyModularForce.EdgeRepulsion(delta))
                 .withConstraint(new ModularConstraint.DecreasingMaxMovement(parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue()))
-                .withConstraint(new ModularConstraint.MovementAcceleration(parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue(), Geom.e3D))
-                .withPostProcessing(new FlexibleTimeTrajectories(parametersMap.get(CONTRACT_DISTANCE).getCurrentValue(), parametersMap.get(EXPAND_DISTANCE).getCurrentValue(), Geom.e3D))
-                .build();
+                .withConstraint(new ModularConstraint.MovementAcceleration(parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue(), Geom.e3D));
+				
+		if(currentGraph.parentGraph() != null || !disableFlexibleTrajectories)
+                algorithmBuilder.withPostProcessing(
+                		new FlexibleTimeTrajectories(parametersMap.get(CONTRACT_DISTANCE).getCurrentValue(), 
+                				parametersMap.get(EXPAND_DISTANCE).getCurrentValue(), Geom.e3D));
+        
+		if(fdlPostProcessingOptions != null)
+        	for(MultiLevelDrawingOption<ModularPostProcessing> opt : fdlPostProcessingOptions){
+        		if(!opt.applyOnLastLevelOnly() || (opt.applyOnLastLevelOnly() && currentGraph.parentGraph() == null))
+        			algorithmBuilder.withPostProcessing(opt.getValue());
+        	}
+		
+		if(fdlPreMovementOptions != null)
+        	for(MultiLevelDrawingOption<ModularPreMovement> opt : fdlPreMovementOptions){
+        		if(!opt.applyOnLastLevelOnly() || (opt.applyOnLastLevelOnly() && currentGraph.parentGraph() == null))
+        			algorithmBuilder.withPreMovmement(opt.getValue());
+        	}
+		
+        DyModularFdl algorithm = algorithmBuilder.build();
 
         algorithm.iterate((int) Math.ceil(parametersMap.get(MAX_ITERATIONS).getCurrentValue()));		
+	}
+
+	public ModularStatistics getLastRoundStatistics() {
+		return lastRoundStats;
 	}
 
 	
