@@ -20,6 +20,7 @@ import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
 import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.logger.Logger;
 
 public abstract class GraphCoarsener {
 
@@ -35,9 +36,9 @@ public abstract class GraphCoarsener {
 	protected Map<String, String> edgeAssociationMasterMap = new HashMap<String, String>();
 
 	protected int current_level = 0;
-
+	
 	public GraphCoarsener() {
-					
+
 	}
 	
 	public void setGraph(DyGraph original) {
@@ -82,7 +83,7 @@ public abstract class GraphCoarsener {
 								
 				/* COPY END */
 				
-				System.out.println("Set up graph with " + coarserGraph.nodeCount() + " nodes and " + coarserGraph.edgeCount() + " edges");
+				Logger.getInstance().log("Set up graph with " + coarserGraph.nodeCount() + " nodes and " + coarserGraph.edgeCount() + " edges");
 	}
 
 	public void computeCoarsening() {
@@ -101,7 +102,7 @@ public abstract class GraphCoarsener {
 				breakCondition = true;
 				continue;
 			}
-			System.out.println("New level has " + subgraph.nodeCount() + " nodes and " + subgraph.edgeCount() + "edges");					
+			Logger.getInstance().log("New level has " + subgraph.nodeCount() + " nodes and " + subgraph.edgeCount() + "edges");					
 
 			DyGraph enclosedSubgraph = coarserGraph.newSubGraph(subgraph.nodes(), subgraph.edges());
 

@@ -95,7 +95,7 @@ public class MultiLevelCustomRun extends CustomRun {
 				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultOptions().build();
+				.defaultLayoutParameters().build();
 
 		//outputGraphOnTerminal(testGraphCoarsening(multiDyn));        
 		//outputGraphOnTerminal(testGraphPlacement(multiDyn, true));
@@ -103,13 +103,15 @@ public class MultiLevelCustomRun extends CustomRun {
 		//outputGraphOnTerminal(multiDyn.runMultiLevelLayout());
 		//outputAsGml(multiDyn.runMultiLevelLayout(), filename);
 		
-		long timeStart = System.nanoTime();
+		//long timeStart = System.nanoTime();
 		DyGraph result = multiDyn.runMultiLevelLayout();
-		long timeEnd = System.nanoTime();
+		//long timeEnd = System.nanoTime();
 
 		//outputFullLevels(result, (DyGraph g) -> showGraphOnWindow(g, timeFactor));
 		outputFullLevels(result, (DyGraph g) -> animateGraphOnWindow(g, timeFactor, suggestedInterval));
-		System.out.println("Algorithm elapsed time: " + secondFormat.format((timeEnd - timeStart)/Math.pow(10, 9)) + "s");
+		//System.out.println("Algorithm elapsed time: " + secondFormat.format((timeEnd - timeStart)/Math.pow(10, 9)) + "s");
+		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getLastRoundStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
+
 	}
 
 	public MultiLevelCustomRun(String[] argv) {

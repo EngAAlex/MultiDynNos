@@ -20,12 +20,12 @@ import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
-import ocotillo.multilevel.MultilevelMetrics.LayoutTime;
 import ocotillo.multilevel.MultilevelMetrics.MultiLevelPreProcessTime;
 import ocotillo.multilevel.MultilevelMetrics.PlacementTime;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.run.customrun.CustomRun;
@@ -47,10 +47,13 @@ public class MultiLevelDynNoSlice {
 	public static final String MAX_ITERATIONS = "mIterations";	
 	public static final double MAX_ITERATIONS_DEFAULT = CustomRun.defaultNumberOfIterations;	
 	
+	public static final String LOG_OPTION = "LogProgressInConsole";
+	public static final String FLEXIBLE_TRAJECTORIES = "FLEXIBLE_TRAJECTORIES";
 	
 	DyGraph dynamicGraph;
 	
 	protected HashMap<String, DynamicLayoutParameter> parametersMap;
+	protected HashMap<String, Object> optionsMap;
 	
 	protected GraphCoarsener gc;
 	protected MultilevelNodePlacementStrategy placement;
@@ -61,17 +64,21 @@ public class MultiLevelDynNoSlice {
 
 	private int current_iteration;	
 	private boolean disableFlexibleTrajectories = false;
+	private boolean logProgressInConsole = false;
 	
 	private ModularStatistics lastRoundStats;
+	
+	Logger logger;
 
 	public MultiLevelDynNoSlice(DyGraph original, double tau, double delta) {
 		dynamicGraph = original;
 		parametersMap = new HashMap<String, DynamicLayoutParameter>();
+		optionsMap = new HashMap<String, Object>();
 		this.tau = tau;
 		this.delta = delta;		
 	}
 	
-	public MultiLevelDynNoSlice addOption(String key, DynamicLayoutParameter par) {
+	public MultiLevelDynNoSlice addLayoutParameter(String key, DynamicLayoutParameter par) {
 		parametersMap.put(key, par);
 		return this;
 	}
@@ -92,12 +99,17 @@ public class MultiLevelDynNoSlice {
 		
 	}	
 	
-	public MultiLevelDynNoSlice defaultOptions() {
-		addOption(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new LinearCoolingStrategy(-.07)))
-			.addOption(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
-			.addOption(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new LinearCoolingStrategy(-.07)))
-			.addOption(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
-			.addOption(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
+	public MultiLevelDynNoSlice defaultLayoutParameters() {
+		addLayoutParameter(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new LinearCoolingStrategy(-.07)))
+			.addLayoutParameter(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
+			.addLayoutParameter(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new LinearCoolingStrategy(-.07)))
+			.addLayoutParameter(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
+			.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
+		return this;
+	}
+	
+	public MultiLevelDynNoSlice addOption(String key, Object value) {
+		optionsMap.put(key, value);
 		return this;
 	}
 	
@@ -123,6 +135,21 @@ public class MultiLevelDynNoSlice {
 	
 	public MultiLevelDynNoSlice build() {
 		placement.setCoarsener(gc);
+		
+		if(optionsMap.containsKey(LOG_OPTION)) {
+			Object eleme = optionsMap.get(LOG_OPTION);
+			if(eleme instanceof Boolean)
+				logger = Logger.getInstance((boolean)eleme);
+			else
+				logger = Logger.getInstance();
+		}else
+			logger = Logger.getInstance();
+		
+		if(optionsMap.containsKey(FLEXIBLE_TRAJECTORIES)) {
+			Object eleme = optionsMap.get(FLEXIBLE_TRAJECTORIES);
+			if(eleme instanceof Boolean)
+				disableFlexibleTrajectories = !(boolean)optionsMap.get(FLEXIBLE_TRAJECTORIES);
+		}
 		return this;
 	}
 	
@@ -168,7 +195,7 @@ public class MultiLevelDynNoSlice {
 		long startTime = System.nanoTime();
 		//double initialTime = startTime;
 		
-		System.out.println("Preprocessing...");
+		logger.log("Preprocessing...");
 		preprocess();
 		MultiLevelPreProcessTime mp = new MultiLevelPreProcessTime();
 		long endTime = System.nanoTime();
@@ -179,7 +206,7 @@ public class MultiLevelDynNoSlice {
 		
 		current_iteration = 1;
 		
-		System.out.println("Executing Coarsening");
+		logger.log("Executing Coarsening");
 		CoarseningTime cp = new CoarseningTime();
 		gc.computeCoarsening();
 		endTime = System.nanoTime();
@@ -194,7 +221,7 @@ public class MultiLevelDynNoSlice {
 		PlacementTime pt = new PlacementTime();
 		lastRoundStats.addMetric(pt);
 		
-		System.out.println("Computing default node positioning");
+		logger.log("Computing default node positioning");
 		nodesFirstPlacement();
 		endTime = System.nanoTime();
 		addedNanos += endTime - startTime;		
@@ -205,7 +232,7 @@ public class MultiLevelDynNoSlice {
 		
 		//LayoutTime lt = new LayoutTime(); 
 
-		System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
+		logger.log("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
 		printParameters();
 		computeDynamicLayout(currentGraph);
 		endTime = System.nanoTime();
@@ -213,7 +240,7 @@ public class MultiLevelDynNoSlice {
 		lastRoundStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
 		startTime = endTime;
     	current_iteration++;
-    	System.out.println("Round complete!");
+    	logger.log("Round complete!");
     	
 		while(currentGraph.parentGraph() != null) {
 			
@@ -228,8 +255,9 @@ public class MultiLevelDynNoSlice {
         		finerGraph.nukeSubgraph(currentGraph);
     		currentGraph = finerGraph;
     		
-			System.out.println("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
-			printParameters();
+    		logger.log("Starting writing round " + (gc.getHierarchyDepth() - current_iteration));
+    		printParameters();
+    		
     		computeDynamicLayout(currentGraph);    
     		endTime = System.nanoTime();
     		addedNanos += endTime - startTime;		    		
@@ -237,7 +265,7 @@ public class MultiLevelDynNoSlice {
     		startTime = endTime;
 
         	current_iteration++;
-        	System.out.println("Round complete!");
+        	logger.log("Round complete!");
         }
 		
 		lastRoundStats.runAtComputationEnd(Duration.ofNanos(addedNanos));
@@ -250,11 +278,12 @@ public class MultiLevelDynNoSlice {
 	}
 
 	private void printParameters() {
-		System.out.println("\tParameters:");
-		System.out.println("\t\tDecreasingMaxMovement: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue());
-		System.out.println("\t\tMovementAcceleration: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue());
-		System.out.println("\t\tFlexibleTimeTrajectories: " + parametersMap.get(CONTRACT_DISTANCE).getCurrentValue() + " - " + parametersMap.get(EXPAND_DISTANCE).getCurrentValue());
-		System.out.println("\t\tMAX_ITERATIONS: " + parametersMap.get(MAX_ITERATIONS).getCurrentValue());
+		if(logProgressInConsole)
+			logger.log("\tParameters:"
+				+"\t\tDecreasingMaxMovement: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue()
+				+"\t\tMovementAcceleration: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue()
+				+"\t\tFlexibleTimeTrajectories: " + parametersMap.get(CONTRACT_DISTANCE).getCurrentValue() + " - " + parametersMap.get(EXPAND_DISTANCE).getCurrentValue()
+				+"\t\tMAX_ITERATIONS: " + parametersMap.get(MAX_ITERATIONS).getCurrentValue());
 	}
 
 	private Graph computeStaticLayout(Graph currentGraph) {

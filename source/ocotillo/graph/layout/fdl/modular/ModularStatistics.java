@@ -85,7 +85,7 @@ public class ModularStatistics {
      *
      * @return the total running time.
      */
-    public Duration getTotalRunnningTime() {
+    public Duration getTotalRunningTime() {
         return totalRunningTime;
     }
 

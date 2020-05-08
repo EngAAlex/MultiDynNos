@@ -105,7 +105,7 @@ public abstract class Experiment {
         algorithm.showMirrorGraph();
         ModularStatistics stats = algorithm.iterate(100);
         stats.saveCsv(new File("build/" + name + "_Continuous.csv"));
-        System.out.println("Total running time: " + stats.getTotalRunnningTime().getSeconds());
+        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
 
         if (k > 1) {
             DyClustering clustering = new DyClustering.Stc.KMeans3D(
@@ -131,7 +131,7 @@ public abstract class Experiment {
         algorithm.showMirrorGraph();
         ModularStatistics stats = algorithm.iterate(100);
         stats.saveCsv(new File("build/" + name + "_Discrete.csv"));
-        System.out.println("Total running time: " + stats.getTotalRunnningTime().getSeconds());
+        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
 
         if (k > 1) {
             DyClustering clustering = new DyClustering.Stc.KMeans3D(
@@ -200,7 +200,7 @@ public abstract class Experiment {
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.disableFlexibleTrajectories()
-				.defaultOptions();
+				.defaultLayoutParameters();
 		
         if (postProcessing != null) 
         	multiDyn.addLayerPostProcessingDrawingOption(
@@ -216,7 +216,7 @@ public abstract class Experiment {
 				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultOptions();
+				.defaultLayoutParameters();
 		
         if (postProcessing != null) 
         	multiDyn.addLayerPostProcessingDrawingOption(

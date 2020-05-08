@@ -404,8 +404,8 @@ public class Gui extends JFrame {
             DyModularFdl algorithm = experiment.getDiscreteLayoutAlgorithm(graph, null);
             SpaceTimeCubeSynchroniser syncrho = algorithm.getSyncro();
             ModularStatistics stats = algorithm.iterate(100);
-            String time = stats.getTotalRunnningTime().getSeconds() + "."
-                    + String.format("%02d", stats.getTotalRunnningTime().getNano() / 10000000);
+            String time = stats.getTotalRunningTime().getSeconds() + "."
+                    + String.format("%02d", stats.getTotalRunningTime().getNano() / 10000000);
             updateComputationReport("Layout computed in " + time + " s");
             return syncrho;
         }
@@ -425,8 +425,8 @@ public class Gui extends JFrame {
             DyModularFdl algorithm = experiment.getContinuousLayoutAlgorithm(graph, null);
             SpaceTimeCubeSynchroniser synchro = algorithm.getSyncro();
             ModularStatistics stats = algorithm.iterate(100);
-            String time = stats.getTotalRunnningTime().getSeconds() + "."
-                    + String.format("%02d", stats.getTotalRunnningTime().getNano() / 10000000);
+            String time = stats.getTotalRunningTime().getSeconds() + "."
+                    + String.format("%02d", stats.getTotalRunningTime().getNano() / 10000000);
             updateComputationReport("Layout computed in " + time + " s");
             return synchro;
         }
