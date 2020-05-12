@@ -17,28 +17,11 @@ import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener
 
 public class IndependentSet extends GraphCoarsener {
 
-	private final long threshold;
-
-	public IndependentSet(long threshold) {
-		super();
-		this.threshold = threshold;
-	}
-	
-	public IndependentSet() {
-		super();
-		this.threshold = DEFAULT_THRESHOLD;
-	}
-
 
 	@Override
-	protected boolean stoppingCondition() {
-		return coarserGraph.nodeCount() <= threshold;
-	}
-
-	@Override
-	protected void preprocess() { //Flatten the graph and generate the weights
+	protected void initialize() { //Flatten the graph and generate the weights
 		StaticSumPresenceFlattener flat = new StaticSumPresenceFlattener(); 
-		flat.addWeightAttribute(coarserGraph);
+		flat.addWeightAttribute(getCoarsestGraph());
 	}
 
 	@Override
@@ -81,10 +64,6 @@ public class IndependentSet extends GraphCoarsener {
 
 		public WalshawIndependentSet() {
 			super();
-		}
-		
-		public WalshawIndependentSet(long threshold) {
-			super(threshold);
 		}
 
 		@Override

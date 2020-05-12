@@ -69,6 +69,7 @@ public class Evolution<T> implements Iterable<Function<T>> {
 		this.defaultValue = defaultValue;
 	}
 
+
 	/**
 	 * Gets the default value, that is the of an undefined point.
 	 *

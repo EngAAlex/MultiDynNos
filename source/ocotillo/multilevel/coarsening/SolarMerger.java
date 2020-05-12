@@ -15,8 +15,6 @@ import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 
 public class SolarMerger extends GraphCoarsener {
-
-	private final long threshold;
 	
 	public static final String STATUS_NODE_ATTRIBUTE_NAME = "SolarMerger_Status";
 	
@@ -25,22 +23,16 @@ public class SolarMerger extends GraphCoarsener {
 	public static final byte PLANET = 2;
 	public static final byte MOON = 3;
 
-	public SolarMerger(long threshold) {
-		super();
-		this.threshold = threshold;
-	}
-	
 	public SolarMerger() {
 		super();
-		this.threshold = DEFAULT_THRESHOLD;
 	}
 
 	@Override
-	protected void preprocess() {
+	protected void initialize() {
 		StaticSumPresenceFlattener flat = new StaticSumPresenceFlattener(); 
-		flat.addWeightAttribute(coarserGraph);
+		flat.addWeightAttribute(getCoarsestGraph());
 		
-		coarserGraph.newNodeAttribute(STATUS_NODE_ATTRIBUTE_NAME, UNASSIGNED_STATE);
+		getCoarsestGraph().newNodeAttribute(STATUS_NODE_ATTRIBUTE_NAME, UNASSIGNED_STATE);
 	}
 
 	@Override
@@ -53,6 +45,7 @@ public class SolarMerger extends GraphCoarsener {
 		Collections.sort(nodes, new GraphCoarsener.NodeWeightComparator(lastLevel, lastLevelEdgeWeight, lastLevelNodeWeight));
 
 		DyGraph newLevel = new DyGraph();
+		newLevel.newNodeAttribute(STATUS_NODE_ATTRIBUTE_NAME, UNASSIGNED_STATE);
 
 		while(!nodes.isEmpty()) {
 			Node topNode = nodes.remove(0);
@@ -88,11 +81,6 @@ public class SolarMerger extends GraphCoarsener {
 		}
 		
 		return newLevel;
-	}
-
-	@Override
-	protected boolean stoppingCondition() {
-		return coarserGraph.nodeCount() <= threshold;
 	}
 
 }

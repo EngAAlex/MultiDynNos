@@ -20,7 +20,7 @@ public abstract class Run {
 
 	public static final double defaultDelta = 5.0;
 	public static final double defaultTau = 1.0;
-	public static final int defaultNumberOfIterations = 70;
+	public static final int defaultNumberOfIterations = 100;
 	public static final String defaultOutput = "output.txt";
 
 	protected final List<NodeAppearance> nodeDataSet;
@@ -118,7 +118,7 @@ public abstract class Run {
      *
      * @param nodeDataSet the node data set.
      */
-	protected static void checkNodeAppearanceCorrectness(List<NodeAppearance> nodeDataSet) {
+	public static void checkNodeAppearanceCorrectness(List<NodeAppearance> nodeDataSet) {
         for (int i = 0; i < nodeDataSet.size(); i++) {
             for (int j = i + 1; j < nodeDataSet.size(); j++) {
                 NodeAppearance first = nodeDataSet.get(i);
@@ -150,7 +150,7 @@ public abstract class Run {
      *
      * @param edgeDataSet the edge data set.
      */
-    protected static void checkEdgeAppearanceCorrectness(List<EdgeAppearance> edgeDataSet) {
+    public static void checkEdgeAppearanceCorrectness(List<EdgeAppearance> edgeDataSet) {
         for (EdgeAppearance appearance : edgeDataSet) {
             if (appearance.sourceId.compareTo(appearance.targetId) >= 0) {
                 String error = "An appearance with source node " + appearance.sourceId

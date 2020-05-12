@@ -93,6 +93,57 @@ public abstract class Experiment {
         this.dataset = dataset;
         this.delta = delta;
     }
+    
+    /**
+     * Runs the MultiLevel layout algorithm treating the graph in continuous time.
+     *
+     * @param k the number of clusters. Negative for no clustering.
+     */
+    public void runMultiLevelContinuous(int k) {
+        MultiLevelDynNoSlice algorithm = getMultiLevelContinuousLayoutAlgorithm(dataset.dygraph, new ModularPostProcessing.DisplayCurrentIteration());
+        algorithm.runMultiLevelLayout();
+        algorithm.showMirrorGraph();
+        ModularStatistics stats = algorithm.getLastRoundStatistics();
+        stats.saveCsv(new File("build/" + name + "_MultiLevel_Continuous.csv"));
+        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
+
+        if (k > 1) {
+            DyClustering clustering = new DyClustering.Stc.KMeans3D(
+                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+                    ColorCollection.cbQualitativePastel);
+            clustering.colorGraph();
+        }
+
+        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
+        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+        view.showNewWindow();
+    }
+    
+    /**
+     * Runs the MultiLevel layout algorithm treating the graph in discrete time.
+     *
+     * @param k the number of clusters. Negative for no clustering.
+     */
+    public void runMultiLevelDiscrete(int k) {
+        DyGraph discreteGraph = discretise();
+        MultiLevelDynNoSlice algorithm = getMultiLevelDiscreteLayoutAlgorithm(discreteGraph, new ModularPostProcessing.DisplayCurrentIteration());
+        algorithm.runMultiLevelLayout();
+        algorithm.showMirrorGraph();
+        ModularStatistics stats = algorithm.getLastRoundStatistics();
+        stats.saveCsv(new File("build/" + name + "_MultiLevel_Discrete.csv"));
+        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
+
+        if (k > 1) {
+            DyClustering clustering = new DyClustering.Stc.KMeans3D(
+                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+                    ColorCollection.cbQualitativePastel);
+            clustering.colorGraph();
+        }
+
+        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
+        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+        view.showNewWindow();
+    }
 
     /**
      * Runs the layout algorithm treating the graph in continuous time.
@@ -199,7 +250,7 @@ public abstract class Experiment {
 				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.disableFlexibleTrajectories()
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
 				.defaultLayoutParameters();
 		
         if (postProcessing != null) 

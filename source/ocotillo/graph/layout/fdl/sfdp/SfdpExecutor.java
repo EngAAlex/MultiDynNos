@@ -42,7 +42,7 @@ import org.apache.commons.exec.PumpStreamHandler;
  */
 public class SfdpExecutor {
 
-	private final static String COMMAND_LINE = "wsl sfdp";
+	private final static String COMMAND_LINE = "sfdp";
 	
     private final String[] arguments;
     private final DotReader dotReader;

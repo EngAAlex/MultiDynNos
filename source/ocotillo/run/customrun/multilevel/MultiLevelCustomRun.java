@@ -24,11 +24,16 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.graph.multilevel.layout.DynamicLayoutParameter;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.gui.quickview.QuickView;
 import ocotillo.multilevel.coarsening.IndependentSet;
+import ocotillo.multilevel.coarsening.SolarMerger;
+import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
+import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy.LinearCoolingStrategy;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
@@ -92,10 +97,12 @@ public class MultiLevelCustomRun extends CustomRun {
 
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, timeFactor, Run.defaultDelta)
-				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
+				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultLayoutParameters().build();
+				.defaultLayoutParameters()
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
+				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 		//outputGraphOnTerminal(testGraphCoarsening(multiDyn));        
 		//outputGraphOnTerminal(testGraphPlacement(multiDyn, true));
@@ -108,8 +115,11 @@ public class MultiLevelCustomRun extends CustomRun {
 		//long timeEnd = System.nanoTime();
 
 		//outputFullLevels(result, (DyGraph g) -> showGraphOnWindow(g, timeFactor));
-		outputFullLevels(result, (DyGraph g) -> animateGraphOnWindow(g, timeFactor, suggestedInterval));
+		//outputFullLevels(result, (DyGraph g) -> animateGraphOnWindow(g, timeFactor, suggestedInterval));
 		//System.out.println("Algorithm elapsed time: " + secondFormat.format((timeEnd - timeStart)/Math.pow(10, 9)) + "s");
+		
+		//animateGraphOnWindow(result, timeFactor, suggestedInterval);
+		showGraphOnWindow(result, timeFactor);
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getLastRoundStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
 
 	}

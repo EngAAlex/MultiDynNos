@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,13 +23,17 @@ import ocotillo.graph.Edge;
 import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.logger.Logger;
+import ocotillo.run.customrun.CustomRun;
 
 public abstract class GraphCoarsener {
 
 	public final static long DEFAULT_THRESHOLD = 15;
-	
+
+	private static final float CHANGE_TRESHOLD = 0.95f;
+
 	//protected final Graph rootGraph;
-	protected DyGraph coarserGraph;	
+	//protected DyGraph coarserGraph;	
+	protected LinkedList<DyGraph> hierarchy;
 	protected Map<String, String> currentLevelEdgeAssociations = new HashMap<String, String>();
 	protected Map<String, Set<String>> currentLevelNodeGroups = new HashMap<String, Set<String>>();
 
@@ -36,54 +42,54 @@ public abstract class GraphCoarsener {
 	protected Map<String, String> edgeAssociationMasterMap = new HashMap<String, String>();
 
 	protected int current_level = 0;
-	
+
 	public GraphCoarsener() {
 
 	}
-	
+
 	public void setGraph(DyGraph original) {
-		//Copy the original graph into the state
-				//coarserGraph = original;
-				coarserGraph = new DyGraph();
 
-				/*COPY AND SETUP OF THE ORIGINAL GRAPH -- NECESSARY FOR NODE ID TRANSLATION*/
+		DyGraph coarserGraph = new DyGraph();
 
-				for(Node n : original.nodes()) {
-					Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
-					for(String s : original.nodeAttributes().keySet()) {
-						DyNodeAttribute<Object> newAttribute;
-						try{
-							newAttribute = coarserGraph.nodeAttribute(s);
-						}catch(IllegalArgumentException ill) {
-							/*The attribute is not among the default ones*/
-							newAttribute = coarserGraph.newNodeAttribute(s, original.nodeAttribute(s).getDefault());
-						}
-						DyNodeAttribute<Object> originalAttr = original.nodeAttribute(s);
-						newAttribute.set(newNode, originalAttr.get(n));
-					}
+		/*COPY AND SETUP OF THE ORIGINAL GRAPH -- NECESSARY FOR NODE ID TRANSLATION*/
+
+		for(Node n : original.nodes()) {
+			Node newNode = coarserGraph.newNode(GraphCoarsener.translateNodeId(n.id(), 0));
+			for(String s : original.nodeAttributes().keySet()) {
+				DyNodeAttribute<Object> newAttribute;
+				try{
+					newAttribute = coarserGraph.nodeAttribute(s);
+				}catch(IllegalArgumentException ill) {
+					/*The attribute is not among the default ones*/
+					newAttribute = coarserGraph.newNodeAttribute(s, original.nodeAttribute(s).getDefault());
 				}
-				for(Edge e : original.edges()) {
-					Edge newEdge = coarserGraph.newEdge(coarserGraph.getNode(translateNodeId(e.source().id(), 0)), 
-							coarserGraph.getNode(translateNodeId(e.target().id(), 0)));
-					for(String s : original.edgeAttributes().keySet()) {
-						DyEdgeAttribute<Object> newAttribute;
-						try{
-							/*The attribute is not among the default ones*/
-							newAttribute = coarserGraph.edgeAttribute(s);
-						}catch(IllegalArgumentException ill) {
-							newAttribute = coarserGraph.newEdgeAttribute(s, original.edgeAttribute(s).getDefault());
-						}
-						DyEdgeAttribute<Object> originalAttr = original.edgeAttribute(s);
-						newAttribute.set(newEdge, originalAttr.get(e));
-					}			
-					coarserGraph.edgeAttributes().put(newEdge.id(), original.edgeAttributes().get(e.id()));
+				DyNodeAttribute<Object> originalAttr = original.nodeAttribute(s);
+				newAttribute.set(newNode, originalAttr.get(n));
+			}
+		}
+		for(Edge e : original.edges()) {
+			Edge newEdge = coarserGraph.newEdge(coarserGraph.getNode(translateNodeId(e.source().id(), 0)), 
+					coarserGraph.getNode(translateNodeId(e.target().id(), 0)));
+			for(String s : original.edgeAttributes().keySet()) {
+				DyEdgeAttribute<Object> newAttribute;
+				try{
+					/*The attribute is not among the default ones*/
+					newAttribute = coarserGraph.edgeAttribute(s);
+				}catch(IllegalArgumentException ill) {
+					newAttribute = coarserGraph.newEdgeAttribute(s, original.edgeAttribute(s).getDefault());
 				}
+				DyEdgeAttribute<Object> originalAttr = original.edgeAttribute(s);
+				newAttribute.set(newEdge, originalAttr.get(e));
+			}			
+			coarserGraph.edgeAttributes().put(newEdge.id(), original.edgeAttributes().get(e.id()));
+		}
 
-				coarserGraph.graphAttributes().putAll(original.graphAttributes());
-								
-				/* COPY END */
-				
-				Logger.getInstance().log("Set up graph with " + coarserGraph.nodeCount() + " nodes and " + coarserGraph.edgeCount() + " edges");
+		coarserGraph.graphAttributes().putAll(original.graphAttributes());
+		hierarchy = new LinkedList<DyGraph>();
+		hierarchy.add(coarserGraph);
+		/* COPY END */
+
+		Logger.getInstance().log("Set up graph with " + coarserGraph.nodeCount() + " nodes and " + coarserGraph.edgeCount() + " edges");
 	}
 
 	public void computeCoarsening() {
@@ -92,53 +98,41 @@ public abstract class GraphCoarsener {
 
 	public void computeCoarsening(boolean createInterLevelEdges) {
 
-		preprocess();
-
-		current_level = 1;
+		initialize();
+		DyGraph coarserGraph = getCoarsestGraph();
+		current_level = hierarchy.size();
 		boolean breakCondition = false;
-		while(!breakCondition && !stoppingCondition()) {
+		while(!breakCondition) {
 			DyGraph subgraph = computeNewLevel(coarserGraph);
 			if(subgraph == null) {
 				breakCondition = true;
 				continue;
 			}
-			Logger.getInstance().log("New level has " + subgraph.nodeCount() + " nodes and " + subgraph.edgeCount() + "edges");					
-
-			DyGraph enclosedSubgraph = coarserGraph.newSubGraph(subgraph.nodes(), subgraph.edges());
-
-			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.weight, 0.0).merge(subgraph.nodeAttribute(StdAttribute.weight));
-			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.dyPresence, false).merge(subgraph.nodeAttribute(StdAttribute.dyPresence));
-			enclosedSubgraph.newLocalNodeAttribute(StdAttribute.nodePosition, new Evolution<>(new Coordinates(0, 0)));
+			Logger.getInstance().log("Level " + current_level + " has " + subgraph.nodeCount() + " nodes and " + subgraph.edgeCount() + " edges");					
 			
-			enclosedSubgraph.newLocalEdgeAttribute(StdAttribute.weight, 0.0).merge(subgraph.edgeAttribute(StdAttribute.weight));
-			enclosedSubgraph.newLocalEdgeAttribute(StdAttribute.dyPresence, false).merge(subgraph.edgeAttribute(StdAttribute.dyPresence));			
-			
-			if(createInterLevelEdges)
-				for(Node source : subgraph.nodes()) {
-					Node target = coarserGraph.getNode(getTranslatedNodeId(source.id(), current_level - 1));
-					coarserGraph.add(new Edge(source.id() + " - "+target.id(), source, target));
-				}				 
-			current_level++;
-			coarserGraph = enclosedSubgraph;
+			hierarchy.add(subgraph);
+			coarserGraph = subgraph;
+			current_level = hierarchy.size();
 		}
 	}
 
-	protected abstract void preprocess();
+	protected abstract void initialize();
 
 	private DyGraph computeNewLevel(DyGraph lastLevel) {
 		DyGraph newLevel = computeNewVertexSet(lastLevel);
-		//## SANITY CHECK: IF NODE COUNT DID NOT DECREASE -- PROBABLY A LOOP		
-		if(newLevel.nodeCount() >= lastLevel.nodeCount()) 
+		//## SANITY CHECK: IF NODE COUNT DID NOT DECREASE -- PROBABLY A LOOP	
+		//## STOPPING CONDITION: If the new level has 95% or more vertices of the last level
+		if(newLevel.nodeCount() >= lastLevel.nodeCount()
+				|| newLevel.nodeCount()/(float)lastLevel.nodeCount() > CHANGE_TRESHOLD) 
 			newLevel = null;
 		else {
 			mergeNodePresenceAndWeight(newLevel, lastLevel, new Evolution.EvolutionORMerge());
 			generateEdges(newLevel, lastLevel);
-
 			groupingMasterMap.putAll(currentLevelNodeGroups);
 			edgeAssociationMasterMap.putAll(currentLevelEdgeAssociations);
 		}
 		currentLevelEdgeAssociations.clear();
-		currentLevelNodeGroups.clear();		
+		currentLevelNodeGroups.clear();
 		return newLevel;
 	}
 
@@ -148,7 +142,7 @@ public abstract class GraphCoarsener {
 
 		DyNodeAttribute<Double> lastLevelNodeWeight = lastLevel.nodeAttribute(StdAttribute.weight);
 		DyNodeAttribute<Double> newLevelNodeWeight = newLevel.nodeAttribute(StdAttribute.weight);
-		
+
 
 		for(String s : currentLevelNodeGroups.keySet()) {
 			Node newLevelNode = newLevel.getNode(s);
@@ -169,7 +163,7 @@ public abstract class GraphCoarsener {
 			newLevelNodeWeight.set(newLevelNode, new Evolution<Double>(totalWeight));
 		}
 	}
-	
+
 	private void computeMergedPresence(Evolution<Boolean> newPresence, Evolution<Boolean> lastPresence, EvolutionMergeValue<Boolean> eval) { 	
 		List<Function<Boolean>> all = new ArrayList<Function<Boolean>>();
 		all.addAll(newPresence.getAllIntervals()); 
@@ -183,49 +177,21 @@ public abstract class GraphCoarsener {
 				currentPot.add(current); 
 				lastInterval = current;
 			} else {
-				currentPot.add(current);
-				if(current.interval().leftBound() == lastInterval.interval().rightBound()) {
-					lastInterval = current;
-				}else {
+				if(current.interval().leftBound() > lastInterval.interval().rightBound()) {
 					merged.add(mergeAdjacentIntervals(currentPot));
 					currentPot.clear();
 				}
+				lastInterval = current;
+				currentPot.add(current);
 			}
 		}
 		if(currentPot.size() != 0)
 			merged.add(mergeAdjacentIntervals(currentPot));
-				
+
 		newPresence.clear();
 		newPresence.insertAll(merged);
 	}
-	
-	
-	
 
-	private List<Function<Boolean>> postProcessIntervals(List<Function<Boolean>> list) {
-		List<Function<Boolean>> merged = new ArrayList<Function<Boolean>>();
-		List<Function<Boolean>> currentPot = new ArrayList<Function<Boolean>>();
-		Function<Boolean> lastInterval = null;
-		for(Function<Boolean> current : list) {			
-			if(currentPot.size() == 0) {
-				currentPot.add(current); 
-				lastInterval = current;
-			} else {
-				currentPot.add(current);
-				if(current.interval().leftBound() == lastInterval.interval().rightBound()) {
-					lastInterval = current;
-				}else {
-					merged.add(mergeAdjacentIntervals(currentPot));
-					currentPot.clear();
-				}
-			}
-		}
-		if(currentPot.size() != 0)
-			merged.add(mergeAdjacentIntervals(currentPot));
-				
-		return merged;
-	}
-	
 	/**
 	 * Method that merges together the list of Intervals provided into one interval that spans from the 
 	 * left bound of the first in the list to the right bound of the last.
@@ -248,12 +214,12 @@ public abstract class GraphCoarsener {
 	 * @param lastLevel The current level graph.
 	 */
 	private void generateEdges(DyGraph newLevel, DyGraph lastLevel) {
-		 DyEdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
-		 DyEdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);
+		DyEdgeAttribute<Double> lastLevelEdgeWeight = lastLevel.edgeAttribute(StdAttribute.weight);
+		DyEdgeAttribute<Double> newLevelEdgeWeight = newLevel.edgeAttribute(StdAttribute.weight);
 
-		 DyEdgeAttribute<Boolean> lastLevelEdgePresence = lastLevel.edgeAttribute(StdAttribute.dyPresence);
-		 DyEdgeAttribute<Boolean> newLevelEdgePresence = newLevel.edgeAttribute(StdAttribute.dyPresence);
-		 
+		DyEdgeAttribute<Boolean> lastLevelEdgePresence = lastLevel.edgeAttribute(StdAttribute.dyPresence);
+		DyEdgeAttribute<Boolean> newLevelEdgePresence = newLevel.edgeAttribute(StdAttribute.dyPresence);
+
 		for(Node sourceLowerNode : lastLevel.nodes()) {
 			Node sourceUpperNode = newLevel.getNode(currentLevelEdgeAssociations.get(sourceLowerNode.id()));
 			for(Edge e : lastLevel.outEdges(sourceLowerNode)) {
@@ -262,36 +228,45 @@ public abstract class GraphCoarsener {
 				if(sourceUpperNode.equals(targetUpperNode))
 					continue;
 				Edge newLevelEdge = newLevel.betweenEdge(sourceUpperNode, targetUpperNode);
-				
+
 				if(newLevelEdge == null) {
 					newLevelEdge = newLevel.newEdge(sourceUpperNode.id()+"-"+targetUpperNode.id(), sourceUpperNode, targetUpperNode);
-					newLevelEdgeWeight.set(newLevelEdge, lastLevelEdgeWeight.get(e));
-					newLevelEdgePresence.set(newLevelEdge, lastLevelEdgePresence.get(e));
+					newLevelEdgeWeight.set(newLevelEdge, new Evolution<Double>(lastLevelEdgeWeight.get(e).getDefaultValue()));//lastLevelEdgeWeight.get(e));
+					Evolution<Boolean> newEdgePresence = new Evolution<Boolean>(false);//newLevelPresence.get(newLevelNode);
+					newEdgePresence.copyFrom(lastLevelEdgePresence.get(e));	
+					newLevelEdgePresence.set(newLevelEdge, newEdgePresence);
 				}else {
 					newLevelEdgeWeight.get(newLevelEdge).setDefaultValue(
 							newLevelEdgeWeight.get(newLevelEdge).getDefaultValue() + lastLevelEdgeWeight.get(e).getDefaultValue());
-					computeMergedPresence(newLevelEdgePresence.get(newLevelEdge), lastLevelEdgePresence.get(e), new Evolution.EvolutionORMerge());
+					computeMergedPresence(newLevelEdgePresence.get(newLevelEdge), lastLevelEdgePresence.get(e), new Evolution.EvolutionORMerge());					
 				}
 			}
 		}
 	}
 
-	
+
 	/**
 	 * Get how many levels the hierarchy has. 
 	 * @return
 	 */
 	public int getHierarchyDepth() {
-		return current_level;
+		return hierarchy.size();
 	}
 
-	
 	/**
 	 * Get the coarsest graph in the hierarchy.
 	 * @return
 	 */
 	public DyGraph getCoarsestGraph() {
-		return coarserGraph;
+		return hierarchy.getLast();
+	}
+
+	public DyGraph getFinestGraph() {
+		return hierarchy.getFirst();
+	}
+
+	public Iterator<DyGraph> getGraphIterator(){
+		return hierarchy.descendingIterator();
 	}
 
 	/**
@@ -323,7 +298,7 @@ public abstract class GraphCoarsener {
 	 * A method to evaluate whether or not to continue the coarsening.
 	 * @return Whether the coarsening should stop or a new level should be created
 	 */
-	protected abstract boolean stoppingCondition();	
+	//protected abstract boolean stoppingCondition();	
 
 	public static String getTranslatedNodeId(String nodeId, int level) {
 		return nodeId.split("__")[0]+"__"+level;
@@ -332,11 +307,11 @@ public abstract class GraphCoarsener {
 	public static String translateNodeId(String nodeId, int level) {
 		return nodeId+"__"+level;
 	}
-	
+
 	public static String nodeIdInverseTranslation(String nodeId) {
 		return nodeId.split("__")[0];
 	} 
-	
+
 	/**
 	 * Check if two nodes are homologues across two adjacent levels
 	 * @param nodeIdA
@@ -346,13 +321,13 @@ public abstract class GraphCoarsener {
 	public static boolean checkNodeIdEquivalence(String nodeIdA, String nodeIdB) {
 		return nodeIdInverseTranslation(nodeIdA).equals(nodeIdInverseTranslation(nodeIdB));
 	}
-	
+
 	public static class NodeWeightComparator implements Comparator<Node>{
 
 		private final DyGraph lastLevel;
 		private final DyNodeAttribute<Double> lastLevelNodeWeight;
 		private final DyEdgeAttribute<Double> lastLevelEdgeWeight;
-		
+
 		public NodeWeightComparator(DyGraph lastLevel, DyEdgeAttribute<Double> lastLevelEdgeWeight,
 				ocotillo.dygraph.DyNodeAttribute<Double> lastLevelNodeWeight) {
 			this.lastLevel = lastLevel;
@@ -377,7 +352,7 @@ public abstract class GraphCoarsener {
 				return 1;				
 			return 0;				
 		}
-	
+
 	}
 
 
@@ -396,5 +371,13 @@ public abstract class GraphCoarsener {
 		}
 
 	}
+
+	public static Evolution<Boolean> copyEvolution(Evolution<Boolean> evol){
+		Evolution<Boolean> result = new Evolution<Boolean>(evol.getDefaultValue());
+		for(Function<Boolean> curr : evol.getAllIntervals())
+			result.insert(curr);
+		return result;
+	}
+
 
 }
