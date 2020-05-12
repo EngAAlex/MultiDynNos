@@ -33,7 +33,6 @@ public class MultiLevelDrawingOption<V> {
 					expandDistance.getInitialValue(), Geom.e3D); 
 			int suggestedInterval = (int) Math.ceil(cooling.getNextValue(iteration));
 			opt.refreshInterval = suggestedInterval;
-			System.out.println("Sugg interval " + suggestedInterval);
 			return opt;
 		}
 		
