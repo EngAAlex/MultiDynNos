@@ -403,4 +403,24 @@ public class Interval {
         }
         return samples;
     }
+    
+    public boolean equals(Object obj) {
+    	if(obj == null)
+    		return false;
+
+    	if(this == obj)
+    		return true;
+    	
+    	if(obj instanceof Interval) {
+    		Interval o = (Interval) obj;
+    		if(this.leftClosed == o.leftClosed && this.rightClosed == o.rightClosed)
+    			if(this.leftClosed == true) {
+	    			if(this.leftBound == o.leftBound && this.rightBound == o.rightBound)
+	    				return true;
+    			}else
+    				return true;
+    	}
+    	
+    	return false;
+    }
 }

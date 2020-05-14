@@ -54,8 +54,6 @@ public class Evolution<T> implements Iterable<Function<T>> {
 
 	}
 
-
-
 	private final IntervalTree<Function<T>> intervalTree = new IntervalTree<>();
 	private T defaultValue;
 
@@ -229,9 +227,6 @@ public class Evolution<T> implements Iterable<Function<T>> {
 		return list;
 	}
 	
-	public void copyFrom(Evolution<T> other) {
-		intervalTree.clear();
-		intervalTree.insertAll(other.getAllIntervals());
-	}
+
 	
 }

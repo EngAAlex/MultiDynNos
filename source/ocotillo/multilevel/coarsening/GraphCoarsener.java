@@ -149,8 +149,8 @@ public abstract class GraphCoarsener {
 			Node lastLevelTopNode = lastLevel.getNode(getTranslatedNodeId(s, current_level-1));
 			double totalWeight = lastLevelNodeWeight.get(lastLevelTopNode).getDefaultValue();
 			Evolution<Boolean> lastNodePresence = lastLevelPresence.get(lastLevelTopNode);								
-			Evolution<Boolean> newNodePresence = new Evolution<Boolean>(false);//newLevelPresence.get(newLevelNode);
-			newNodePresence.copyFrom(lastNodePresence);			
+			Evolution<Boolean> newNodePresence = new Evolution<Boolean>(lastNodePresence.getDefaultValue());//newLevelPresence.get(newLevelNode);
+			newNodePresence.insertAll(duplicatePresenceEvolution(lastNodePresence));
 			for(String n : currentLevelNodeGroups.get(s)) {
 				Node lastLevelGroupNode = lastLevel.getNode(n);
 				if(nodeIdInverseTranslation(n).equals(nodeIdInverseTranslation(newLevelNode.id())))
@@ -180,6 +180,9 @@ public abstract class GraphCoarsener {
 				if(current.interval().leftBound() > lastInterval.interval().rightBound()) {
 					merged.add(mergeAdjacentIntervals(currentPot));
 					currentPot.clear();
+				}else {
+					if(current.interval().isContainedIn(lastInterval.interval()))
+						continue;
 				}
 				lastInterval = current;
 				currentPot.add(current);
@@ -233,7 +236,7 @@ public abstract class GraphCoarsener {
 					newLevelEdge = newLevel.newEdge(sourceUpperNode.id()+"-"+targetUpperNode.id(), sourceUpperNode, targetUpperNode);
 					newLevelEdgeWeight.set(newLevelEdge, new Evolution<Double>(lastLevelEdgeWeight.get(e).getDefaultValue()));//lastLevelEdgeWeight.get(e));
 					Evolution<Boolean> newEdgePresence = new Evolution<Boolean>(false);//newLevelPresence.get(newLevelNode);
-					newEdgePresence.copyFrom(lastLevelEdgePresence.get(e));	
+					newEdgePresence.insertAll(duplicatePresenceEvolution(lastLevelEdgePresence.get(e)));	
 					newLevelEdgePresence.set(newLevelEdge, newEdgePresence);
 				}else {
 					newLevelEdgeWeight.get(newLevelEdge).setDefaultValue(
@@ -377,6 +380,20 @@ public abstract class GraphCoarsener {
 		for(Function<Boolean> curr : evol.getAllIntervals())
 			result.insert(curr);
 		return result;
+	}
+	
+	private static LinkedList<Function<Boolean>> duplicatePresenceEvolution(Evolution<Boolean> toDuplicate){
+		LinkedList<Function<Boolean>> newEvo = new LinkedList<Function<Boolean>>();
+		for(Function<Boolean> func : toDuplicate.getAllIntervals()) {
+			Interval currInterval = func.interval();
+			newEvo.add(
+					new ocotillo.dygraph.FunctionRect.Boolean(
+							Interval.newCustom(currInterval.leftBound(), currInterval.rightBound(), currInterval.isLeftClosed(), currInterval.isRightClosed()),
+							func.leftValue(),
+							func.rightValue(), Interpolation.Std.constant)
+					);
+		}
+		return newEvo;
 	}
 
 
