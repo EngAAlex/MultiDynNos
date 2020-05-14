@@ -52,6 +52,7 @@ import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.multilevel.coarsening.IndependentSet;
+import ocotillo.multilevel.coarsening.SolarMerger;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
@@ -247,11 +248,13 @@ public abstract class Experiment {
     public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
-				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
+				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
 				.defaultLayoutParameters();
+				//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
+
 		
         if (postProcessing != null) 
         	multiDyn.addLayerPostProcessingDrawingOption(
@@ -264,10 +267,12 @@ public abstract class Experiment {
     public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
-				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
+				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters();
+				//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
+
 		
         if (postProcessing != null) 
         	multiDyn.addLayerPostProcessingDrawingOption(
@@ -276,33 +281,43 @@ public abstract class Experiment {
         multiDyn.build();    
 		return multiDyn;
     }
-
+    
     /**
-     * Compute the metrics for the current experiment.
+     * Compute the metrics for the current experiment, DynNoSlice only.
      *
      * @param visoneTime the running time recorded for visone.
      * @return the lines of the metric table.
      */
-    public List<String> computeMetrics(String visoneTime) {
+    public List<String> computeMetrics(String visoneTime){
+    	return computeMetrics(visoneTime, false);
+    }
+    
+
+    /**
+     * Compute the metrics for the current experiment.
+     * @param visoneTime
+     * @param runMultiDyn if to run the experiment for Multi-DynNoSlice as well. 
+     * @return
+     */
+    public List<String> computeMetrics(String visoneTime, boolean runMultiDyn) {
         List<String> lines = new ArrayList<>();
 
         DyGraph visoneGraph = exportImportVisone(directory);
 
         DyGraph discGraph = discretise();
-        DyModularFdl discAlgorithm = getDiscreteLayoutAlgorithm(discGraph, new ModularPostProcessing.DisplayCurrentIteration());
-//        discAlgorithm.showMirrorGraph();
+        
+        System.out.println("\tExecuting Discrete Algorithm");
+        DyModularFdl discAlgorithm = getDiscreteLayoutAlgorithm(discGraph, null);//, new ModularPostProcessing.DisplayCurrentIteration());
         SpaceTimeCubeSynchroniser discSyncro = discAlgorithm.getSyncro();
         ModularStatistics discStats = discAlgorithm.iterate(100);
         double discTime = computeRunningTime(discStats);
 
-        DyGraph contGraph = dataset.dygraph;
-        DyModularFdl contAlgorithm = getContinuousLayoutAlgorithm(contGraph, new ModularPostProcessing.DisplayCurrentIteration());
-//        contAlgorithm.showMirrorGraph();
+        System.out.println("\tExecuting Continuous Algorithm");
+		  DyGraph contGraph = dataset.dygraph;
+        DyModularFdl contAlgorithm = getContinuousLayoutAlgorithm(contGraph, null);//, new ModularPostProcessing.DisplayCurrentIteration());
         SpaceTimeCubeSynchroniser contSyncro = contAlgorithm.getSyncro();
         ModularStatistics contStats = contAlgorithm.iterate(100);
         double contTime = computeRunningTime(contStats);
-        
-        
 
         List<Double> snapTimes = readSnapTimes(discGraph);
         double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
@@ -311,7 +326,7 @@ public abstract class Experiment {
         applyIdealScaling(visoneGraph, visoneScaling);
         applyIdealScaling(discSyncro, discreteScaling);
         applyIdealScaling(contSyncro, continuousScaling);
-
+        
         DyGraph contVisone = getContinuousCopy();
         copyNodeLayoutFromTo(visoneGraph, contVisone);
         DyGraph contDiscrete = getContinuousCopy();
@@ -319,12 +334,44 @@ public abstract class Experiment {
         DyGraph discContinuous = discretise();
         copyNodeLayoutFromTo(contGraph, discContinuous);
 
+
         lines.add(name + "," + "v" + "," + visoneTime + "," + 1 / visoneScaling + ","
                 + computeOtherMetrics(visoneGraph, contVisone, snapTimes, null));
         lines.add("," + "d" + "," + discTime + "," + 1 / discreteScaling + ","
                 + computeOtherMetrics(discGraph, contDiscrete, snapTimes, discSyncro));
         lines.add("," + "c" + "," + contTime + "," + 1 / continuousScaling + ","
-                + computeOtherMetrics(discContinuous, contGraph, snapTimes, contSyncro));
+                + computeOtherMetrics(discContinuous, contGraph, snapTimes, contSyncro));     
+        
+        if(runMultiDyn) {
+            System.out.println("\tExecuting Continuous Multi-Level Algorithm");            
+            MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(contGraph, null);
+            contMultiDyn.runMultiLevelLayout();
+            SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();
+            ModularStatistics multiContStats = contMultiDyn.getLastRoundStatistics();
+            double multiContTime = multiContStats.getTotalRunningTime().getSeconds();
+            
+            System.out.println("\tExecuting Discrete Multi-Level Algorithm");
+            MultiLevelDynNoSlice discMultiDyn = getMultiLevelDiscreteLayoutAlgorithm(discGraph, null);
+            discMultiDyn.runMultiLevelLayout();
+            SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
+            ModularStatistics multiDiscStats = discMultiDyn.getLastRoundStatistics();
+            double multiDiscTime = multiDiscStats.getTotalRunningTime().getSeconds();            
+            
+            applyIdealScaling(discMultiDynSyncro, discreteScaling);
+            applyIdealScaling(contMultiDynSyncro, continuousScaling);
+            
+            DyGraph multiDiscContinuous = discretise();
+            copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);
+            
+            DyGraph multiContDiscrete = getContinuousCopy();
+            copyNodeLayoutFromTo(discMultiDyn.getDrawnGraph(), multiContDiscrete);
+            
+            lines.add("," + "multic" + "," + multiContTime + "," + 1 / continuousScaling + ","
+                    + computeOtherMetrics(contMultiDyn.getDrawnGraph(), multiDiscContinuous, snapTimes, contMultiDynSyncro));   
+            
+            lines.add("," + "multid" + "," + multiDiscTime + "," + 1 / discreteScaling + ","
+                    + computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro));
+        }
 
         return lines;
     }

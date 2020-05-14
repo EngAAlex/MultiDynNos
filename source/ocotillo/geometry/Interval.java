@@ -413,14 +413,10 @@ public class Interval {
     	
     	if(obj instanceof Interval) {
     		Interval o = (Interval) obj;
-    		if(this.leftClosed == o.leftClosed && this.rightClosed == o.rightClosed)
-    			if(this.leftClosed == true) {
-	    			if(this.leftBound == o.leftBound && this.rightBound == o.rightBound)
-	    				return true;
-    			}else
-    				return true;
+    		if(this.leftClosed == o.leftClosed && this.rightClosed == o.rightClosed
+    				&& this.leftBound == o.leftBound && this.rightBound == o.rightBound)
+    					return true;
     	}
-    	
     	return false;
     }
 }

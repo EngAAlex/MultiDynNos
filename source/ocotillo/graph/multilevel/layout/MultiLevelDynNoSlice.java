@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import ocotillo.dygraph.DyGraph;
+import ocotillo.dygraph.extra.SpaceTimeCubeSynchroniser;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
 import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
@@ -67,6 +68,8 @@ public class MultiLevelDynNoSlice {
 
 	private ModularStatistics lastRoundStats;
 	private DyModularFdl currentAlgorithm;
+    protected SpaceTimeCubeSynchroniser synchronizer;
+    protected DyGraph drawnGraph;
 
 	Logger logger;
 
@@ -269,7 +272,8 @@ public class MultiLevelDynNoSlice {
 		lastRoundStats.runAtComputationEnd(Duration.ofNanos(addedNanos));
 
 		//if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
-			return currentGraph;
+		drawnGraph = currentGraph;
+		return currentGraph;
 		/*else
 			return gc.getCoarsestGraph();*/
 
@@ -280,7 +284,7 @@ public class MultiLevelDynNoSlice {
 				+"\t\tDecreasingMaxMovement: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue() + "\n"
 				+"\t\tMovementAcceleration: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue() + "\n"
 				+"\t\tFlexibleTimeTrajectories: " + parametersMap.get(CONTRACT_DISTANCE).getCurrentValue() + " - " + parametersMap.get(EXPAND_DISTANCE).getCurrentValue() + "\n"
-				+"\t\tMAX_ITERATIONS: " + parametersMap.get(MAX_ITERATIONS).getCurrentValue()); 
+				+"\t\tMAX_ITERATIONS: " + Math.ceil(parametersMap.get(MAX_ITERATIONS).getCurrentValue())); 
 	}
 
 	private Graph computeStaticLayout(Graph currentGraph) {
@@ -320,14 +324,24 @@ public class MultiLevelDynNoSlice {
 		currentAlgorithm = algorithmBuilder.build();
 
 		currentAlgorithm.iterate((int) Math.ceil(parametersMap.get(MAX_ITERATIONS).getCurrentValue()));		
+		
+		synchronizer = currentAlgorithm.getSyncro();
 	}
 
 	public ModularStatistics getLastRoundStatistics() {
 		return lastRoundStats;
 	}
 
+	public DyGraph getDrawnGraph() {
+		return drawnGraph;
+	}
+
 	public void showMirrorGraph() {
 		currentAlgorithm.showMirrorGraph();;
+	}
+
+	public SpaceTimeCubeSynchroniser getSyncro() {
+		return this.synchronizer;
 	}
 
 }

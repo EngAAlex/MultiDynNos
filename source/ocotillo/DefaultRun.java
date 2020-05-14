@@ -17,8 +17,11 @@ package ocotillo;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.swing.SwingUtilities;
 
 import ocotillo.dygraph.DyGraph;
@@ -140,25 +143,45 @@ public class DefaultRun {
             case computeMetrics:
                 List<String> lines = new ArrayList<>();
                 lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding");
+                String outputFolder = "."+File.separator;
+                Boolean executeMulti = false;
+                
+                for(int i = 1; i < args.length; i++) {
+                	if(args[i].equals("--multi"))
+                		executeMulti = true;
+                	else
+                		outputFolder = args[i];
+                }
+                
+                LocalDateTime ld = LocalDateTime.now();
+                String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
+                String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
+                time = time.replace(':', '-');
+                
+                String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
+                System.out.println("Starting VanDeBunt Experiment");
                 experiment = new Experiment.Bunt();
-                lines.addAll(experiment.computeMetrics("0.128"));
+                lines.addAll(experiment.computeMetrics("0.128", executeMulti));
+                System.out.println("Starting Newcomb Experiment");
                 experiment = new Experiment.Newcomb();
-                lines.addAll(experiment.computeMetrics("0.109"));
+                lines.addAll(experiment.computeMetrics("0.109", executeMulti));
+                System.out.println("Starting InfoVis Experiment");                
                 experiment = new Experiment.InfoVis();
-                lines.addAll(experiment.computeMetrics("77.430"));
+                lines.addAll(experiment.computeMetrics("77.430", executeMulti));
+                System.out.println("Starting Rugby Experiment");                
                 experiment = new Experiment.Rugby();
-                lines.addAll(experiment.computeMetrics("0.079"));
+                lines.addAll(experiment.computeMetrics("0.079", executeMulti));
+                System.out.println("Starting Pride Experiment");                
                 experiment = new Experiment.Pride();
-                lines.addAll(experiment.computeMetrics("3.391"));
+                lines.addAll(experiment.computeMetrics("3.391", executeMulti));
 
                 for (String line : lines) {
                     System.out.println(line);
                 }
+                
                 ParserTools.writeFileLines(lines,
-                        new File("/home/paolo/Development/ContinuousDyGraph/Paper/data/data.csv"));
-                ParserTools.writeFileLines(lines,
-                        new File("/home/paolo/Dropbox/data.csv"));
+                        new File(outputFolder + File.separator + fileName));
                 break;
             case gui:
                 Gui gui = new Gui();

@@ -177,12 +177,13 @@ public abstract class GraphCoarsener {
 				currentPot.add(current); 
 				lastInterval = current;
 			} else {
-				if(current.interval().leftBound() > lastInterval.interval().rightBound()) {
-					merged.add(mergeAdjacentIntervals(currentPot));
-					currentPot.clear();
+				if(current.interval().isContainedIn(lastInterval.interval())) {
+					continue;
 				}else {
-					if(current.interval().isContainedIn(lastInterval.interval()))
-						continue;
+					if(current.interval().leftBound() > lastInterval.interval().rightBound()) {
+						merged.add(mergeAdjacentIntervals(currentPot));
+						currentPot.clear();
+					}
 				}
 				lastInterval = current;
 				currentPot.add(current);

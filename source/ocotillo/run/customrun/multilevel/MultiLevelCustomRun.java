@@ -102,8 +102,8 @@ public class MultiLevelCustomRun extends CustomRun {
 		DyGraph result = multiDyn.runMultiLevelLayout();	
 
 		//## OUTPUT OPTIONS (uncomment the ones preferred)
-		//animateGraphOnWindow(result, timeFactor, suggestedInterval);
-		showGraphOnWindow(result, timeFactor);
+		animateGraphOnWindow(result, timeFactor, suggestedInterval);
+		//showGraphOnWindow(result, timeFactor);
 
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getLastRoundStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
 
