@@ -7,6 +7,7 @@ package ocotillo;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,10 +52,16 @@ import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
 import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.gui.quickview.DyQuickView;
+import ocotillo.multilevel.MultilevelMetrics;
+import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
+import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
+import ocotillo.multilevel.MultilevelMetrics.PlacementTime;
+import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.coarsening.SolarMerger;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
+import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.run.Run;
 import ocotillo.samples.parsers.Commons;
@@ -100,51 +107,51 @@ public abstract class Experiment {
      *
      * @param k the number of clusters. Negative for no clustering.
      */
-    public void runMultiLevelContinuous(int k) {
-        MultiLevelDynNoSlice algorithm = getMultiLevelContinuousLayoutAlgorithm(dataset.dygraph, new ModularPostProcessing.DisplayCurrentIteration());
-        algorithm.runMultiLevelLayout();
-        algorithm.showMirrorGraph();
-        ModularStatistics stats = algorithm.getLastRoundStatistics();
-        stats.saveCsv(new File("build/" + name + "_MultiLevel_Continuous.csv"));
-        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
-
-        if (k > 1) {
-            DyClustering clustering = new DyClustering.Stc.KMeans3D(
-                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
-                    ColorCollection.cbQualitativePastel);
-            clustering.colorGraph();
-        }
-
-        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
-        view.showNewWindow();
-    }
+//    public void runMultiLevelContinuous(int k) {
+//        MultiLevelDynNoSlice algorithm = getMultiLevelContinuousLayoutAlgorithm(dataset.dygraph, new ModularPostProcessing.DisplayCurrentIteration());
+//        algorithm.runMultiLevelLayout();
+//        algorithm.showMirrorGraph();
+//        ModularStatistics stats = algorithm.getLastRoundStatistics();
+//        stats.saveCsv(new File("build/" + name + "_MultiLevel_Continuous.csv"));
+//        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
+//
+//        if (k > 1) {
+//            DyClustering clustering = new DyClustering.Stc.KMeans3D(
+//                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+//                    ColorCollection.cbQualitativePastel);
+//            clustering.colorGraph();
+//        }
+//
+//        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
+//        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+//        view.showNewWindow();
+//    }
     
     /**
      * Runs the MultiLevel layout algorithm treating the graph in discrete time.
      *
      * @param k the number of clusters. Negative for no clustering.
      */
-    public void runMultiLevelDiscrete(int k) {
-        DyGraph discreteGraph = discretise();
-        MultiLevelDynNoSlice algorithm = getMultiLevelDiscreteLayoutAlgorithm(discreteGraph, new ModularPostProcessing.DisplayCurrentIteration());
-        algorithm.runMultiLevelLayout();
-        algorithm.showMirrorGraph();
-        ModularStatistics stats = algorithm.getLastRoundStatistics();
-        stats.saveCsv(new File("build/" + name + "_MultiLevel_Discrete.csv"));
-        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
-
-        if (k > 1) {
-            DyClustering clustering = new DyClustering.Stc.KMeans3D(
-                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
-                    ColorCollection.cbQualitativePastel);
-            clustering.colorGraph();
-        }
-
-        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
-        view.showNewWindow();
-    }
+//    public void runMultiLevelDiscrete(int k) {
+//        DyGraph discreteGraph = discretise();
+//        MultiLevelDynNoSlice algorithm = getMultiLevelDiscreteLayoutAlgorithm(discreteGraph, new ModularPostProcessing.DisplayCurrentIteration());
+//        algorithm.runMultiLevelLayout();
+//        algorithm.showMirrorGraph();
+//        ModularStatistics stats = algorithm.getLastRoundStatistics();
+//        stats.saveCsv(new File("build/" + name + "_MultiLevel_Discrete.csv"));
+//        System.out.println("Total running time: " + stats.getTotalRunningTime().getSeconds());
+//
+//        if (k > 1) {
+//            DyClustering clustering = new DyClustering.Stc.KMeans3D(
+//                    dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+//                    ColorCollection.cbQualitativePastel);
+//            clustering.colorGraph();
+//        }
+//
+//        DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
+//        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+//        view.showNewWindow();
+//    }
 
     /**
      * Runs the layout algorithm treating the graph in continuous time.
@@ -245,14 +252,14 @@ public abstract class Experiment {
         return builder.build();
     }
     
-    public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
+    public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
-				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
-				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
+				.setCoarsener(gc) //WalshawIndependentSet
+				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
-				.defaultLayoutParameters();
+				.defaultLayoutParameters()
+				.addLayerPreMovementDrawingOption(new MultiLevelDrawingOption<DyModularPreMovement>(new DyModularPreMovement.ForbidTimeShitfing()));
 				//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 		
@@ -264,12 +271,13 @@ public abstract class Experiment {
 		return multiDyn;
     }
     
-    public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
+    public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
-				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
-				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
+				.setCoarsener(gc) 
+				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(1))
 				.defaultLayoutParameters();
 				//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
@@ -306,20 +314,20 @@ public abstract class Experiment {
 
         DyGraph discGraph = discretise();
         
-        System.out.println("\tExecuting Discrete Algorithm");
+        System.out.println("\tExecuting Discrete DynNoSlice");
         DyModularFdl discAlgorithm = getDiscreteLayoutAlgorithm(discGraph, null);//, new ModularPostProcessing.DisplayCurrentIteration());
         SpaceTimeCubeSynchroniser discSyncro = discAlgorithm.getSyncro();
         ModularStatistics discStats = discAlgorithm.iterate(100);
         double discTime = computeRunningTime(discStats);
 
-        System.out.println("\tExecuting Continuous Algorithm");
-		  DyGraph contGraph = dataset.dygraph;
+        System.out.println("\tExecuting Continuous DynNoSlice");
+        DyGraph contGraph = dataset.dygraph;
         DyModularFdl contAlgorithm = getContinuousLayoutAlgorithm(contGraph, null);//, new ModularPostProcessing.DisplayCurrentIteration());
         SpaceTimeCubeSynchroniser contSyncro = contAlgorithm.getSyncro();
         ModularStatistics contStats = contAlgorithm.iterate(100);
         double contTime = computeRunningTime(contStats);
 
-        List<Double> snapTimes = readSnapTimes(discGraph);
+		List<Double> snapTimes = readSnapTimes(discGraph);
         double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
         double discreteScaling = computeIdealScaling(discGraph, snapTimes);
         double continuousScaling = computeIdealScaling(contGraph, snapTimes);
@@ -343,39 +351,80 @@ public abstract class Experiment {
                 + computeOtherMetrics(discContinuous, contGraph, snapTimes, contSyncro));     
         
         if(runMultiDyn) {
-            System.out.println("\tExecuting Continuous Multi-Level Algorithm");            
-            MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(contGraph, null);
-            contMultiDyn.runMultiLevelLayout();
-            SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();
-            ModularStatistics multiContStats = contMultiDyn.getLastRoundStatistics();
-            double multiContTime = multiContStats.getTotalRunningTime().getSeconds();
-            
-            System.out.println("\tExecuting Discrete Multi-Level Algorithm");
-            MultiLevelDynNoSlice discMultiDyn = getMultiLevelDiscreteLayoutAlgorithm(discGraph, null);
-            discMultiDyn.runMultiLevelLayout();
-            SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
-            ModularStatistics multiDiscStats = discMultiDyn.getLastRoundStatistics();
-            double multiDiscTime = multiDiscStats.getTotalRunningTime().getSeconds();            
-            
-            applyIdealScaling(discMultiDynSyncro, discreteScaling);
-            applyIdealScaling(contMultiDynSyncro, continuousScaling);
-            
-            DyGraph multiDiscContinuous = discretise();
-            copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);
-            
-            DyGraph multiContDiscrete = getContinuousCopy();
-            copyNodeLayoutFromTo(discMultiDyn.getDrawnGraph(), multiContDiscrete);
-            
-            lines.add("," + "multic" + "," + multiContTime + "," + 1 / continuousScaling + ","
-                    + computeOtherMetrics(contMultiDyn.getDrawnGraph(), multiDiscContinuous, snapTimes, contMultiDynSyncro));   
-            
-            lines.add("," + "multid" + "," + multiDiscTime + "," + 1 / discreteScaling + ","
-                    + computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro));
+        	String[] methodologies = new String[3];
+        	methodologies[0] = "wi_id";
+        	methodologies[1] = "iset_grip";
+        	methodologies[2] = "sm_sp";
+        	for(String s : methodologies) {
+        		GraphCoarsener gc;
+        		MultilevelNodePlacementStrategy ps;
+        		if(s.equals("wi_id")) {
+        			System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+        			gc = new IndependentSet.WalshawIndependentSet();
+        			ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+        		}else if(s.equals("iset_grip")) {
+        			System.out.println("Setting IndependentSet and GRIP Placement");        			
+        			gc = new IndependentSet();
+        			ps = new WeightedBarycenterPlacementStrategy();
+        		}else{
+        			System.out.println("Setting Solar Merger and Placer");        			        			
+        			gc = new SolarMerger();
+        			ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+        		}
+	            System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+	            MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(contGraph, gc, ps, null);
+	            contMultiDyn.runMultiLevelLayout();
+	            SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();
+	            ModularStatistics multiContStats = contMultiDyn.getComputationStatistics();
+	            double multiContTime = multiContStats.getTotalRunningTime().getSeconds();
+	            
+	            System.out.println("\t\tExecuting Discrete Multi-Level Algorithm");
+	            MultiLevelDynNoSlice discMultiDyn = getMultiLevelDiscreteLayoutAlgorithm(discGraph, gc, ps, null);
+	            discMultiDyn.runMultiLevelLayout();
+	            SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
+	            ModularStatistics multiDiscStats = discMultiDyn.getComputationStatistics();
+	            double multiDiscTime = multiDiscStats.getTotalRunningTime().getSeconds();            
+	            
+	            double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
+	            double multiDiscreteScaling = computeIdealScaling(discMultiDyn.getDrawnGraph(), snapTimes);
+	
+	            applyIdealScaling(discMultiDynSyncro, multiDiscreteScaling);
+	            applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
+	            
+	            DyGraph multiDiscContinuous = discretise();
+	            copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
+	            
+	            String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics());
+	            
+	            lines.add(name + "," + "multic_" + s + "," + multiContTime + "," + 1 / multiContinuousScaling + ","
+	                    + computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + "," + extraLines);   
+	            
+	            DyGraph multiContDiscrete = getContinuousCopy();
+	            copyNodeLayoutFromTo(discMultiDyn.getDrawnGraph(), multiContDiscrete);
+	            
+	            extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
+	            
+	            lines.add("," + "multid_" + s + "," + multiDiscTime + "," + 1 / multiDiscreteScaling + ","
+	                    + computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + "," + extraLines);
+        	}
         }
 
         return lines;
     }
 
+    private String stringifyMultiLevelMetrics(List<ModularMetric> list) {
+    	String coarseningTime = "";
+    	int hierarchyDepth = 0;
+        for(ModularMetric m : list) {
+        	if(m instanceof HierarchyDepth)
+        		hierarchyDepth = (int) m.values().get(0);
+        	else if (m instanceof CoarseningTime) {	            		
+        		coarseningTime = new DecimalFormat("#.00").format((long)m.values().get(0)/Math.pow(10, 9));
+        	}
+        }
+        return hierarchyDepth + "," + coarseningTime;
+    }
+    
     /**
      * Computes the running times for the DyModularFDL algorithm.
      *
@@ -452,7 +501,7 @@ public abstract class Experiment {
                 bestScaling = scaling;
             }
         }
-        System.out.println("Best scaling: " + bestScaling);
+        System.out.println("\tBest scaling: " + bestScaling);
         return bestScaling;
     }
 

@@ -142,7 +142,7 @@ public class DefaultRun {
                 break;
             case computeMetrics:
                 List<String> lines = new ArrayList<>();
-                lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding");
+                lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding,Coarsening_Depth,Coarsening_Time");
                 String outputFolder = "."+File.separator;
                 Boolean executeMulti = false;
                 

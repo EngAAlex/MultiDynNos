@@ -11,6 +11,7 @@ import ocotillo.dygraph.extra.SpaceTimeCubeSynchroniser;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
 import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
+import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
@@ -47,7 +48,7 @@ public class MultiLevelDynNoSlice {
 	public static final String EXPAND_DISTANCE = "edistance";
 	//public static final double EXPAND_DISTANCE_DEFAULT = 2*CustomRun.defaultDelta;	
 	public static final String MAX_ITERATIONS = "mIterations";	
-	public static final double MAX_ITERATIONS_DEFAULT = 50;	
+	public static final double MAX_ITERATIONS_DEFAULT = 75;	
 
 	public static final String LOG_OPTION = "LogProgressInConsole";
 	public static final String FLEXIBLE_TRAJECTORIES = "FLEXIBLE_TRAJECTORIES";
@@ -62,11 +63,11 @@ public class MultiLevelDynNoSlice {
 	protected DyGraphFlattener flattener;
 
 	protected HashSet<MultiLevelDrawingOption<ModularPostProcessing>> fdlPostProcessingOptions;
-	protected HashSet<MultiLevelDrawingOption<ModularPreMovement>> fdlPreMovementOptions;
+	protected HashSet<MultiLevelDrawingOption<DyModularPreMovement>> fdlPreMovementOptions;
 
 	private int current_iteration;	
 
-	private ModularStatistics lastRoundStats;
+	private ModularStatistics computationStats;
 	private DyModularFdl currentAlgorithm;
     protected SpaceTimeCubeSynchroniser synchronizer;
     protected DyGraph drawnGraph;
@@ -94,9 +95,9 @@ public class MultiLevelDynNoSlice {
 
 	}
 
-	public MultiLevelDynNoSlice addLayerPreMovementDrawingOption(MultiLevelDrawingOption<ModularPreMovement> opt) {
+	public MultiLevelDynNoSlice addLayerPreMovementDrawingOption(MultiLevelDrawingOption<DyModularPreMovement> opt) {
 		if(fdlPostProcessingOptions == null)
-			fdlPreMovementOptions = new HashSet<MultiLevelDrawingOption<ModularPreMovement>>();
+			fdlPreMovementOptions = new HashSet<MultiLevelDrawingOption<DyModularPreMovement>>();
 		fdlPreMovementOptions.add(opt);
 		return this;
 
@@ -186,7 +187,7 @@ public class MultiLevelDynNoSlice {
 
 	public DyGraph runMultiLevelLayout() {
 
-		lastRoundStats = new ModularStatistics(new HashSet<ModularMetric>());
+		computationStats = new ModularStatistics(new HashSet<ModularMetric>());
 		long addedNanos = 0;
 		//HashSet<ModularMetric> computationMetrics = new HashSet<ModularMetric>();
 		//ModularStatistics iterationTimes = new ModularStatistics(new HashSet<ModularMetric>());
@@ -200,7 +201,7 @@ public class MultiLevelDynNoSlice {
 		long endTime = System.nanoTime();
 		addedNanos += endTime - startTime;
 		mp.values().add(endTime - startTime);
-		lastRoundStats.addMetric(mp);
+		computationStats.addMetric(mp);
 		startTime = endTime;
 
 		current_iteration = 1;
@@ -211,14 +212,14 @@ public class MultiLevelDynNoSlice {
 		endTime = System.nanoTime();
 		addedNanos += endTime - startTime;
 		cp.values().add(endTime - startTime);
-		lastRoundStats.addMetric(cp);
+		computationStats.addMetric(cp);
 		startTime = endTime;
 		HierarchyDepth hd = new HierarchyDepth();
 		hd.values().add(gc.getHierarchyDepth());
-		lastRoundStats.addMetric(hd);
+		computationStats.addMetric(hd);
 
 		PlacementTime pt = new PlacementTime();
-		lastRoundStats.addMetric(pt);
+		computationStats.addMetric(pt);
 
 		logger.log("Computing default node positioning");
 		nodesFirstPlacement();
@@ -238,7 +239,7 @@ public class MultiLevelDynNoSlice {
 		computeDynamicLayout(currentGraph);
 		endTime = System.nanoTime();
 		addedNanos += endTime - startTime;				
-		lastRoundStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
+		computationStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
 		logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");
 		startTime = endTime;
 		current_iteration++;
@@ -259,7 +260,7 @@ public class MultiLevelDynNoSlice {
 			computeDynamicLayout(finerGraph);    
 			endTime = System.nanoTime();
 			addedNanos += endTime - startTime;		    		
-			lastRoundStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
+			computationStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
 			logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");
 			startTime = endTime;
 
@@ -269,7 +270,7 @@ public class MultiLevelDynNoSlice {
 
 		}
 
-		lastRoundStats.runAtComputationEnd(Duration.ofNanos(addedNanos));
+		computationStats.runAtComputationEnd(Duration.ofNanos(addedNanos));
 
 		//if(!parametersMap.containsKey(NOT_NUKE_HIERARCHY))
 		drawnGraph = currentGraph;
@@ -316,7 +317,7 @@ public class MultiLevelDynNoSlice {
 			}
 
 		if(fdlPreMovementOptions != null)
-			for(MultiLevelDrawingOption<ModularPreMovement> opt : fdlPreMovementOptions){
+			for(MultiLevelDrawingOption<DyModularPreMovement> opt : fdlPreMovementOptions){
 				if(opt.active(gc.getHierarchyDepth() - current_iteration))
 					algorithmBuilder.withPreMovmement(opt.getValue(current_iteration, gc.getHierarchyDepth() - current_iteration, delta, tau, parametersMap.get(INITIAL_MAX_MOVEMENT), parametersMap.get(CONTRACT_DISTANCE), parametersMap.get(EXPAND_DISTANCE)));
 			}
@@ -328,8 +329,8 @@ public class MultiLevelDynNoSlice {
 		synchronizer = currentAlgorithm.getSyncro();
 	}
 
-	public ModularStatistics getLastRoundStatistics() {
-		return lastRoundStats;
+	public ModularStatistics getComputationStatistics() {
+		return computationStats;
 	}
 
 	public DyGraph getDrawnGraph() {
