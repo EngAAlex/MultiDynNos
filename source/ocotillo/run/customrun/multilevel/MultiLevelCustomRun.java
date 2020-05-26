@@ -34,6 +34,7 @@ import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
+import ocotillo.samples.parsers.CollegeMsg;
 import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
 import ocotillo.samples.parsers.NewcombFraternity;
@@ -55,6 +56,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		preloadedGraphs.put("infovis", 2);
 		preloadedGraphs.put("rugby", 3);
 		preloadedGraphs.put("dialogs", 4);
+		preloadedGraphs.put("college", 5);
 
 		MultiLevelCustomRun mlcr = new MultiLevelCustomRun(argv);
 		mlcr.run();
@@ -68,6 +70,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		DyDataSet data = null;
 		final double timeFactor;
 		final Interval suggestedInterval;
+		final double staticTiming;
 
 		if(preloadedGraphs.containsKey(args[0])) {
 			switch(preloadedGraphs.get(args[0])) {
@@ -79,15 +82,18 @@ public class MultiLevelCustomRun extends CustomRun {
 					data = InfoVisCitations.parse(Mode.keepAppearedNode); break;
 				case 3: data = RugbyTweets.parse(Mode.keepAppearedNode); break;
 				case 4: data = DialogSequences.parse(Mode.keepAppearedNode); break;
+				case 5: data = CollegeMsg.parse(Mode.keepAppearedNode); break;
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
 			dyGraph = data.dygraph; filename = args[0];
 			timeFactor = data.suggestedTimeFactor;
 			suggestedInterval = data.suggestedInterval;
+			staticTiming = data.suggestedInterval.leftBound();
 		}else {
 			dyGraph = createDynamicGraph();
 			timeFactor = Run.defaultTau;
 			suggestedInterval = Interval.newClosed(0, 30);
+			staticTiming = suggestedInterval.leftBound();
 		}
 
 		MultiLevelDynNoSlice multiDyn = 
@@ -101,12 +107,11 @@ public class MultiLevelCustomRun extends CustomRun {
 
 		DyGraph result = multiDyn.runMultiLevelLayout();	
 
-		//## OUTPUT OPTIONS (uncomment the ones preferred)
-		animateGraphOnWindow(result, timeFactor, suggestedInterval);
-		//showGraphOnWindow(result, timeFactor);
-
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getComputationStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
-
+		
+		//## OUTPUT OPTIONS (uncomment the ones preferred)
+		animateGraphOnWindow(result, staticTiming, suggestedInterval);
+		//showGraphOnWindow(result, staticTiming);
 	}
 
 	public MultiLevelCustomRun(String[] argv) {
