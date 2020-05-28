@@ -38,6 +38,7 @@ import ocotillo.samples.parsers.CollegeMsg;
 import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
 import ocotillo.samples.parsers.NewcombFraternity;
+import ocotillo.samples.parsers.RealityMining;
 import ocotillo.samples.parsers.RugbyTweets;
 import ocotillo.samples.parsers.VanDeBunt;
 
@@ -57,6 +58,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		preloadedGraphs.put("rugby", 3);
 		preloadedGraphs.put("dialogs", 4);
 		preloadedGraphs.put("college", 5);
+		preloadedGraphs.put("reality", 6);
 
 		MultiLevelCustomRun mlcr = new MultiLevelCustomRun(argv);
 		mlcr.run();
@@ -83,6 +85,7 @@ public class MultiLevelCustomRun extends CustomRun {
 				case 3: data = RugbyTweets.parse(Mode.keepAppearedNode); break;
 				case 4: data = DialogSequences.parse(Mode.keepAppearedNode); break;
 				case 5: data = CollegeMsg.parse(Mode.keepAppearedNode); break;
+				case 6: data = RealityMining.parse(Mode.keepAppearedNode); break;
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
 			dyGraph = data.dygraph; filename = args[0];
