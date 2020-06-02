@@ -34,9 +34,12 @@ import ocotillo.run.Run;
 import ocotillo.run.customrun.CustomRun;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
+import ocotillo.samples.parsers.BitcoinAlpha;
+import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
 import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
+import ocotillo.samples.parsers.Mooc;
 import ocotillo.samples.parsers.NewcombFraternity;
 import ocotillo.samples.parsers.RealityMining;
 import ocotillo.samples.parsers.RugbyTweets;
@@ -59,6 +62,9 @@ public class MultiLevelCustomRun extends CustomRun {
 		preloadedGraphs.put("dialogs", 4);
 		preloadedGraphs.put("college", 5);
 		preloadedGraphs.put("reality", 6);
+		preloadedGraphs.put("bitalpha", 7);
+		preloadedGraphs.put("bitotc", 8);
+		preloadedGraphs.put("mooc", 9);		
 
 		MultiLevelCustomRun mlcr = new MultiLevelCustomRun(argv);
 		mlcr.run();
@@ -86,6 +92,9 @@ public class MultiLevelCustomRun extends CustomRun {
 				case 4: data = DialogSequences.parse(Mode.keepAppearedNode); break;
 				case 5: data = CollegeMsg.parse(Mode.keepAppearedNode); break;
 				case 6: data = RealityMining.parse(Mode.keepAppearedNode); break;
+				case 7: data = BitcoinAlpha.parse(Mode.keepAppearedNode); break;
+				case 8: data = BitcoinOTC.parse(Mode.keepAppearedNode); break;
+				case 9: data = Mooc.parse(Mode.keepAppearedNode); break;				
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
 			dyGraph = data.dygraph; filename = args[0];
@@ -114,7 +123,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		
 		//## OUTPUT OPTIONS (uncomment the ones preferred)
 		animateGraphOnWindow(result, staticTiming, suggestedInterval);
-		//showGraphOnWindow(result, staticTiming);
+		showGraphOnWindow(result, staticTiming);
 	}
 
 	public MultiLevelCustomRun(String[] argv) {

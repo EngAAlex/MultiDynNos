@@ -44,7 +44,7 @@ import ocotillo.serialization.ParserTools;
  */
 public class CollegeMsg {
 
-	private static Duration messageDuration = Duration.ofHours(12);
+	private static Duration messageDuration = Duration.ofHours(1);
 
     /**
      * Produces the dynamic dataset for this data.
@@ -130,22 +130,10 @@ public class CollegeMsg {
         
         return new DyDataSet(
                 graph,
-                1.0 / Duration.ofDays(5).getSeconds(),
+                1.0 / Duration.ofHours(12).getSeconds(),
                 Interval.newClosed(
                 		startTime,
                 		endTime));
-    //}
 
-    /**
-     * Parses the rugby tweet graph.
-     *
-     * @param file the file.
-     * @param messageDuration the duration assign to each tweet.
-     * @param mode the desired mode.
-     * @return the dynamic graph.
-     */
-//    public static DyGraph parseGraph(File file, Duration messageDuration, Mode mode) {
-        
-      //  return graph;
     }
 }

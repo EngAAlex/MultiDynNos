@@ -51,7 +51,7 @@ public class RealityMining {
 	
 	
 	
-	private static Duration messageDuration = Duration.ofSeconds(60);
+	private static Duration messageDuration = Duration.ofMinutes(15);
 	private static HashSet<String> allowedTypes = new HashSet<String>(Arrays.asList("voice call", "short message"));
 
     /**
@@ -178,7 +178,7 @@ public class RealityMining {
         
         return new DyDataSet(
                 graph,
-                1.0 / Duration.ofDays(10).getSeconds(),
+                1.0 / Duration.ofHours(4).getSeconds(),
                 Interval.newClosed(
                 		startTime,
                 		endTime));

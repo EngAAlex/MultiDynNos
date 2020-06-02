@@ -20,7 +20,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.swing.SwingUtilities;
 
@@ -45,6 +53,8 @@ import ocotillo.serialization.ParserTools;
  */
 public class DefaultRun {
 
+	private static final long TIMEOUT = 9000;
+	
     private enum AvailableMode {
 
         discretisationTest,
@@ -145,13 +155,63 @@ public class DefaultRun {
                 lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding,Coarsening_Depth,Coarsening_Time");
                 String outputFolder = "."+File.separator;
                 Boolean executeMulti = false;
+                Boolean executeSFDP = false;
+                Boolean executeSingle = false;
+                Boolean executeVisone = false;
                 
-                for(int i = 1; i < args.length; i++) {
-                	if(args[i].equals("--multi"))
-                		executeMulti = true;
-                	else
-                		outputFolder = args[i];
+                HashSet<String> expNames = new HashSet<String>();
+                HashSet<String> smallerDatasets = new HashSet<String>();
+                smallerDatasets.add("Bunt");
+                smallerDatasets.add("Newcomb");
+                smallerDatasets.add("InfoVis");
+                smallerDatasets.add("Rugby");
+                smallerDatasets.add("Pride");
+                
+                HashSet<String> largerDatasets = new HashSet<String>();
+                largerDatasets.add("College");
+                largerDatasets.add("BitAlpha");
+                largerDatasets.add("RealMining");
+                largerDatasets.add("BitOTC");
+//                largerDatasets.add("MOOC");
+                
+                HashMap<String, String> visoneTimes = new HashMap<String, String>();
+                if(executeVisone) {                	
+                	visoneTimes.put("Bunt", "0.128");
+                	visoneTimes.put("Newcomb", "0.109");
+                	visoneTimes.put("InfoVis", "77.430");
+                	visoneTimes.put("Rugby", "0.079");
+                	visoneTimes.put("Pride", "3.391");
                 }
+                
+                HashSet<String> discreteExperiment = new HashSet<String>();
+                if(executeVisone) {                	
+                	discreteExperiment.add("Bunt");
+                	discreteExperiment.add("Newcomb");
+                	discreteExperiment.add("InfoVis");
+                	discreteExperiment.add("Rugby");
+                	discreteExperiment.add("Pride");
+
+                }
+                
+                for(int i = 0; i < args.length; i++) {
+                	if(args[i].equals("--smaller"))
+                		expNames.addAll(smallerDatasets);
+                	else if(args[i].equals("--larger"))
+                		expNames.addAll(largerDatasets);
+                	else if(args[i].equals("--visone"))
+                		executeVisone = true;
+                	else if(args[i].equals("--single"))
+                		executeSingle = true;
+                	else if(args[i].equals("--multi"))
+                		executeMulti = true;
+                	else if(args[i].equals("--sfdp"))
+                		executeSFDP = true;
+                	else if(args[i].equals("-o"))
+                		if(i+1 < args.length) {
+                			i++;
+                			outputFolder = args[i];
+                		}                
+                }               
                 
                 LocalDateTime ld = LocalDateTime.now();
                 String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
@@ -160,21 +220,99 @@ public class DefaultRun {
                 
                 String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
-                System.out.println("Starting VanDeBunt Experiment");
-                experiment = new Experiment.Bunt();
-                lines.addAll(experiment.computeMetrics("0.128", executeMulti));
-                System.out.println("Starting Newcomb Experiment");
-                experiment = new Experiment.Newcomb();
-                lines.addAll(experiment.computeMetrics("0.109", executeMulti));
-                System.out.println("Starting InfoVis Experiment");                
-                experiment = new Experiment.InfoVis();
-                lines.addAll(experiment.computeMetrics("77.430", executeMulti));
-                System.out.println("Starting Rugby Experiment");                
-                experiment = new Experiment.Rugby();
-                lines.addAll(experiment.computeMetrics("0.079", executeMulti));
-                System.out.println("Starting Pride Experiment");                
-                experiment = new Experiment.Pride();
-                lines.addAll(experiment.computeMetrics("3.391", executeMulti));
+                HashSet<Callable<List<String>>> callables = new HashSet<Callable<List<String>>>();
+                
+                for(String graphName : expNames) {
+                    System.out.println("Starting " + graphName + " Experiment");
+                	if(executeVisone && visoneTimes.containsKey(graphName)) {
+                		callables.clear();
+                        callables.add(new Callable<List<String>>() {
+                            public List<String> call() throws Exception {
+                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeVisoneMetrics(visoneTimes.get(graphName));
+                            }
+                        });
+                        try {
+                            ExecutorService exec = Executors.newSingleThreadExecutor();
+							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
+						}catch (InterruptedException | ExecutionException e) {
+							e.printStackTrace();
+						}catch (TimeoutException timeout) {
+							System.out.println("Timeout reached!");
+						} 
+                	}
+                	if(executeSingle) {
+                		callables.clear();                		
+                        callables.add(new Callable<List<String>>() {
+                            public List<String> call() throws Exception {
+                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName));
+                            }
+                        });
+                        try {
+                            ExecutorService exec = Executors.newSingleThreadExecutor();
+							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
+						}catch (InterruptedException | ExecutionException e) {
+							e.printStackTrace();
+						}catch (TimeoutException timeout) {
+							System.out.println("Timeout reached!");
+						} 
+                	}if(executeMulti) {
+                		callables.clear();                		
+                        callables.add(new Callable<List<String>>() {
+                            public List<String> call() throws Exception {
+                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName));
+                            }
+                        });
+                        try {
+                            ExecutorService exec = Executors.newSingleThreadExecutor();                       	
+							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
+						}catch (InterruptedException | ExecutionException e) {
+							e.printStackTrace();
+						}catch (TimeoutException timeout) {
+							System.out.println("Timeout reached!");
+						} 
+                	}
+                	if(executeSFDP) {
+                		callables.clear();                		
+                        callables.add(new Callable<List<String>>() {
+                            public List<String> call() throws Exception {
+                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeSFDPMetrics();
+                            }
+                        });
+                        try {
+                            ExecutorService exec = Executors.newSingleThreadExecutor();
+							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));							
+						}catch (InterruptedException | ExecutionException e) {
+							e.printStackTrace();
+						}catch (TimeoutException timeout) {
+							System.out.println("Timeout reached!");
+						} 
+                	}
+                		
+                }
+                                
+//                System.out.println("Starting VanDeBunt Experiment");
+//                lines.add("VanDeBunt");
+//                experiment = new Experiment.Bunt();
+////                lines.addAll(experiment.computeMetrics("0.128"));
+////                if(executeMulti)
+////                	lines.addAll(experiment.computeMultiLevelMetrics());
+//                if(executeSFDP)
+//                	lines.addAll(experiment.computeSFDPMetrics());
+//                System.out.println("Starting Newcomb Experiment");
+//                experiment = new Experiment.Newcomb();
+//                lines.addAll(experiment.computeMetrics("0.109", executeMulti));
+//                System.out.println("Starting InfoVis Experiment");                
+//                experiment = new Experiment.InfoVis();
+//                lines.addAll(experiment.computeMetrics("77.430", executeMulti));
+//                System.out.println("Starting Rugby Experiment");                
+//                experiment = new Experiment.Rugby();
+//                lines.addAll(experiment.computeMetrics("0.079", executeMulti));
+//                System.out.println("Starting Pride Experiment");                
+//                experiment = new Experiment.Pride();
+//                lines.addAll(experiment.computeMetrics("3.391", executeMulti));
+//                  System.out.println("Starting College Experiment");
+//                  experiment = new Experiment.College();
+//                  lines.addAll(experiment.computeMetrics(null, executeMulti));
 
                 for (String line : lines) {
                     System.out.println(line);
@@ -199,6 +337,8 @@ public class DefaultRun {
             default:
                 throw new UnsupportedOperationException("Not supported");
         }
+        
+        System.exit(0);
     }
 
     private static void showHelp() {
