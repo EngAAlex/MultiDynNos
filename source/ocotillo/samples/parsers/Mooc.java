@@ -44,7 +44,7 @@ import ocotillo.serialization.ParserTools;
  */
 public class Mooc {
 
-	private static Duration messageDuration = Duration.ofSeconds(1);
+	private static Duration messageDuration = Duration.ofMinutes(31);
 
     /**
      * Produces the dynamic dataset for this data.
@@ -63,7 +63,7 @@ public class Mooc {
         DyEdgeAttribute<Boolean> edgePresence = graph.edgeAttribute(StdAttribute.dyPresence);
         DyEdgeAttribute<Color> edgeColor = graph.edgeAttribute(StdAttribute.color);
         long fullDuration = messageDuration.getSeconds();
-        long halfDuration = messageDuration.dividedBy(2).toMillis();       
+        long halfDuration = messageDuration.dividedBy(2).getSeconds();       
 
         long minEpoch = Long.MAX_VALUE;
         long maxEpoch = Long.MIN_VALUE;
@@ -75,6 +75,10 @@ public class Mooc {
             String[] tokens = line.split("\t");
             String idSource = tokens[1];
             String idTarget = tokens[2];
+            
+            if(idSource.equals(idTarget))
+            	continue;
+            
             long epoch = Math.round(Double.parseDouble(tokens[3])) + fullDuration;
             
             minEpoch = Math.min(minEpoch, epoch);
@@ -116,6 +120,9 @@ public class Mooc {
             presence.get(source).insert(new FunctionConst<>(msgInterval, true));
             presence.get(target).insert(new FunctionConst<>(msgInterval, true));
             edgePresence.get(edge).insert(new FunctionConst<>(msgInterval, true));
+            
+            if(i == 20000)
+            	break;
         }
 
 //        LocalDateTime minEpochDT =
@@ -124,14 +131,14 @@ public class Mooc {
 //        LocalDateTime maxEpochDT =
 //        	    LocalDateTime.ofInstant(Instant.ofEpochMilli(maxEpoch), ZoneOffset.UTC);
         
-        double startTime = 0;
+        double startTime = minEpoch;
         double endTime = maxEpoch;
         Commons.scatterNodes(graph, 100);
         Commons.mergeAndColor(graph, startTime - halfDuration, endTime + halfDuration, mode, new Color(141, 211, 199), Color.BLACK, halfDuration);
         
         return new DyDataSet(
                 graph,
-                1.0 / Duration.ofHours(2).getSeconds(),
+                1.0 / Duration.ofHours(5).getSeconds(),
                 Interval.newClosed(
                 		startTime,
                 		endTime));
