@@ -59,7 +59,7 @@ public class MultiLevelCustomRun extends CustomRun {
 		preloadedGraphs.put("newcomb", 1);
 		preloadedGraphs.put("infovis", 2);
 		preloadedGraphs.put("rugby", 3);
-		preloadedGraphs.put("dialogs", 4);
+		preloadedGraphs.put("pride", 4);
 		preloadedGraphs.put("college", 5);
 		preloadedGraphs.put("reality", 6);
 		preloadedGraphs.put("bitalpha", 7);
@@ -97,6 +97,7 @@ public class MultiLevelCustomRun extends CustomRun {
 				case 9: data = Mooc.parse(Mode.keepAppearedNode); break;				
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
+			System.out.println(args[0] + " graph selected");
 			dyGraph = data.dygraph; filename = args[0];
 			timeFactor = data.suggestedTimeFactor;
 			suggestedInterval = data.suggestedInterval;
@@ -122,8 +123,8 @@ public class MultiLevelCustomRun extends CustomRun {
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getComputationStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
 		
 		//## OUTPUT OPTIONS (uncomment the ones preferred)
-		animateGraphOnWindow(result, staticTiming, suggestedInterval);
-		showGraphOnWindow(result, staticTiming);
+		animateGraphOnWindow(result, staticTiming, suggestedInterval, args[0]);
+		//showGraphOnWindow(result, staticTiming);
 	}
 
 	public MultiLevelCustomRun(String[] argv) {
@@ -175,18 +176,18 @@ public class MultiLevelCustomRun extends CustomRun {
 		}while(currentGraph != null);
 	}
 
-	private void showGraphOnWindow(DyGraph graph, double timing) {
+	public static void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
 
 //		DyQuickView window = new DyQuickView(graph, timing);
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
-		QuickView window = new QuickView(stcs.mirrorGraph());
+		QuickView window = new QuickView(stcs.mirrorGraph(), graphName);
 		window.showNewWindow();
 	}
 	
-	private void animateGraphOnWindow(DyGraph graph, double timing, Interval interval) {
+	public static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
 
 //		DyQuickView window = new DyQuickView(graph, timing);
-		DyQuickView dyWindow = new DyQuickView(graph, timing);
+		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName);
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
 		dyWindow.showNewWindow();
 	}

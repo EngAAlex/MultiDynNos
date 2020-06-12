@@ -123,7 +123,7 @@ public abstract class GraphCoarsener {
 		//## SANITY CHECK: IF NODE COUNT DID NOT DECREASE -- PROBABLY A LOOP	
 		//## STOPPING CONDITION: If the new level has 95% or more vertices of the last level
 		if(newLevel.nodeCount() >= lastLevel.nodeCount()
-				|| newLevel.nodeCount()/(float)lastLevel.nodeCount() > CHANGE_TRESHOLD) 
+				|| (newLevel.nodeCount()/(float)lastLevel.nodeCount() > CHANGE_TRESHOLD && hierarchy.size() > 1)) 
 			newLevel = null;
 		else {
 			mergeNodePresenceAndWeight(newLevel, lastLevel, new Evolution.EvolutionORMerge());

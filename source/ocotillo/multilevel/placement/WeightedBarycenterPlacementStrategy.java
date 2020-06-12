@@ -121,8 +121,8 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 			DyNodeAttribute<Byte> statusAttr = finerLevel.nodeAttribute(SolarMerger.STATUS_NODE_ATTRIBUTE_NAME);
 			byte status = statusAttr.get(lowerLevelNode).getDefaultValue();
 			switch(status) {
-			case SolarMerger.PLANET: System.out.println("\t\tPlacing a planet"); return totalSum*.5f;
-			case SolarMerger.MOON: System.out.println("\t\tPlacing a moon"); return totalSum*0.25f;
+			case SolarMerger.PLANET: return totalSum*.5f;
+			case SolarMerger.MOON: return totalSum*0.25f;
 			default: return totalSum*.6f;
 			}
 		}

@@ -45,6 +45,21 @@ public class Commons {
         public final DyGraph dygraph;
         public final double suggestedTimeFactor;
         public final Interval suggestedInterval;
+        public final int eventsProcessed;
+        
+        /**
+         * Builds a dynamic dataset with an indication of the events processed.
+         *
+         * @param dygraph the dynamic graph.
+         * @param suggestedTimeFactor the suggested time factor.
+         * @param suggestedInterval the suggested animation interval.
+         */
+        public DyDataSet(DyGraph dygraph, double suggestedTimeFactor, Interval suggestedInterval, int eventsProcessed) {
+            this.dygraph = dygraph;
+            this.suggestedTimeFactor = suggestedTimeFactor;
+            this.suggestedInterval = suggestedInterval;
+            this.eventsProcessed = eventsProcessed;
+        }
 
         /**
          * Builds a dynamic dataset.
@@ -57,7 +72,9 @@ public class Commons {
             this.dygraph = dygraph;
             this.suggestedTimeFactor = suggestedTimeFactor;
             this.suggestedInterval = suggestedInterval;
+            this.eventsProcessed = -1;
         }
+
     }
 
     /**

@@ -253,7 +253,7 @@ public class MultiLevelDynNoSlice {
 			addedNanos += endTime - startTime;    		
 			pt.values().add(endTime - startTime);
 			startTime = endTime;
-
+//
 			logger.log("Working on level " + (gc.getHierarchyDepth() - current_iteration));
 			printParameters();
 

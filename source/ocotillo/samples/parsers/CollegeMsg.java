@@ -69,7 +69,8 @@ public class CollegeMsg {
         
         Map<String, Node> nodeMap = new HashMap<>();
         List<String> lines = ParserTools.readFileLines(file);
-        for (int i = 1; i < lines.size(); i++) {
+        int i;
+        for (i = 1; i < lines.size(); i++) {
             String line = lines.get(i);
             String[] tokens = line.split(" ");
             String idSource = tokens[0];
@@ -115,6 +116,9 @@ public class CollegeMsg {
             presence.get(source).insert(new FunctionConst<>(msgInterval, true));
             presence.get(target).insert(new FunctionConst<>(msgInterval, true));
             edgePresence.get(edge).insert(new FunctionConst<>(msgInterval, true));
+            
+            if(i == 15000)
+            	break;
         }
 
         LocalDateTime minEpochDT =
@@ -122,6 +126,16 @@ public class CollegeMsg {
         
         LocalDateTime maxEpochDT =
         	    LocalDateTime.ofInstant(Instant.ofEpochSecond(maxEpoch), ZoneOffset.UTC);
+        
+        System.out.println("Events processed: " + (i - 1));
+        
+		long removedNodes = 0;
+		for(Node n : graph.nodes())
+			if(graph.outEdges(n).size() == 0 && graph.inEdges(n).size() == 0) {
+				graph.remove(n);
+				removedNodes++;
+			}
+		System.out.println("Removed " + removedNodes + " isolated nodes"); 
         
         double startTime = minEpochDT.toEpochSecond(ZoneOffset.UTC);
         double endTime = maxEpochDT.toEpochSecond(ZoneOffset.UTC);
@@ -133,7 +147,8 @@ public class CollegeMsg {
                 1.0 / Duration.ofHours(12).getSeconds(),
                 Interval.newClosed(
                 		startTime,
-                		endTime));
+                		endTime),
+                i-1);
 
     }
 }

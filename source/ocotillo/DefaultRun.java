@@ -53,7 +53,7 @@ import ocotillo.serialization.ParserTools;
  */
 public class DefaultRun {
 
-	private static final long TIMEOUT = 9000;
+	private static final long TIMEOUT = 86400;
 	
     private enum AvailableMode {
 
@@ -152,12 +152,13 @@ public class DefaultRun {
                 break;
             case computeMetrics:
                 List<String> lines = new ArrayList<>();
-                lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding,Coarsening_Depth,Coarsening_Time");
+                lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding,Coarsening_Depth,Coarsening_Time,Events_Processed");
                 String outputFolder = "."+File.separator;
                 Boolean executeMulti = false;
                 Boolean executeSFDP = false;
                 Boolean executeSingle = false;
                 Boolean executeVisone = false;
+                Boolean executeDiscrete = false;
                 
                 HashSet<String> expNames = new HashSet<String>();
                 HashSet<String> smallerDatasets = new HashSet<String>();
@@ -168,45 +169,42 @@ public class DefaultRun {
                 smallerDatasets.add("Pride");
                 
                 HashSet<String> largerDatasets = new HashSet<String>();
-                largerDatasets.add("College");
-                largerDatasets.add("BitAlpha");
                 largerDatasets.add("RealMining");
                 largerDatasets.add("BitOTC");
-//                largerDatasets.add("MOOC");
+                largerDatasets.add("MOOC");
+                largerDatasets.add("BitAlpha");  
+                largerDatasets.add("College");
                 
                 HashMap<String, String> visoneTimes = new HashMap<String, String>();
-                if(executeVisone) {                	
-                	visoneTimes.put("Bunt", "0.128");
-                	visoneTimes.put("Newcomb", "0.109");
-                	visoneTimes.put("InfoVis", "77.430");
-                	visoneTimes.put("Rugby", "0.079");
-                	visoneTimes.put("Pride", "3.391");
-                }
                 
                 HashSet<String> discreteExperiment = new HashSet<String>();
-                if(executeVisone) {                	
-                	discreteExperiment.add("Bunt");
-                	discreteExperiment.add("Newcomb");
-                	discreteExperiment.add("InfoVis");
-                	discreteExperiment.add("Rugby");
-                	discreteExperiment.add("Pride");
-
-                }
                 
                 for(int i = 0; i < args.length; i++) {
                 	if(args[i].equals("--smaller"))
                 		expNames.addAll(smallerDatasets);
                 	else if(args[i].equals("--larger"))
                 		expNames.addAll(largerDatasets);
-                	else if(args[i].equals("--visone"))
+                	else if(args[i].equals("--visone")) {
                 		executeVisone = true;
+                    	visoneTimes.put("Bunt", "0.128");
+                    	visoneTimes.put("Newcomb", "0.109");
+                    	visoneTimes.put("InfoVis", "77.430");
+                    	visoneTimes.put("Rugby", "0.079");
+                    	visoneTimes.put("Pride", "3.391");                		
+                	}
                 	else if(args[i].equals("--single"))
                 		executeSingle = true;
                 	else if(args[i].equals("--multi"))
                 		executeMulti = true;
                 	else if(args[i].equals("--sfdp"))
-                		executeSFDP = true;
-                	else if(args[i].equals("-o"))
+                		executeSFDP = true;             
+                	else if(args[i].equals("-d")) {
+                    	discreteExperiment.add("Bunt");
+                    	discreteExperiment.add("Newcomb");
+                    	discreteExperiment.add("InfoVis");
+                    	discreteExperiment.add("Rugby");
+                    	discreteExperiment.add("Pride");                	
+                	}else if(args[i].equals("-o"))
                 		if(i+1 < args.length) {
                 			i++;
                 			outputFolder = args[i];
@@ -280,12 +278,14 @@ public class DefaultRun {
                         });
                         try {
                             ExecutorService exec = Executors.newSingleThreadExecutor();
-							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));							
-						}catch (InterruptedException | ExecutionException e) {
+							//lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
+                            lines.addAll(((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeSFDPMetrics());                                                      
+						}catch (IllegalAccessException | InstantiationException | ClassNotFoundException e ) {
 							e.printStackTrace();
-						}catch (TimeoutException timeout) {
-							System.out.println("Timeout reached!");
-						} 
+						}
+//						}catch (TimeoutException timeout) {
+//							System.out.println("Timeout reached!");
+//						} 
                 	}
                 		
                 }

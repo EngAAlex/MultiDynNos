@@ -68,6 +68,8 @@ public class Mooc {
         long minEpoch = Long.MAX_VALUE;
         long maxEpoch = Long.MIN_VALUE;
         
+        int eventsProcessed = 0;
+        
         Map<String, Node> nodeMap = new HashMap<>();
         List<String> lines = ParserTools.readFileLines(file);
         for (int i = 1; i < lines.size(); i++) {
@@ -121,9 +123,21 @@ public class Mooc {
             presence.get(target).insert(new FunctionConst<>(msgInterval, true));
             edgePresence.get(edge).insert(new FunctionConst<>(msgInterval, true));
             
-            if(i == 20000)
+            eventsProcessed++;
+            
+            if(eventsProcessed == 15000)
             	break;
         }
+        
+        System.out.println("Events processed " + eventsProcessed);
+        
+		long removedNodes = 0;
+		for(Node n : graph.nodes())
+			if(graph.outEdges(n).size() == 0 && graph.inEdges(n).size() == 0) {
+				graph.remove(n);
+				removedNodes++;
+			}
+		System.out.println("Removed " + removedNodes + " isolated nodes"); 
 
 //        LocalDateTime minEpochDT =
 //        	    LocalDateTime.ofInstant(Instant.ofEpochMilli(minEpoch), ZoneOffset.UTC);
@@ -141,7 +155,7 @@ public class Mooc {
                 1.0 / Duration.ofHours(5).getSeconds(),
                 Interval.newClosed(
                 		startTime,
-                		endTime));
+                		endTime), eventsProcessed);
 
     }
 }

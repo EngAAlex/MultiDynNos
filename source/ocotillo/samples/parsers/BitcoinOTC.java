@@ -69,11 +69,14 @@ public class BitcoinOTC {
         
         Map<String, Node> nodeMap = new HashMap<>();
         List<String> lines = ParserTools.readFileLines(file);
+        int eventsProcessed = 0;
         for (int i = 1; i < lines.size(); i++) {
             String line = lines.get(i);
             String[] tokens = line.split(",");
             String idSource = tokens[0];
             String idTarget = tokens[1];
+            if(Long.parseLong(tokens[2]) < 2)
+            	continue;
             long epoch = Math.round(Double.parseDouble(tokens[3])*Math.pow(10, 6));
             
             minEpoch = Math.min(minEpoch, epoch);
@@ -115,7 +118,11 @@ public class BitcoinOTC {
             presence.get(source).insert(new FunctionConst<>(msgInterval, true));
             presence.get(target).insert(new FunctionConst<>(msgInterval, true));
             edgePresence.get(edge).insert(new FunctionConst<>(msgInterval, true));
+            
+            eventsProcessed++;
         }
+        
+        System.out.println("Events Processed: " + eventsProcessed);
 
         LocalDateTime minEpochDT =
         	    LocalDateTime.ofInstant(Instant.ofEpochMilli(minEpoch), ZoneOffset.UTC);
@@ -128,12 +135,24 @@ public class BitcoinOTC {
         Commons.scatterNodes(graph, 100);
         Commons.mergeAndColor(graph, startTime - halfDuration, endTime + halfDuration, mode, new Color(141, 211, 199), Color.BLACK, halfDuration);
         
+		long removedNodes = 0;
+		for(Node n : graph.nodes())
+			if(graph.outEdges(n).size() == 0 && graph.inEdges(n).size() == 0) {
+				graph.remove(n);
+				removedNodes++;
+			}
+		System.out.println("Removed " + removedNodes + " isolated nodes"); 
+		
         return new DyDataSet(
                 graph,
                 1.0 / Duration.ofDays(8).getSeconds(),
                 Interval.newClosed(
                 		startTime,
-                		endTime));
+                		endTime),
+                eventsProcessed);
 
     }
+    
+
+
 }
