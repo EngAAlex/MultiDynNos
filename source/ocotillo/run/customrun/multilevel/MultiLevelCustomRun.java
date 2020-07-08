@@ -41,6 +41,7 @@ import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
 import ocotillo.samples.parsers.Mooc;
 import ocotillo.samples.parsers.NewcombFraternity;
+import ocotillo.samples.parsers.RampInfectionMap;
 import ocotillo.samples.parsers.RealityMining;
 import ocotillo.samples.parsers.RugbyTweets;
 import ocotillo.samples.parsers.VanDeBunt;
@@ -64,7 +65,8 @@ public class MultiLevelCustomRun extends CustomRun {
 		preloadedGraphs.put("reality", 6);
 		preloadedGraphs.put("bitalpha", 7);
 		preloadedGraphs.put("bitotc", 8);
-		preloadedGraphs.put("mooc", 9);		
+		preloadedGraphs.put("mooc", 9);
+		preloadedGraphs.put("rampinfectionmap", 10);
 
 		MultiLevelCustomRun mlcr = new MultiLevelCustomRun(argv);
 		mlcr.run();
@@ -94,7 +96,8 @@ public class MultiLevelCustomRun extends CustomRun {
 				case 6: data = RealityMining.parse(Mode.keepAppearedNode); break;
 				case 7: data = BitcoinAlpha.parse(Mode.keepAppearedNode); break;
 				case 8: data = BitcoinOTC.parse(Mode.keepAppearedNode); break;
-				case 9: data = Mooc.parse(Mode.keepAppearedNode); break;				
+				case 9: data = Mooc.parse(Mode.keepAppearedNode); break;
+				case 10: data = RampInfectionMap.parse(Mode.keepAppearedNode); break;
 				default: System.err.println("Can't load graph dataset"); System.exit(1); break;
 			}	
 			dyGraph = data.dygraph; filename = args[0];
