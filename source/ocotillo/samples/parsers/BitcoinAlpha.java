@@ -69,11 +69,15 @@ public class BitcoinAlpha {
         
         Map<String, Node> nodeMap = new HashMap<>();
         List<String> lines = ParserTools.readFileLines(file);
+        int eventsProcessed = 0;
+
         for (int i = 1; i < lines.size(); i++) {
             String line = lines.get(i);
             String[] tokens = line.split(",");
             String idSource = tokens[0];
             String idTarget = tokens[1];
+            if(Long.parseLong(tokens[2]) < 1)
+            	continue;
             long epoch = Long.parseLong(tokens[3]);
             
             minEpoch = Math.min(minEpoch, epoch);
@@ -115,7 +119,15 @@ public class BitcoinAlpha {
             presence.get(source).insert(new FunctionConst<>(msgInterval, true));
             presence.get(target).insert(new FunctionConst<>(msgInterval, true));
             edgePresence.get(edge).insert(new FunctionConst<>(msgInterval, true));
+            
+            eventsProcessed++;
+            
+            if(eventsProcessed > 15000)
+            	break;
+
         }
+        
+        System.out.println("Events Processed: " + eventsProcessed);
 
         LocalDateTime minEpochDT =
         	    LocalDateTime.ofInstant(Instant.ofEpochSecond(minEpoch), ZoneOffset.UTC);
@@ -133,7 +145,8 @@ public class BitcoinAlpha {
                 1.0/(Duration.ofDays(5).getSeconds()),
                 Interval.newClosed(
                 		startTime,
-                		endTime));
+                		endTime),
+                eventsProcessed);
 
     }
 }

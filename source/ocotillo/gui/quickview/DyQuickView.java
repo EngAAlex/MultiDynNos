@@ -49,14 +49,18 @@ public class DyQuickView extends JFrame {
 
     private static final long serialVersionUID = 1L;
 
+    public DyQuickView(DyGraph dyGraph, double staticTiming) {
+    	this(dyGraph, staticTiming, "Graph QuickView");
+    }
+    
     /**
      * Constructs a DyQuickView for the graph.
      *
      * @param dyGraph the dynamic graph to be visualised.
      * @param staticTiming the time used for the static image.
      */
-    public DyQuickView(DyGraph dyGraph, double staticTiming) {
-        setTitle("Graph QuickView");
+    public DyQuickView(DyGraph dyGraph, double staticTiming, String windowTitle) {
+    	setTitle(windowTitle);
         add(content);
         this.dyGraph = dyGraph;
         this.canvas = new GraphCanvas(dyGraph.snapshotAt(staticTiming));

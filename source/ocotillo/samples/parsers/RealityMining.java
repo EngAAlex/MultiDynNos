@@ -52,7 +52,7 @@ public class RealityMining {
 	
 	
 	private static Duration messageDuration = Duration.ofMinutes(15);
-	private static HashSet<String> allowedTypes = new HashSet<String>(Arrays.asList("voice call", "short message"));
+	private static HashSet<String> allowedTypes = new HashSet<String>(Arrays.asList("voice call"/*, "short message"*/));
 
     /**
      * Produces the dynamic dataset for this data.
@@ -75,7 +75,7 @@ public class RealityMining {
         long minEpoch = Long.MAX_VALUE;
         long maxEpoch = Long.MIN_VALUE;
         
-        long eventsProcessed = 0;
+        int eventsProcessed = 0;
         
         Map<String, Node> nodeMap = new HashMap<>();
         List<String> lines = ParserTools.readFileLines(file);
@@ -95,12 +95,7 @@ public class RealityMining {
             
             String idSource; 
             String idTarget;
-//            long hashNum = -1;
-//            try {
-//                hashNum = Long.parseLong(tokens[8]);
-//            }catch(NumberFormatException nfe) {
-//            	continue;
-//            }
+
             String index = tokens[9];
             String direction = tokens[6];
             if(direction.toLowerCase().equals("outgoing")) {
@@ -161,6 +156,9 @@ public class RealityMining {
             edgePresence.get(edge).insert(new FunctionConst<>(eventInterval, true));
             
             eventsProcessed++;
+            
+            if(eventsProcessed > 28000)
+            	break;
         }
 
         LocalDateTime minEpochDT =
@@ -168,6 +166,14 @@ public class RealityMining {
         
         LocalDateTime maxEpochDT =
         	    LocalDateTime.ofInstant(Instant.ofEpochSecond(maxEpoch), ZoneOffset.UTC);
+        
+		long removedNodes = 0;
+		for(Node n : graph.nodes())
+			if(graph.outEdges(n).size() == 0 && graph.inEdges(n).size() == 0) {
+				graph.remove(n);
+				removedNodes++;
+			}
+		System.out.println("Removed " + removedNodes + " isolated nodes"); 
         
         double startTime = minEpochDT.toEpochSecond(ZoneOffset.UTC);
         double endTime = maxEpochDT.toEpochSecond(ZoneOffset.UTC);
@@ -181,7 +187,8 @@ public class RealityMining {
                 1.0 / Duration.ofHours(4).getSeconds(),
                 Interval.newClosed(
                 		startTime,
-                		endTime));
+                		endTime),
+                eventsProcessed);
 
     }
 }
