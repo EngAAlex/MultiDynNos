@@ -124,22 +124,22 @@ public class RampInfectionMap {
             //starts a new tree
             if (isDigit) {
             	RampNode src = new RampNode (branch[0]);
-            	idToRampNode.put(new Integer (src.ID).toString(), src);
+            	idToRampNode.put(Integer.valueOf(src.ID).toString(), src);
             	RampNode[] tgts = parseRampChildren(branch[1]);
             	for (int j = 0; j < tgts.length; j++) {
             		infectionEvents.add (new RampEdge(src, tgts[j]));
-            		idToRampNode.put(new Integer (tgts[j].ID).toString(), tgts[j]);
+            		idToRampNode.put(Integer.valueOf(tgts[j].ID).toString(), tgts[j]);
             		numEvents++;
             	}
             }
             else if (isDash) {
             	//continues a branch of a tree
             	RampNode src = new RampNode (branch[1]);
-            	idToRampNode.put(new Integer (src.ID).toString(), src);
+            	idToRampNode.put(Integer.valueOf(src.ID).toString(), src);
             	RampNode[] tgts = parseRampChildren(branch[2]);
             	for (int j = 0; j < tgts.length; j++) {
             		infectionEvents.add(new RampEdge(src, tgts[j]));
-            		idToRampNode.put(new Integer (tgts[j].ID).toString(), tgts[j]);
+            		idToRampNode.put(Integer.valueOf(tgts[j].ID).toString(), tgts[j]);
             		numEvents++;
             	}
             }
@@ -174,8 +174,8 @@ public class RampInfectionMap {
         double startTime = Double.POSITIVE_INFINITY;
         double endTime = Double.NEGATIVE_INFINITY;
         while (curEvent < numEvents) {
-        	String srcNode = (new Integer (infectionEvents.get(curEvent).SRC)).toString();
-        	String tgtNode = (new Integer (infectionEvents.get(curEvent).TGT)).toString();
+        	String srcNode = (Integer.valueOf(infectionEvents.get(curEvent).SRC)).toString();
+        	String tgtNode = (Integer.valueOf(infectionEvents.get(curEvent).TGT)).toString();
         	if(!nodeMap.containsKey(srcNode)) {
         		Node node = graph.newNode(srcNode);
         		presence.set(node, new Evolution<>(false));
@@ -228,8 +228,8 @@ public class RampInfectionMap {
         if (EDGE_PERSIST) {
         	curEvent = 0;
         	while (curEvent < numEvents) {
-        		String srcNode = (new Integer (infectionEvents.get(curEvent).SRC)).toString();
-            	String tgtNode = (new Integer (infectionEvents.get(curEvent).TGT)).toString();
+        		String srcNode = (Integer.valueOf(infectionEvents.get(curEvent).SRC)).toString();
+            	String tgtNode = (Integer.valueOf(infectionEvents.get(curEvent).TGT)).toString();
             	Node source = nodeMap.get(srcNode);
                 Node target = nodeMap.get(tgtNode);
             	Edge edge = graph.betweenEdge(source, target);

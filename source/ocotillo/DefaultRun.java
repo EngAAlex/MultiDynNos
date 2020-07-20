@@ -74,7 +74,7 @@ public class DefaultRun {
         custom;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         System.setProperty("awt.useSystemAAFontSettings", "lcd");
         System.setProperty("swing.aatext", "true");
 
@@ -223,97 +223,27 @@ public class DefaultRun {
                 for(String graphName : expNames) {
                     System.out.println("Starting " + graphName + " Experiment");
                 	if(executeVisone && visoneTimes.containsKey(graphName)) {
-                		callables.clear();
-                        callables.add(new Callable<List<String>>() {
-                            public List<String> call() throws Exception {
-                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeVisoneMetrics(visoneTimes.get(graphName));
-                            }
-                        });
-                        try {
-                            ExecutorService exec = Executors.newSingleThreadExecutor();
-							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
-						}catch (InterruptedException | ExecutionException e) {
-							e.printStackTrace();
-						}catch (TimeoutException timeout) {
-							System.out.println("Timeout reached!");
-						} 
+                		lines.addAll(
+                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
+                			);
                 	}
                 	if(executeSingle) {
-                		callables.clear();                		
-                        callables.add(new Callable<List<String>>() {
-                            public List<String> call() throws Exception {
-                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName));
-                            }
-                        });
-                        try {
-                            ExecutorService exec = Executors.newSingleThreadExecutor();
-							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
-						}catch (InterruptedException | ExecutionException e) {
-							e.printStackTrace();
-						}catch (TimeoutException timeout) {
-							System.out.println("Timeout reached!");
-						} 
+                		lines.addAll(
+                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
+                			);                		
                 	}if(executeMulti) {
-                		callables.clear();                		
-                        callables.add(new Callable<List<String>>() {
-                            public List<String> call() throws Exception {
-                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName));
-                            }
-                        });
-                        try {
-                            ExecutorService exec = Executors.newSingleThreadExecutor();                       	
-							lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
-						}catch (InterruptedException | ExecutionException e) {
-							e.printStackTrace();
-						}catch (TimeoutException timeout) {
-							System.out.println("Timeout reached!");
-						} 
+                		lines.addAll(
+                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName))
+                			);                		
                 	}
                 	if(executeSFDP) {
-                		callables.clear();                		
-                        callables.add(new Callable<List<String>>() {
-                            public List<String> call() throws Exception {
-                            	return ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeSFDPMetrics();
-                            }
-                        });
-                        try {
-                            ExecutorService exec = Executors.newSingleThreadExecutor();
-							//lines.addAll(exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS));
-                            lines.addAll(((Experiment) Class.forName("ocotillo.Experiment$"+graphName).newInstance()).computeSFDPMetrics());                                                      
-						}catch (IllegalAccessException | InstantiationException | ClassNotFoundException e ) {
-							e.printStackTrace();
-						}
-//						}catch (TimeoutException timeout) {
-//							System.out.println("Timeout reached!");
-//						} 
+                		lines.addAll(
+                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
+                			);                		
                 	}
                 		
                 }
-                                
-//                System.out.println("Starting VanDeBunt Experiment");
-//                lines.add("VanDeBunt");
-//                experiment = new Experiment.Bunt();
-////                lines.addAll(experiment.computeMetrics("0.128"));
-////                if(executeMulti)
-////                	lines.addAll(experiment.computeMultiLevelMetrics());
-//                if(executeSFDP)
-//                	lines.addAll(experiment.computeSFDPMetrics());
-//                System.out.println("Starting Newcomb Experiment");
-//                experiment = new Experiment.Newcomb();
-//                lines.addAll(experiment.computeMetrics("0.109", executeMulti));
-//                System.out.println("Starting InfoVis Experiment");                
-//                experiment = new Experiment.InfoVis();
-//                lines.addAll(experiment.computeMetrics("77.430", executeMulti));
-//                System.out.println("Starting Rugby Experiment");                
-//                experiment = new Experiment.Rugby();
-//                lines.addAll(experiment.computeMetrics("0.079", executeMulti));
-//                System.out.println("Starting Pride Experiment");                
-//                experiment = new Experiment.Pride();
-//                lines.addAll(experiment.computeMetrics("3.391", executeMulti));
-//                  System.out.println("Starting College Experiment");
-//                  experiment = new Experiment.College();
-//                  lines.addAll(experiment.computeMetrics(null, executeMulti));
-
+                
                 for (String line : lines) {
                     System.out.println(line);
                 }
