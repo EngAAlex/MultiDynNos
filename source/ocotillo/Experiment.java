@@ -31,7 +31,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
@@ -49,6 +48,7 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
 import ocotillo.dygraph.rendering.Animation;
+import ocotillo.export.GMLOutputWriter;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Geom;
 import ocotillo.geometry.Interval;
@@ -99,7 +99,7 @@ import ocotillo.various.ColorCollection;
  */
 public abstract class Experiment {
 
-	private static final long TIMEOUT = 86400;
+	private static final long TIMEOUT = 9000;
 
 	protected final String name;
 	protected final String directory;
@@ -108,6 +108,8 @@ public abstract class Experiment {
 
 	protected HashSet<Callable<ModularStatistics>> callables = new HashSet<Callable<ModularStatistics>>();
 
+	private final static String STAT_SEPARATOR = ";";
+	
 
 	/**
 	 * Builds the experiment.
@@ -284,13 +286,46 @@ public abstract class Experiment {
 
 		double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 		applyIdealScaling(visoneGraph, visoneScaling);
-		lines.add(name + "," + "v" + "," + visoneTime + "," + 1 / visoneScaling + ","
+		lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 				+ computeOtherMetrics(visoneGraph, contVisone, snapTimes, null));
 
 		return lines;
 	}
 
-
+//	public List<String> provideSnapshotSize(){
+//		List<String> lines = new ArrayList<>();
+//		DyGraph discGraph = discretise();  
+//		return lines;
+//	}
+	
+	public void probeLayout() {
+		HashSet<String> methodologies = new HashSet<String>();
+		methodologies.add("wi_id");
+		methodologies.add("iset_grip");
+		methodologies.add("sm_sp");
+		for(String s : methodologies) {
+			GraphCoarsener gc;
+			MultilevelNodePlacementStrategy ps;
+			if(s.equals("wi_id")) {
+				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+				gc = new IndependentSet.WalshawIndependentSet();
+				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+			}else if(s.equals("iset_grip")) {
+				System.out.println("Setting IndependentSet and GRIP Placement");        			
+				gc = new IndependentSet();
+				ps = new WeightedBarycenterPlacementStrategy();
+			}else{
+				System.out.println("Setting Solar Merger and Placer");        			        			
+				gc = new SolarMerger();
+				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+			}
+			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
+			contMultiDyn.runMultiLevelLayout();
+			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
+		}
+	}
+	
 	/**
 	 * Compute the metrics for the current experiment for VisOne.
 	 * @param visoneTime
@@ -322,7 +357,7 @@ public abstract class Experiment {
 				applyIdealScaling(discSyncro, discreteScaling);
 				DyGraph contDiscrete = getContinuousCopy();
 				copyNodeLayoutFromTo(discGraph, contDiscrete);
-				lines.add(name + "," + "d" + "," + discTime + "," + 1 / discreteScaling + ","
+				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
 						+ computeOtherMetrics(discGraph, contDiscrete, snapTimes, discSyncro));
 			}catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
@@ -346,18 +381,18 @@ public abstract class Experiment {
 			ModularStatistics contStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
 			double contTime = computeRunningTime(contStats);       
 
-			//MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
-
 			double continuousScaling = computeIdealScaling(contGraph, snapTimes);
 			applyIdealScaling(contSyncro, continuousScaling);
 
-			//System.out.println("Applied " + continuousScaling);
+			System.out.println("Applied scaling " + continuousScaling);
 
+			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
+			
 			DyGraph discContinuous = discretise();
 			copyNodeLayoutFromTo(contGraph, discContinuous);
 
-			String line = name + "," + "c" + "," + contTime + "," + 1 / continuousScaling + ","
-					+ computeOtherMetrics(contGraph, contGraph, snapTimes, contSyncro);
+			String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
+					+ computeOtherMetrics(discContinuous, contGraph, snapTimes, contSyncro);
 
 			//		System.out.println(line);
 
@@ -385,7 +420,12 @@ public abstract class Experiment {
 		SfdpExecutor sfdpInstance = sfdp.build();
 		System.out.println("Flattened graph has " + flattened.nodeCount() + " nodes and " + flattened.edgeCount() + " edges");
 		long epochStart = System.currentTimeMillis();
-		sfdpInstance.execute(flattened);	
+		sfdpInstance.execute(flattened);
+
+//		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"-sfdp" +".gml"), flattened);
+//		if(true)
+//			return lines;
+
 		long epochEnd = System.currentTimeMillis();
 		System.out.println("\tDone! Computing metrics...");
 		DyGraph sfdpCont = getContinuousCopy();
@@ -397,22 +437,22 @@ public abstract class Experiment {
 		double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
 		applyIdealScaling(sfdpCont, sfdpScaling);
 
-		//		System.out.println("Applied " + sfdpScaling);
+		System.out.println("Applied " + sfdpScaling);
 
-		DyGraph sfdpContinuous = discretise();
-		copyNodeLayoutFromTo(sfdpCont, sfdpContinuous);
+		DyGraph sfdpDisc = discretise();
+		copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
 
 		//		DyGraph sfdpContDisc = getContinuousCopy();
 		//		copyNodeLayoutFromTo(sfdpCont, sfdpContDisc);
 
-		String line = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
-				+ computeOtherMetrics(sfdpContinuous, sfdpCont, snapTimes, null);
+		String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
+				+ computeOtherMetrics(sfdpDisc, sfdpCont, snapTimes, null) + STAT_SEPARATOR + dataset.eventsProcessed;;
 
-		//		System.out.println(line);
+		//System.out.println(line);
 
-		//		String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
-		//				+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
-		//		
+		//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
+		//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
+				
 		//		System.out.println(lineD);
 
 		lines.add(line);
@@ -457,28 +497,36 @@ public abstract class Experiment {
 			callables.add(new Callable<ModularStatistics>() {
 				public ModularStatistics call() throws Exception {
 					contMultiDyn.runMultiLevelLayout();
+					//contMultiDyn.runCoarsening();
 					return contMultiDyn.getComputationStatistics();
 				}
 			});
 			try {
 				ExecutorService exec = Executors.newSingleThreadExecutor();
-				SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();				
 				ModularStatistics multiContStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
-				
-				double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
 
+				double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
+				
+				System.out.println("total running time " + multiContTime);
+				
+				SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();	
+								
 				double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
 				applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
 
+				System.out.println("Applied scaling " + multiContinuousScaling);
+				
+				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
+				
 				DyGraph multiDiscContinuous = discretise();
 				copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
 
-				String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + "," + dataset.eventsProcessed;
+				String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
 				System.out.println("\tDone! Computing metrics...");
-				String line = name + "," + "multic_" + s + "," + multiContTime + "," + 1 / multiContinuousScaling + ","
-						+ computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + "," + extraLines;
+				String line = name + ";" + "multic_" + s + ";" + multiContTime + STAT_SEPARATOR + 1 / multiContinuousScaling + STAT_SEPARATOR
+						+ computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
-				System.out.println(line);
+				//System.out.println(line);
 
 				lines.add(line); 
 			}catch (InterruptedException | ExecutionException e) {
@@ -515,8 +563,8 @@ public abstract class Experiment {
 
 					String extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
 
-					String line = name + "," + "multid_" + s + "," + multiDiscTime + "," + 1 / multiDiscreteScaling + ","
-							+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + "," + extraLines;
+					String line = name + STAT_SEPARATOR + "multid_" + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR + 1 / multiDiscreteScaling + STAT_SEPARATOR
+							+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
 					System.out.println(line);
 
@@ -534,16 +582,16 @@ public abstract class Experiment {
 	}
 
 	private String stringifyMultiLevelMetrics(List<ModularMetric> list) {
-		String coarseningTime = "";
+		String coarseningTime = "0";
 		int hierarchyDepth = 0;
 		for(ModularMetric m : list) {
 			if(m instanceof HierarchyDepth)
 				hierarchyDepth = (int) m.values().get(0);
 			else if (m instanceof CoarseningTime) {	            		
-				coarseningTime = new DecimalFormat("#.00").format((long)m.values().get(0)/Math.pow(10, 9));
+				coarseningTime = new DecimalFormat("#0.00").format((long)m.values().get(0)/Math.pow(10, 9));
 			}
 		}
-		return hierarchyDepth + "," + coarseningTime;
+		return hierarchyDepth + STAT_SEPARATOR + coarseningTime;
 	}
 
 	/**
@@ -598,14 +646,14 @@ public abstract class Experiment {
 		StcGraphMetric<Double> nodeMovement = new StcGraphMetric.AverageNodeMovement2D();
 		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.suggestedInterval, 600);
 
-		//		return /*stressOn.computeMetric(discGraph) + "," + stressOff.computeMetric(discGraph) + ","
-		//		+ stressOn.computeMetric(contGraph) + ","*/ ",,,"  + stressOff.computeMetric(contGraph) + ","
-		//		+ nodeMovement.computeMetric(synchroniser) + "," + crowding.computeMetric(synchroniser);
+//		return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
+//		+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+//		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
+		
+		return stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR
+		+ stressOn.computeMetric(contGraph) + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
-
-		return stressOn.computeMetric(discGraph) + "," + stressOff.computeMetric(discGraph) + ","
-		+ stressOn.computeMetric(contGraph) + "," + stressOff.computeMetric(contGraph) + ","
-		+ nodeMovement.computeMetric(synchroniser) + "," + crowding.computeMetric(synchroniser);
 	}
 
 	public double computeIdealScaling(DyGraph graph, List<Double> snapTimes) {
@@ -625,7 +673,7 @@ public abstract class Experiment {
 					new GraphMetric.StressMetric.Builder().withScaling(delta * scaling).build(),
 					interval, snapTimes.size());
 			double stress = stressMetric.computeMetric(graph);
-
+			//System.out.println("\t\t\tComputed Stress: " + stress);
 			if (stress < bestStress) {
 				bestStress = stress;
 				bestScaling = scaling;
@@ -950,6 +998,7 @@ public abstract class Experiment {
 		public DyGraph getContinuousCopy() {
 			return RugbyTweets.parse(Commons.Mode.keepAppearedNode).dygraph;
 		}
+
 	}
 
 	/**
@@ -977,6 +1026,7 @@ public abstract class Experiment {
 		public DyGraph getContinuousCopy() {
 			return DialogSequences.parse(Commons.Mode.keepAppearedNode).dygraph;
 		}
+
 	}
 
 	/**
@@ -1161,6 +1211,54 @@ public abstract class Experiment {
 		public DyGraph getContinuousCopy() {
 			return Mooc.parse(Commons.Mode.keepAppearedNode).dygraph;
 		}
+	}
+	
+	/**
+	 * Experiment with the MOOC dataset.
+	 */
+	public static class RampInfectionMap extends Experiment {
+
+		public RampInfectionMap() {
+			super("RampInfectionMap", "data/RampInfectionMap/", ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode), 5);
+		}
+
+		@Override
+		public DyGraph discretise() {
+			List<Double> snapshotTimes = new ArrayList<>();
+			int slices = 20;
+			double gap = dataset.suggestedInterval.width() / slices;
+			for (int i = 0; i < slices; i++) {
+				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				snapshotTimes.add(snapTime);
+			}
+			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
+		}
+
+		@Override
+		public DyGraph getContinuousCopy() {
+			return ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode).dygraph;
+		}
+	}
+	
+	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
+    	DyGraph discretizedGraph = discretise();
+    	List<Double> snapTimes = readSnapTimes(discretizedGraph);
+    	System.out.println("Dumping Slices");
+    	int lastSnap = 0;
+    	int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
+    	boolean stoppingCondition = true;
+    	int needle = step;
+    	while(stoppingCondition) {    		
+    		if(needle >= snapTimes.size()) {
+    			stoppingCondition = false;
+    			needle = snapTimes.size() - 1;
+    		}    		
+    		System.out.println("Start " + lastSnap + " end " + needle);
+    		Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+    		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
+    		lastSnap = needle;
+    		needle += step;
+    	}	
 	}
 
 }

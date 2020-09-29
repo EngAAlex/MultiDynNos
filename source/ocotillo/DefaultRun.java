@@ -1,5 +1,5 @@
 /**
- * Copyright Â© 2014-2017 Paolo Simonetto
+ * Copyright © 2014-2017 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,11 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.swing.SwingUtilities;
 
@@ -52,8 +47,6 @@ import ocotillo.serialization.ParserTools;
  * Default code for run target.
  */
 public class DefaultRun {
-
-	private static final long TIMEOUT = 86400;
 	
     private enum AvailableMode {
 
@@ -152,13 +145,14 @@ public class DefaultRun {
                 break;
             case computeMetrics:
                 List<String> lines = new ArrayList<>();
-                lines.add("Graph,Type,Time,Scaling,StressOn(d),StressOff(d),StressOn(c),StressOff(c),Movement,Crowding,Coarsening_Depth,Coarsening_Time,Events_Processed");
+                lines.add("Graph;Type;Time;Scaling;StressOn(d);StressOff(d);StressOn(c);StressOff(c);Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");
                 String outputFolder = "."+File.separator;
                 Boolean executeMulti = false;
                 Boolean executeSFDP = false;
                 Boolean executeSingle = false;
                 Boolean executeVisone = false;
-                Boolean executeDiscrete = false;
+                Boolean plotSliceSize = false;
+                Boolean dumpSlicesPicture = false;
                 
                 HashSet<String> expNames = new HashSet<String>();
                 HashSet<String> smallerDatasets = new HashSet<String>();
@@ -174,13 +168,14 @@ public class DefaultRun {
                 largerDatasets.add("MOOC");
                 largerDatasets.add("BitAlpha");  
                 largerDatasets.add("College");
+                largerDatasets.add("RampInfectionMap");
                 
                 HashMap<String, String> visoneTimes = new HashMap<String, String>();
                 
                 HashSet<String> discreteExperiment = new HashSet<String>();
                 
                 for(int i = 0; i < args.length; i++) {
-                	if(args[i].equals("--smaller"))
+					if(args[i].equals("--smaller"))
                 		expNames.addAll(smallerDatasets);
                 	else if(args[i].equals("--larger"))
                 		expNames.addAll(largerDatasets);
@@ -197,13 +192,17 @@ public class DefaultRun {
                 	else if(args[i].equals("--multi"))
                 		executeMulti = true;
                 	else if(args[i].equals("--sfdp"))
-                		executeSFDP = true;             
-                	else if(args[i].equals("-d")) {
+                		executeSFDP = true;
+                	else if(args[i].equals("--slices"))
+                		plotSliceSize = true;
+                	else if(args[i].equals("--dump"))
+						dumpSlicesPicture = true;
+                	else if(args[i].equals("-d") || args[i].equals("--discrete")) {
                     	discreteExperiment.add("Bunt");
                     	discreteExperiment.add("Newcomb");
                     	discreteExperiment.add("InfoVis");
-                    	discreteExperiment.add("Rugby");
-                    	discreteExperiment.add("Pride");                	
+//                    	discreteExperiment.add("Rugby");
+//                    	discreteExperiment.add("Pride");                	
                 	}else if(args[i].equals("-o"))
                 		if(i+1 < args.length) {
                 			i++;
@@ -217,8 +216,6 @@ public class DefaultRun {
                 time = time.replace(':', '-');
                 
                 String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
-
-                HashSet<Callable<List<String>>> callables = new HashSet<Callable<List<String>>>();
                 
                 for(String graphName : expNames) {
                     System.out.println("Starting " + graphName + " Experiment");
@@ -241,6 +238,14 @@ public class DefaultRun {
                 				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
                 			);                		
                 	}
+//                	if(plotSliceSize) {
+//                		lines.addAll(
+//                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).provideSnapshotSize()
+//                			);                		
+//                	}   
+                	if(dumpSlicesPicture) {
+           				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).probeLayout();
+                	}                    	
                 		
                 }
                 

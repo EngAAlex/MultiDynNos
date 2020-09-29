@@ -121,13 +121,13 @@ public class MultiLevelCustomRun extends CustomRun {
 				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
-		DyGraph result = multiDyn.runMultiLevelLayout();	
+		DyGraph result = multiDyn.runMultiLevelLayout();
 
 		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getComputationStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
 		
 		//## OUTPUT OPTIONS (uncomment the ones preferred)
 		animateGraphOnWindow(result, staticTiming, suggestedInterval, args[0]);
-		//showGraphOnWindow(result, staticTiming);
+		//showGraphOnWindow(result, staticTiming, args[0]);
 	}
 
 	public MultiLevelCustomRun(String[] argv) {

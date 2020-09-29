@@ -88,7 +88,7 @@ public class RampInfectionMap {
 		return children;
 	}
 	
-	private static final boolean EDGE_PERSIST = true;
+	private static final boolean EDGE_PERSIST = false;
 	
 	 /**
      * Produces the dynamic dataset for this data.
@@ -251,6 +251,7 @@ public class RampInfectionMap {
         
         double tau = infectionDuration/endTime;
         System.out.println ("Start, end, tau: " + startTime + " " + endTime + " " + tau);
+        System.out.println ("Parsed " + numEvents + " events");
         Commons.scatterNodes(graph, 100);
         Commons.mergeAndColor(graph, startTime, endTime, mode, new Color(141, 211, 199), Color.BLACK, halfDuration);
         return new DyDataSet(graph, tau, Interval.newClosed(startTime, endTime));

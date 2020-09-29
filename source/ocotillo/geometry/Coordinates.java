@@ -128,6 +128,18 @@ public class Coordinates {
         }
         return 0;
     }
+    
+    /**
+     * Returns the coordinates as an array.
+     * 
+     * @return the coordinates as array.
+     */
+    public double[] getArray() {
+    	double[] arr = new double[coordinates.size()];
+    	for(int i=0; i<coordinates.size(); i++)
+    		arr[i] = coordinates.get(i);
+    	return arr;
+    }
 
     /**
      * Sets the coordinate with given index.
