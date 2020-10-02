@@ -23,7 +23,7 @@ import ocotillo.graph.Edge;
 import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.logger.Logger;
-import ocotillo.run.customrun.CustomRun;
+import ocotillo.run.DynNoSliceRun;
 
 public abstract class GraphCoarsener {
 

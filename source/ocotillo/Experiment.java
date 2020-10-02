@@ -79,7 +79,6 @@ import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.run.Run;
-import ocotillo.run.customrun.multilevel.MultiLevelCustomRun;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
@@ -282,8 +281,6 @@ public abstract class Experiment {
 		contVisone = getContinuousCopy();
 		copyNodeLayoutFromTo(visoneGraph, contVisone);
 
-		MultiLevelCustomRun.animateGraphOnWindow(contVisone, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " Visone");
-
 		double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 		applyIdealScaling(visoneGraph, visoneScaling);
 		lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
@@ -298,33 +295,33 @@ public abstract class Experiment {
 //		return lines;
 //	}
 	
-	public void probeLayout() {
-		HashSet<String> methodologies = new HashSet<String>();
-		methodologies.add("wi_id");
-		methodologies.add("iset_grip");
-		methodologies.add("sm_sp");
-		for(String s : methodologies) {
-			GraphCoarsener gc;
-			MultilevelNodePlacementStrategy ps;
-			if(s.equals("wi_id")) {
-				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
-				gc = new IndependentSet.WalshawIndependentSet();
-				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
-			}else if(s.equals("iset_grip")) {
-				System.out.println("Setting IndependentSet and GRIP Placement");        			
-				gc = new IndependentSet();
-				ps = new WeightedBarycenterPlacementStrategy();
-			}else{
-				System.out.println("Setting Solar Merger and Placer");        			        			
-				gc = new SolarMerger();
-				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
-			}
-			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
-			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
-			contMultiDyn.runMultiLevelLayout();
-			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
-		}
-	}
+//	public void probeLayout() {
+//		HashSet<String> methodologies = new HashSet<String>();
+//		methodologies.add("wi_id");
+//		methodologies.add("iset_grip");
+//		methodologies.add("sm_sp");
+//		for(String s : methodologies) {
+//			GraphCoarsener gc;
+//			MultilevelNodePlacementStrategy ps;
+//			if(s.equals("wi_id")) {
+//				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+//				gc = new IndependentSet.WalshawIndependentSet();
+//				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+//			}else if(s.equals("iset_grip")) {
+//				System.out.println("Setting IndependentSet and GRIP Placement");        			
+//				gc = new IndependentSet();
+//				ps = new WeightedBarycenterPlacementStrategy();
+//			}else{
+//				System.out.println("Setting Solar Merger and Placer");        			        			
+//				gc = new SolarMerger();
+//				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+//			}
+//			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+//			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
+//			contMultiDyn.runMultiLevelLayout();
+//			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
+//		}
+//	}
 	
 	/**
 	 * Compute the metrics for the current experiment for VisOne.
@@ -386,7 +383,7 @@ public abstract class Experiment {
 
 			System.out.println("Applied scaling " + continuousScaling);
 
-			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
+//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
 			
 			DyGraph discContinuous = discretise();
 			copyNodeLayoutFromTo(contGraph, discContinuous);
@@ -516,7 +513,7 @@ public abstract class Experiment {
 
 				System.out.println("Applied scaling " + multiContinuousScaling);
 				
-				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
+//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
 				
 				DyGraph multiDiscContinuous = discretise();
 				copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
