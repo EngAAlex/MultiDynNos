@@ -20,6 +20,7 @@ import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
 import ocotillo.graph.layout.fdl.modular.ModularPreMovement;
 import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
+import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
@@ -71,6 +72,8 @@ public class MultiLevelDynNoSlice {
 	private DyModularFdl currentAlgorithm;
     protected SpaceTimeCubeSynchroniser synchronizer;
     protected DyGraph drawnGraph;
+    
+    protected AVAILABLE_STATIC_LAYOUTS singleLevelLayout = SfdpExecutor.DEFAULT_COMMAND_LINE;
 
 	Logger logger;
 
@@ -117,6 +120,11 @@ public class MultiLevelDynNoSlice {
 //		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
 		return this;
 	}
+	
+	public MultiLevelDynNoSlice withSingleLevelLayout(AVAILABLE_STATIC_LAYOUTS commandLine) {
+		this.singleLevelLayout = commandLine;
+		return this;
+	}
 
 	public MultiLevelDynNoSlice addOption(String key, Object value) {
 		optionsMap.put(key, value);
@@ -125,11 +133,13 @@ public class MultiLevelDynNoSlice {
 
 	public MultiLevelDynNoSlice setCoarsener(GraphCoarsener gc) {
 		this.gc = gc;
+		System.out.println("Coarsening | Selected " + this.gc.getDescription());
 		return this;
 	}
 
 	public MultiLevelDynNoSlice setPlacementStrategy(MultilevelNodePlacementStrategy mpc) {
 		placement = mpc;
+		System.out.println("Placement | Selected " + this.placement.getDescription());		
 		return this;
 	}
 
@@ -289,7 +299,8 @@ public class MultiLevelDynNoSlice {
 	}
 
 	private Graph computeStaticLayout(Graph currentGraph) {
-		SfdpBuilder sfdp = new SfdpBuilder();
+		SfdpBuilder sfdp = new SfdpBuilder().withCommandLine(singleLevelLayout);
+		System.out.println("Using " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevelLayout) + " for first layout");
 		SfdpExecutor sfdpInstance = sfdp.build();
 		sfdpInstance.execute(currentGraph);	
 		return currentGraph;

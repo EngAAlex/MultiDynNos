@@ -90,7 +90,18 @@ public class IndependentSet extends GraphCoarsener {
 			list.add(edges.get(0));
 			return list;
 		}
+		
+		@Override
+		public String getDescription() {
+			return "Walshaw - Independent Set";
+		}
 
+	}
+
+
+	@Override
+	public String getDescription() {
+		return "GRIP - Independent Set";
 	}
 
 }	

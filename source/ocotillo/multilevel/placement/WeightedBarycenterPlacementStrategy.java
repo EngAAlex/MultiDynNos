@@ -126,7 +126,17 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 			default: return totalSum*.6f;
 			}
 		}
+		
+		@Override
+		public String getDescription() {
+			return "FM3 - Solar Merger Placement Strategy";
+		}
 
+	}
+
+	@Override
+	public String getDescription() {
+		return "GRIP - Weighted Barycenter Strategy";
 	}
 
 

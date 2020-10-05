@@ -107,6 +107,13 @@ public abstract class MultilevelNodePlacementStrategy {
 			
 			return new Coordinates(upperClusterCoordinates.x() + Math.random()*fuzzyness, upperClusterCoordinates.y() + Math.random()*fuzzyness);
 		}
+
+		@Override
+		public String getDescription() {
+			return "Identity";
+		}
 	}
+
+	public abstract String getDescription();
 }
 

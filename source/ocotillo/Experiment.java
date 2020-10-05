@@ -7,6 +7,8 @@ package ocotillo;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
@@ -83,10 +86,12 @@ import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
 import ocotillo.samples.parsers.Commons;
+import ocotillo.samples.parsers.Commons.Mode;
 import ocotillo.samples.parsers.DialogSequences;
 import ocotillo.samples.parsers.InfoVisCitations;
 import ocotillo.samples.parsers.Mooc;
 import ocotillo.samples.parsers.NewcombFraternity;
+import ocotillo.samples.parsers.PreloadedGraphParser;
 import ocotillo.samples.parsers.RealityMining;
 import ocotillo.samples.parsers.RugbyTweets;
 import ocotillo.samples.parsers.VanDeBunt;
@@ -103,12 +108,14 @@ public abstract class Experiment {
 	protected final String name;
 	protected final String directory;
 	protected final Commons.DyDataSet dataset;
+	protected final PreloadedGraphParser parserInstance;
+	protected final Commons.Mode loadMode;
 	protected final double delta;
 
 	protected HashSet<Callable<ModularStatistics>> callables = new HashSet<Callable<ModularStatistics>>();
 
 	private final static String STAT_SEPARATOR = ";";
-	
+
 
 	/**
 	 * Builds the experiment.
@@ -118,11 +125,29 @@ public abstract class Experiment {
 	 * @param dataset the dataset to use.
 	 * @param delta the default edge length.
 	 */
-	public Experiment(String name, String directory, Commons.DyDataSet dataset, double delta) {
+	//	public Experiment(String name, String directory, Commons.DyDataSet dataset, double delta) throws URISyntaxException{
+	//		this.name = name;
+	//		this.directory = directory;
+	//		this.dataset = dataset;
+	//		this.delta = delta;
+	//	}
+
+	/**
+	 * Builds the experiment.
+	 *
+	 * @param name the name of the experiment.
+	 * @param directory the dataset directory.
+	 * @param parserClass the parser class of the dataset.
+	 * @param loadMode how to load the dataset.
+	 * @param delta the default edge length.
+	 */
+	public Experiment(String name, String directory, Class<? extends PreloadedGraphParser> parserClass, Mode loadMode, double delta) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, URISyntaxException {
 		this.name = name;
 		this.directory = directory;
-		this.dataset = dataset;
-		this.delta = delta;
+		this.delta = delta;		
+		this.parserInstance = ((PreloadedGraphParser)(parserClass.getDeclaredConstructor().newInstance()));
+		this.loadMode = loadMode;
+		this.dataset = this.parserInstance.parse(this.loadMode);
 	}
 
 	/**
@@ -275,54 +300,58 @@ public abstract class Experiment {
 		DyGraph visoneGraph = null;
 		DyGraph contVisone = null;
 
-		List<Double> snapTimes = readSnapTimes(discretise());
+		try {
+			List<Double> snapTimes = readSnapTimes(discretise());
 
-		visoneGraph = exportImportVisone(directory);
-		contVisone = getContinuousCopy();
-		copyNodeLayoutFromTo(visoneGraph, contVisone);
+			visoneGraph = exportImportVisone(directory);
+			contVisone = getContinuousCopy();
+			copyNodeLayoutFromTo(visoneGraph, contVisone);
 
-		double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
-		applyIdealScaling(visoneGraph, visoneScaling);
-		lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
-				+ computeOtherMetrics(visoneGraph, contVisone, snapTimes, null));
+			double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
+			applyIdealScaling(visoneGraph, visoneScaling);
+			lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
+					+ computeOtherMetrics(visoneGraph, contVisone, snapTimes, null));
+		}catch (URISyntaxException uri) {
+			System.err.println("Could not load graph!");
+		}
 
 		return lines;
 	}
 
-//	public List<String> provideSnapshotSize(){
-//		List<String> lines = new ArrayList<>();
-//		DyGraph discGraph = discretise();  
-//		return lines;
-//	}
-	
-//	public void probeLayout() {
-//		HashSet<String> methodologies = new HashSet<String>();
-//		methodologies.add("wi_id");
-//		methodologies.add("iset_grip");
-//		methodologies.add("sm_sp");
-//		for(String s : methodologies) {
-//			GraphCoarsener gc;
-//			MultilevelNodePlacementStrategy ps;
-//			if(s.equals("wi_id")) {
-//				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
-//				gc = new IndependentSet.WalshawIndependentSet();
-//				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
-//			}else if(s.equals("iset_grip")) {
-//				System.out.println("Setting IndependentSet and GRIP Placement");        			
-//				gc = new IndependentSet();
-//				ps = new WeightedBarycenterPlacementStrategy();
-//			}else{
-//				System.out.println("Setting Solar Merger and Placer");        			        			
-//				gc = new SolarMerger();
-//				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
-//			}
-//			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
-//			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
-//			contMultiDyn.runMultiLevelLayout();
-//			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
-//		}
-//	}
-	
+	//	public List<String> provideSnapshotSize(){
+	//		List<String> lines = new ArrayList<>();
+	//		DyGraph discGraph = discretise();  
+	//		return lines;
+	//	}
+
+	//	public void probeLayout() {
+	//		HashSet<String> methodologies = new HashSet<String>();
+	//		methodologies.add("wi_id");
+	//		methodologies.add("iset_grip");
+	//		methodologies.add("sm_sp");
+	//		for(String s : methodologies) {
+	//			GraphCoarsener gc;
+	//			MultilevelNodePlacementStrategy ps;
+	//			if(s.equals("wi_id")) {
+	//				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+	//				gc = new IndependentSet.WalshawIndependentSet();
+	//				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+	//			}else if(s.equals("iset_grip")) {
+	//				System.out.println("Setting IndependentSet and GRIP Placement");        			
+	//				gc = new IndependentSet();
+	//				ps = new WeightedBarycenterPlacementStrategy();
+	//			}else{
+	//				System.out.println("Setting Solar Merger and Placer");        			        			
+	//				gc = new SolarMerger();
+	//				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+	//			}
+	//			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+	//			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
+	//			contMultiDyn.runMultiLevelLayout();
+	//			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
+	//		}
+	//	}
+
 	/**
 	 * Compute the metrics for the current experiment for VisOne.
 	 * @param visoneTime
@@ -360,6 +389,8 @@ public abstract class Experiment {
 				e.printStackTrace();
 			}catch (TimeoutException timeout) {
 				System.out.println("Timeout reached!");
+			}catch (URISyntaxException uri) {
+				System.out.println("ERROR: Can't load graph!");
 			}
 		}
 
@@ -383,8 +414,8 @@ public abstract class Experiment {
 
 			System.out.println("Applied scaling " + continuousScaling);
 
-//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
-			
+			//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
+
 			DyGraph discContinuous = discretise();
 			copyNodeLayoutFromTo(contGraph, discContinuous);
 
@@ -408,52 +439,55 @@ public abstract class Experiment {
 
 		List<String> lines = new ArrayList<>();
 
-		DyGraph contGraph = dataset.dygraph;
-		List<Double> snapTimes = readSnapTimes(discretise());
+		try {
+			DyGraph contGraph = dataset.dygraph;
+			List<Double> snapTimes = readSnapTimes(discretise());
 
-		StaticSumPresenceFlattener dyg = new StaticSumPresenceFlattener();
-		Graph flattened = dyg.flattenDyGraph(contGraph);
-		SfdpBuilder sfdp = new SfdpBuilder();
-		SfdpExecutor sfdpInstance = sfdp.build();
-		System.out.println("Flattened graph has " + flattened.nodeCount() + " nodes and " + flattened.edgeCount() + " edges");
-		long epochStart = System.currentTimeMillis();
-		sfdpInstance.execute(flattened);
+			StaticSumPresenceFlattener dyg = new StaticSumPresenceFlattener();
+			Graph flattened = dyg.flattenDyGraph(contGraph);
+			SfdpBuilder sfdp = new SfdpBuilder();
+			SfdpExecutor sfdpInstance = sfdp.build();
+			System.out.println("Flattened graph has " + flattened.nodeCount() + " nodes and " + flattened.edgeCount() + " edges");
+			long epochStart = System.currentTimeMillis();
+			sfdpInstance.execute(flattened);
 
-//		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"-sfdp" +".gml"), flattened);
-//		if(true)
-//			return lines;
+			//		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"-sfdp" +".gml"), flattened);
+			//		if(true)
+			//			return lines;
 
-		long epochEnd = System.currentTimeMillis();
-		System.out.println("\tDone! Computing metrics...");
-		DyGraph sfdpCont = getContinuousCopy();
-		copyNodeLayoutFromTo(flattened, sfdpCont);
+			long epochEnd = System.currentTimeMillis();
+			System.out.println("\tDone! Computing metrics...");
+			DyGraph sfdpCont = getContinuousCopy();
+			copyNodeLayoutFromTo(flattened, sfdpCont);
 
-		//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), name + " SFDP");
-		//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " SFDP");
+			//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), name + " SFDP");
+			//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " SFDP");
 
-		double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
-		applyIdealScaling(sfdpCont, sfdpScaling);
+			double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
+			applyIdealScaling(sfdpCont, sfdpScaling);
 
-		System.out.println("Applied " + sfdpScaling);
+			System.out.println("Applied " + sfdpScaling);
 
-		DyGraph sfdpDisc = discretise();
-		copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
+			DyGraph sfdpDisc = discretise();
+			copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
 
-		//		DyGraph sfdpContDisc = getContinuousCopy();
-		//		copyNodeLayoutFromTo(sfdpCont, sfdpContDisc);
+			//		DyGraph sfdpContDisc = getContinuousCopy();
+			//		copyNodeLayoutFromTo(sfdpCont, sfdpContDisc);
 
-		String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
-				+ computeOtherMetrics(sfdpDisc, sfdpCont, snapTimes, null) + STAT_SEPARATOR + dataset.eventsProcessed;;
+			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
+					+ computeOtherMetrics(sfdpDisc, sfdpCont, snapTimes, null) + STAT_SEPARATOR + dataset.eventsProcessed;;
 
-		//System.out.println(line);
+					//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
+					//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
 
-		//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
-		//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
-				
-		//		System.out.println(lineD);
+					//		System.out.println(lineD);
 
-		lines.add(line);
-		//		lines.add(lineD);
+					lines.add(line);
+					//		lines.add(lineD);
+
+		}catch(URISyntaxException uri) {
+			System.err.println("Can't load graph");
+		}
 
 		return lines;
 	}
@@ -461,8 +495,7 @@ public abstract class Experiment {
 
 	/**
 	 * Compute the metrics for the current experiment for MultiLevelDynNoSlice.
-	 * @param visoneTime
-	 * @param runMultiDyn if to run the experiment for Multi-DynNoSlice as well. 
+	 * @param discrete if to run the discrete experiment (for timesliced graph) as well. 
 	 * @return
 	 */
 	public List<String> computeMultiLevelMetrics(boolean discrete) {
@@ -488,33 +521,35 @@ public abstract class Experiment {
 				gc = new SolarMerger();
 				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
 			}
-			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
-			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
-			callables.clear();
-			callables.add(new Callable<ModularStatistics>() {
-				public ModularStatistics call() throws Exception {
-					contMultiDyn.runMultiLevelLayout();
-					//contMultiDyn.runCoarsening();
-					return contMultiDyn.getComputationStatistics();
-				}
-			});
-			try {
+			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");     
+			
+			try {			
+				MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
+				callables.clear();
+				callables.add(new Callable<ModularStatistics>() {
+					public ModularStatistics call() throws Exception {
+						contMultiDyn.runMultiLevelLayout();
+						//contMultiDyn.runCoarsening();
+						return contMultiDyn.getComputationStatistics();
+					}
+				});
+
 				ExecutorService exec = Executors.newSingleThreadExecutor();
 				ModularStatistics multiContStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
 
 				double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
-				
+
 				System.out.println("total running time " + multiContTime);
-				
+
 				SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();	
-								
+
 				double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
 				applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
 
 				System.out.println("Applied scaling " + multiContinuousScaling);
-				
-//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
-				
+
+				//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
+
 				DyGraph multiDiscContinuous = discretise();
 				copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
 
@@ -530,6 +565,8 @@ public abstract class Experiment {
 				e.printStackTrace();
 			}catch (TimeoutException timeout) {
 				System.out.println("Timeout reached!");
+			}catch (URISyntaxException uri) {
+				System.out.println("Can't load graph");
 			}
 
 			//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), name + " Multi-C");
@@ -570,9 +607,10 @@ public abstract class Experiment {
 					e.printStackTrace();
 				}catch (TimeoutException timeout) {
 					System.out.println("Timeout reached!");
-				}				
+				}catch (URISyntaxException uri) {
+					System.out.println("ERROR: Can't load graph!");
+				}
 			}
-
 		}
 
 		return lines;
@@ -643,13 +681,13 @@ public abstract class Experiment {
 		StcGraphMetric<Double> nodeMovement = new StcGraphMetric.AverageNodeMovement2D();
 		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.suggestedInterval, 600);
 
-//		return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
-//		+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
-//		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
-		
+		//		return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
+		//		+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+		//		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
+
 		return stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR
-		+ stressOn.computeMetric(contGraph) + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
-		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
+				+ stressOn.computeMetric(contGraph) + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
 	}
 
@@ -723,9 +761,9 @@ public abstract class Experiment {
 	 * @param directory the visone directory.
 	 * @return the discrete graph with the layout computed by visone.
 	 */
-	public DyGraph exportImportVisone(String directory) {
+	public DyGraph exportImportVisone(String directory) throws URISyntaxException{
 		DyGraph discreteGraph = discretise();
-		exportVisone(directory, discreteGraph);
+		//		exportVisone(directory, discreteGraph);
 		importVisone(directory, discreteGraph);
 		return discreteGraph;
 	}
@@ -736,40 +774,40 @@ public abstract class Experiment {
 	 * @param directory the visone directory.
 	 * @param discreteGraph the original discrete graph.
 	 */
-	public void exportVisone(String directory, DyGraph discreteGraph) {
-		NodeMap map = new NodeMap(discreteGraph);
-
-		int sliceNumber = 0;
-		for (Double time : readSnapTimes(discreteGraph)) {
-			List<String> lines = new ArrayList<>();
-
-			Graph snapshot = discreteGraph.snapshotAt(time);
-			for (String a : map) {
-				String line = "";
-				Node aNode = snapshot.hasNode(a) ? snapshot.getNode(a) : null;
-				for (String b : map) {
-					Node bNode = snapshot.hasNode(b) ? snapshot.getNode(b) : null;
-					if (aNode == null || bNode == null || aNode == bNode
-							|| snapshot.betweenEdge(aNode, bNode) == null) {
-						line += " 0";
-					} else {
-						line += " 1";
-					}
-				}
-				lines.add(line);
-			}
-
-			File dir = new File(directory + "visoneIn/");
-			try {
-				dir.mkdir();
-			} catch (SecurityException se) {
-				throw new IllegalStateException("Cannot create the directory.");
-			}
-			File file = new File(directory + "visoneIn/" + name + String.format("%03d", sliceNumber) + ".csv");
-			ParserTools.writeFileLines(lines, file);
-			sliceNumber++;
-		}
-	}
+	//	public void exportVisone(String directory, DyGraph discreteGraph) throws URISyntaxException{
+	//		NodeMap map = new NodeMap(discreteGraph);
+	//
+	//		int sliceNumber = 0;
+	//		for (Double time : readSnapTimes(discreteGraph)) {
+	//			List<String> lines = new ArrayList<>();
+	//
+	//			Graph snapshot = discreteGraph.snapshotAt(time);
+	//			for (String a : map) {
+	//				String line = "";
+	//				Node aNode = snapshot.hasNode(a) ? snapshot.getNode(a) : null;
+	//				for (String b : map) {
+	//					Node bNode = snapshot.hasNode(b) ? snapshot.getNode(b) : null;
+	//					if (aNode == null || bNode == null || aNode == bNode
+	//							|| snapshot.betweenEdge(aNode, bNode) == null) {
+	//						line += " 0";
+	//					} else {
+	//						line += " 1";
+	//					}
+	//				}
+	//				lines.add(line);
+	//			}
+	//
+	//			File dir = new File(Experiment.class.getResource(directory + "visoneIn/").toURI());
+	//			try {
+	//				dir.mkdir();
+	//			} catch (SecurityException se) {
+	//				throw new IllegalStateException("Cannot create the directory.");
+	//			}
+	//			File file = new File(directory + "visoneIn/" + name + String.format("%03d", sliceNumber) + ".csv");
+	//			ParserTools.writeFileLines(lines, file);
+	//			sliceNumber++;
+	//		}
+	//	}
 
 	/**
 	 * Imports the layout computed by visone and applies it to the given graph.
@@ -777,7 +815,7 @@ public abstract class Experiment {
 	 * @param directory the visone directory.
 	 * @param discreteGraph the graph that will receive the visone layout.
 	 */
-	public void importVisone(String directory, DyGraph discreteGraph) {
+	public void importVisone(String directory, DyGraph discreteGraph) throws URISyntaxException{
 		NodeMap map = new NodeMap(discreteGraph);
 		List<Double> snapTimes = readSnapTimes(discreteGraph);
 		List<Map<Node, Coordinates>> nodePositions = readNodePositions(directory, discreteGraph, map);
@@ -817,10 +855,10 @@ public abstract class Experiment {
 		return snapTimes;
 	}
 
-	private List<Map<Node, Coordinates>> readNodePositions(String directory, DyGraph discreteGraph, NodeMap map) {
+	private List<Map<Node, Coordinates>> readNodePositions(String directory, DyGraph discreteGraph, NodeMap map) throws URISyntaxException{
 		List<Map<Node, Coordinates>> nodePositions = new ArrayList<>();
 
-		for (File fileEntry : new File(directory + "/visoneAfter").listFiles()) {
+		for (File fileEntry : new File(Experiment.class.getResource(directory + "/visoneAfter").toURI()).listFiles()) {
 
 			int sliceNumber = Integer.parseInt(fileEntry.getName().replaceAll("[^\\d]", ""));
 			while (nodePositions.size() <= sliceNumber) {
@@ -943,15 +981,17 @@ public abstract class Experiment {
 	 *
 	 * @return a copy of the continuous graph.
 	 */
-	public abstract DyGraph getContinuousCopy(); 
+	public DyGraph getContinuousCopy() throws URISyntaxException{
+		return parserInstance.parse(loadMode).dygraph;
+	}
 
 	/**
 	 * Experiment with the InfoVis dataset.
 	 */
 	public static class InfoVis extends Experiment {
 
-		public InfoVis() {
-			super("InfoVis", "data/InfoVis_citations/", InfoVisCitations.parse(Commons.Mode.plain), 5);
+		public InfoVis() throws Exception{
+			super("InfoVis", "data/InfoVis_citations/", InfoVisCitations.class, Commons.Mode.plain, 5.0);
 		}
 
 		@Override
@@ -963,10 +1003,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return InfoVisCitations.parse(Commons.Mode.plain).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return InfoVisCitations.parse(Commons.Mode.plain).dygraph;
+		//		}
 
 	}
 
@@ -975,8 +1015,9 @@ public abstract class Experiment {
 	 */
 	public static class Rugby extends Experiment {
 
-		public Rugby() {
-			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
+		public Rugby() throws Exception{
+			super("Rugby", "data/Rugby_tweets/", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d);			
+			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
 		}
 
 		@Override
@@ -991,10 +1032,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return RugbyTweets.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return RugbyTweets.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 
 	}
 
@@ -1003,8 +1044,8 @@ public abstract class Experiment {
 	 */
 	public static class Pride extends Experiment {
 
-		public Pride() {
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice/", DialogSequences.parse(Commons.Mode.keepAppearedNode), 5);
+		public Pride() throws Exception{
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice/", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1019,10 +1060,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return DialogSequences.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return DialogSequences.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 
 	}
 
@@ -1031,8 +1072,8 @@ public abstract class Experiment {
 	 */
 	public static class Bunt extends Experiment {
 
-		public Bunt() {
-			super("VanDeBunt", "data/van_De_Bunt/", VanDeBunt.parse(Commons.Mode.keepAppearedNode), 5);
+		public Bunt() throws Exception {
+			super("VanDeBunt", "data/van_De_Bunt/", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1044,10 +1085,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return VanDeBunt.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return VanDeBunt.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 	/**
@@ -1055,8 +1096,8 @@ public abstract class Experiment {
 	 */
 	public static class Newcomb extends Experiment {
 
-		public Newcomb() {
-			super("Newcomb", "data/Newcomb/", NewcombFraternity.parse(Commons.Mode.keepAppearedNode), 5);
+		public Newcomb() throws Exception {
+			super("Newcomb", "data/Newcomb/", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5);
 		}
 
 		@Override
@@ -1068,10 +1109,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return NewcombFraternity.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return NewcombFraternity.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 	/**
@@ -1079,8 +1120,8 @@ public abstract class Experiment {
 	 */
 	public static class College extends Experiment {
 
-		public College() {
-			super("CollegeMsg", "data/CollegeMsg/", CollegeMsg.parse(Commons.Mode.keepAppearedNode), 5);
+		public College() throws Exception {
+			super("CollegeMsg", "data/CollegeMsg/", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1095,10 +1136,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return CollegeMsg.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return CollegeMsg.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 	/**
@@ -1106,8 +1147,8 @@ public abstract class Experiment {
 	 */
 	public static class BitAlpha extends Experiment {
 
-		public BitAlpha() {
-			super("BitcoinAlpha", "data/BitcoinAlpha/", BitcoinAlpha.parse(Commons.Mode.keepAppearedNode), 5);
+		public BitAlpha() throws Exception {
+			super("BitcoinAlpha", "data/BitcoinAlpha/", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1122,10 +1163,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return BitcoinAlpha.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return BitcoinAlpha.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 	/**
@@ -1133,8 +1174,8 @@ public abstract class Experiment {
 	 */
 	public static class BitOTC extends Experiment {
 
-		public BitOTC() {
-			super("BitcoinOTC", "data/BitcoinOTC/", BitcoinOTC.parse(Commons.Mode.keepAppearedNode), 5);
+		public BitOTC() throws Exception {
+			super("BitcoinOTC", "data/BitcoinOTC/", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1149,10 +1190,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return BitcoinOTC.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return BitcoinOTC.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 	/**
@@ -1160,8 +1201,8 @@ public abstract class Experiment {
 	 */
 	public static class RealMining extends Experiment {
 
-		public RealMining() {
-			super("Reality Mining", "data/RealityMining/", RealityMining.parse(Commons.Mode.keepAppearedNode), 5);
+		public RealMining() throws Exception{
+			super("Reality Mining", "data/RealityMining/", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d);
 		}
 
 		@Override
@@ -1176,10 +1217,10 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return RealityMining.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return RealityMining.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
 
 
@@ -1188,8 +1229,8 @@ public abstract class Experiment {
 	 */
 	public static class MOOC extends Experiment {
 
-		public MOOC() {
-			super("MOOC", "data/act-mooc/", Mooc.parse(Commons.Mode.keepAppearedNode), 5);
+		public MOOC() throws Exception {
+			super("MOOC", "data/act-mooc/", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1204,19 +1245,19 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return Mooc.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return Mooc.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
-	
+
 	/**
 	 * Experiment with the MOOC dataset.
 	 */
 	public static class RampInfectionMap extends Experiment {
 
-		public RampInfectionMap() {
-			super("RampInfectionMap", "data/RampInfectionMap/", ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode), 5);
+		public RampInfectionMap() throws Exception {
+			super("RampInfectionMap", "data/RampInfectionMap/", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1231,31 +1272,31 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		@Override
-		public DyGraph getContinuousCopy() {
-			return ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode).dygraph;
-		}
+		//		@Override
+		//		public DyGraph getContinuousCopy() {
+		//			return ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode).dygraph;
+		//		}
 	}
-	
+
 	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
-    	DyGraph discretizedGraph = discretise();
-    	List<Double> snapTimes = readSnapTimes(discretizedGraph);
-    	System.out.println("Dumping Slices");
-    	int lastSnap = 0;
-    	int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
-    	boolean stoppingCondition = true;
-    	int needle = step;
-    	while(stoppingCondition) {    		
-    		if(needle >= snapTimes.size()) {
-    			stoppingCondition = false;
-    			needle = snapTimes.size() - 1;
-    		}    		
-    		System.out.println("Start " + lastSnap + " end " + needle);
-    		Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-    		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
-    		lastSnap = needle;
-    		needle += step;
-    	}	
+		DyGraph discretizedGraph = discretise();
+		List<Double> snapTimes = readSnapTimes(discretizedGraph);
+		System.out.println("Dumping Slices");
+		int lastSnap = 0;
+		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
+		boolean stoppingCondition = true;
+		int needle = step;
+		while(stoppingCondition) {    		
+			if(needle >= snapTimes.size()) {
+				stoppingCondition = false;
+				needle = snapTimes.size() - 1;
+			}    		
+			System.out.println("Start " + lastSnap + " end " + needle);
+			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
+			lastSnap = needle;
+			needle += step;
+		}	
 	}
 
 }

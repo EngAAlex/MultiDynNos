@@ -13,14 +13,6 @@
 	</properties>
 	<build>
 		<sourceDirectory>source</sourceDirectory>
-		<resources>
-			<resource>
-				<directory>./data</directory>
-				<includes>
-					<include>./data/**/*</include>
-				</includes>
-			</resource>		
-		</resources>
 		<testSourceDirectory>test</testSourceDirectory>
 		<plugins>
 			<plugin>
@@ -36,21 +28,29 @@
 			    <artifactId>maven-jar-plugin</artifactId>
 			    <version>3.2.0</version>
 			    <configuration>
-			        <archive>
-			            <manifest>
-			                <mainClass>
-			                    ocotillo.DefaultRun
-			                </mainClass>
-			            </manifest>
-			        </archive>
+		          <archive>
+		            <manifest>
+		              <addClasspath>true</addClasspath>
+		              <mainClass>ocotillo.DefaultRun</mainClass>
+		            </manifest>
+		          </archive>
 			    </configuration>
 			</plugin>			
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
-					<descriptorRefs>
+					<archive>
+					  <manifest>
+					    <addClasspath>true</addClasspath>
+					    <mainClass>ocotillo.DefaultRun</mainClass>
+					  </manifest>
+					</archive>				
+	                <descriptors>
+	                    <descriptor>source/mvn-assembly.xml</descriptor>
+	                </descriptors>				
+					<!--  <descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
+					</descriptorRefs>-->
 				</configuration>
 				<executions>
 					<execution>

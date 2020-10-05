@@ -83,4 +83,9 @@ public class SolarMerger extends GraphCoarsener {
 		return newLevel;
 	}
 
+	@Override
+	public String getDescription() {
+		return "FM3 - Galaxy Partitioning";
+	}
+
 }

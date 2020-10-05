@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import ocotillo.graph.Rules;
@@ -29,6 +31,36 @@ public class ParserTools {
 
     static public final String SPLIT_KEEP_DELIMITERS = "((?<=%1$s)|(?=%1$s))";
 
+    public static List<String> readFileLinesFromStream(InputStream in) throws Exception{
+        List<String> lines = new ArrayList<>();
+        BufferedReader reader = null;
+        try { 
+        	reader = new BufferedReader(new InputStreamReader(in));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+            reader.close();
+        } catch (IOException e) {
+        	if(reader != null)
+        		reader.close();
+            System.out.println("The stream is not readable.");
+            throw new IOException(e.getLocalizedMessage());
+        } catch (NullPointerException npe) {
+        	if(reader != null)
+        		reader.close();        	
+        	//npe.printStackTrace();
+        	//System.out.println("Input Stream is null? " + in == null);
+        	throw new NullPointerException("Input Stream is null");
+        } catch (Exception ne) {
+        	if(reader != null)
+        		reader.close();
+        	ne.printStackTrace();
+        	throw new Exception(ne.getMessage());
+        }
+        return lines;
+    }
+    
     /**
      * Reads all the lines in a text file.
      *

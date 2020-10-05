@@ -136,8 +136,8 @@ public class DefaultRun {
 		vandebunt,
 		newcomb,
 		mooc,
-		alpha,
-		otc,
+		bitalpha,
+		bitotc,
 		reality,
 		collegemsg,
 		ramp;
@@ -297,23 +297,29 @@ public class DefaultRun {
 			String selectedGraph = args[1];
 
 			if(preloadedGraphs.containsKey(selectedGraph)) {
-				switch(preloadedGraphs.get(selectedGraph)) {
-				case 0: 
-					data = VanDeBunt.parse(Mode.keepAppearedNode); break;
-				case 1: 
-					data = NewcombFraternity.parse(Mode.keepAppearedNode); break;
-				case 2: 
-					data = InfoVisCitations.parse(Mode.keepAppearedNode); break;
-				case 3: data = RugbyTweets.parse(Mode.keepAppearedNode); break;
-				case 4: data = DialogSequences.parse(Mode.keepAppearedNode); break;
-				case 5: data = CollegeMsg.parse(Mode.keepAppearedNode); break;
-				case 6: data = RealityMining.parse(Mode.keepAppearedNode); break;
-				case 7: data = BitcoinAlpha.parse(Mode.keepAppearedNode); break;
-				case 8: data = BitcoinOTC.parse(Mode.keepAppearedNode); break;
-				case 9: data = Mooc.parse(Mode.keepAppearedNode); break;
-				case 10: data = RampInfectionMap.parse(Mode.keepAppearedNode); break;
-				default: break;
-				}	
+				try {
+					switch(preloadedGraphs.get(selectedGraph)) {
+					case 0: 
+						data = new VanDeBunt().parse(Mode.keepAppearedNode); break;
+					case 1: 
+						data = new NewcombFraternity().parse(Mode.keepAppearedNode); break;
+					case 2: 
+						data = new InfoVisCitations().parse(Mode.keepAppearedNode); break;
+					case 3: data = new RugbyTweets().parse(Mode.keepAppearedNode); break;
+					case 4: data = new DialogSequences().parse(Mode.keepAppearedNode); break;
+					case 5: data = new CollegeMsg().parse(Mode.keepAppearedNode); break;
+					case 6: data = new RealityMining().parse(Mode.keepAppearedNode); break;
+					case 7: data = new BitcoinAlpha().parse(Mode.keepAppearedNode); break;
+					case 8: data = new BitcoinOTC().parse(Mode.keepAppearedNode); break;
+					case 9: data = new Mooc().parse(Mode.keepAppearedNode); break;
+					case 10: data = new RampInfectionMap().parse(Mode.keepAppearedNode); break;
+					default: break;
+					}
+				}catch (Exception e) {
+					System.out.println("Can't load preloaded graph: " + e.getMessage());
+					e.printStackTrace();
+					System.exit(1);
+				}
 			}else if(!selectedGraph.equals("custom")) {
 				System.err.println("Graph Dataset not found!"); 
 				showHelp();

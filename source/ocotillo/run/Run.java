@@ -5,6 +5,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.WindowConstants;
+
 import ocotillo.DefaultRun.CMDLineOption;
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
@@ -155,6 +157,7 @@ public abstract class Run {
 
 		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName + " animation");
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
+		dyWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		dyWindow.showNewWindow();
 	}
 
@@ -162,6 +165,7 @@ public abstract class Run {
 
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
 		QuickView window = new QuickView(stcs.mirrorGraph(), graphName + " space-time cube");
+		window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);		
 		window.showNewWindow();
 	}	
 

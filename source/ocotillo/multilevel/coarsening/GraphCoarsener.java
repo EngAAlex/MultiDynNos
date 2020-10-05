@@ -397,5 +397,7 @@ public abstract class GraphCoarsener {
 		return newEvo;
 	}
 
+	public abstract String getDescription();
+
 
 }
