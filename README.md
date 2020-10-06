@@ -7,7 +7,7 @@ MultiDyNoSlice is the first multi-level event based graph drawing algorithm.
 #### Requirements
 
 - **Build**: To build MultiDynNos, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoSlice requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** variables if needed to point at the command to run Graphviz.
+- **Layout**: To produce its layouts, MultiDynNoSlice requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
 
 #### Build
 
