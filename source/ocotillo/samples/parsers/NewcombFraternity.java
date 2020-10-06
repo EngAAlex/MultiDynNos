@@ -152,8 +152,6 @@ public class NewcombFraternity extends PreloadedGraphParser{
 		List<Integer[][]> dataset = new ArrayList<>();
 		ZipEntry zie = inputStream.getNextEntry();
 		while(zie != null) {
-			System.out.print("\rLoading file " + zie.getName());
-			System.out.print("Loading complete");
 			//			for (File fileEntry : inputStream.getNextEntry()) {			
 			//				if (fileEntry.getName().toLowerCase().endsWith(".txt")) {
 			List<String> fileLines = ParserTools.readFileLinesFromStream(

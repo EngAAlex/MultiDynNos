@@ -191,7 +191,7 @@ public class VanDeBunt extends PreloadedGraphParser{
 
 		ZipEntry zie = inputStream.getNextEntry();
 		while(zie != null) {
-			System.out.print("\rLoading file " + zie.getName());
+			//			System.out.print("\rLoading file " + zie.getName());
 			//			for (File fileEntry : inputStream.getNextEntry()) {			
 			//				if (fileEntry.getName().toLowerCase().endsWith(".txt")) {
 

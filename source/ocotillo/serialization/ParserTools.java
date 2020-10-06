@@ -93,7 +93,7 @@ public class ParserTools {
                 writer.newLine();
             }
         } catch (IOException ex) {
-            System.err.println("The file " + file.getName() + "is not writable.");
+            System.err.println("The file " + file.getName() + " is not writable.");
         }
     }
 

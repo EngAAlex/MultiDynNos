@@ -200,6 +200,7 @@ public class DefaultRun {
 		sfdp,
 		help,
 		discrete,
+		verbose,
 		output;
 
 		public static void printHelp() {
@@ -219,6 +220,8 @@ public class DefaultRun {
 				return new CMDLineOption("Smaller graphs", "--smaller", "Executes the experiment on the smaller graphs");
 			case larger: 
 				return new CMDLineOption("Larger graphs", "--larger", "Executes the experiment on the larger graphs");
+			case visone: 
+				return new CMDLineOption("Visone", "--visone", "Computes metrics for stored Visone graphs");    			
 			case multi: 
 				return new CMDLineOption("MultiDynNoS", "--multi", "Executes the experiment using MultiDynNoS");    			
 			case single: 
@@ -228,7 +231,9 @@ public class DefaultRun {
 			case discrete: 
 				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
 			case output:
-				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");				
+				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
+			case verbose:
+				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
 			default: return null;
 			}
 		}
@@ -240,6 +245,8 @@ public class DefaultRun {
 				return MetricsCalculationOptions.smaller;
 			case "larger": 
 				return MetricsCalculationOptions.larger;
+			case "visone": 
+				return MetricsCalculationOptions.visone;  				
 			case "multi": 
 				return MetricsCalculationOptions.multi;    			
 			case "single": 
@@ -250,6 +257,8 @@ public class DefaultRun {
 				return MetricsCalculationOptions.discrete;    		
 			case "out":
 				return MetricsCalculationOptions.output;
+			case "verbose":
+				return MetricsCalculationOptions.verbose;
 			default: return null;			
 			}			
 		}
@@ -355,6 +364,7 @@ public class DefaultRun {
 			Boolean executeSFDP = false;
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
+			Boolean verbose = false;
 			//                Boolean plotSliceSize = false;
 			//                Boolean dumpSlicesPicture = false;
 
@@ -378,13 +388,14 @@ public class DefaultRun {
 
 			HashSet<String> discreteExperiment = new HashSet<String>();
 
-			for(int i = 0; i < args.length; i++) {
+			for(int i = 1; i < args.length; i++) {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
 				case smaller: expNames.addAll(smallerDatasets); break;
 				case larger: expNames.addAll(largerDatasets); break;
 				case single: executeSingle = true; break;
-				case multi: 					executeMulti = true; break;
-				case sfdp: 					executeSFDP = true; break;
+				case multi: executeMulti = true; break;
+				case sfdp: 	executeSFDP = true; break;
+				case verbose: verbose = true; break;
 				case discrete: {
 					discreteExperiment.add("Bunt");
 					discreteExperiment.add("Newcomb");
@@ -426,9 +437,9 @@ public class DefaultRun {
 			time = time.replace(':', '-');
 
 			String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
-
+			
 			for(String graphName : expNames) {
-				System.out.println("Starting " + graphName + " Experiment");
+				System.out.println("\n### Starting " + graphName + " Experiment ###");
 				if(executeVisone && visoneTimes.containsKey(graphName)) {
 					lines.addAll(
 							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
@@ -440,7 +451,7 @@ public class DefaultRun {
 							);                		
 				}if(executeMulti) {
 					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName))
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
 							);                		
 				}
 				if(executeSFDP) {
@@ -459,13 +470,17 @@ public class DefaultRun {
 
 			}
 
-			for (String line : lines) {
-				System.out.println(line);
-			}
+			//			for (String line : lines) {
+			//				System.out.println(line);
+			//			}
 
 			ParserTools.writeFileLines(lines,
 					new File(outputFolder + File.separator + fileName));
-			break;
+			
+			System.out.println("\n##### Experiments complete! #####");
+			
+			System.exit(0);
+			return;
 		}
 
 		}

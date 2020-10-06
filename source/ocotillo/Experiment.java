@@ -6,7 +6,9 @@
 package ocotillo;
 
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
@@ -24,6 +26,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -68,6 +72,7 @@ import ocotillo.graph.layout.fdl.modular.ModularMetric;
 import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
 import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
+import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.gui.quickview.DyQuickView;
@@ -95,7 +100,6 @@ import ocotillo.samples.parsers.PreloadedGraphParser;
 import ocotillo.samples.parsers.RealityMining;
 import ocotillo.samples.parsers.RugbyTweets;
 import ocotillo.samples.parsers.VanDeBunt;
-import ocotillo.serialization.ParserTools;
 import ocotillo.various.ColorCollection;
 
 /**
@@ -249,15 +253,16 @@ public abstract class Experiment {
 		return builder.build();
 	}
 
-	public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing) {
+	public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc,  AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
 				.setCoarsener(gc) //WalshawIndependentSet
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters()
-				.addLayerPreMovementDrawingOption(new MultiLevelDrawingOption<DyModularPreMovement>(new DyModularPreMovement.ForbidTimeShitfing()));
-		//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
+				.withSingleLevelLayout(staticLayout)
+				.addLayerPreMovementDrawingOption(new MultiLevelDrawingOption<DyModularPreMovement>(new DyModularPreMovement.ForbidTimeShitfing()))
+				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose);//.build();
 
 
 		if (postProcessing != null) 
@@ -268,16 +273,16 @@ public abstract class Experiment {
 		return multiDyn;
 	}
 
-	public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing) {
+	public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
-				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true)
+				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose)
+				.withSingleLevelLayout(staticLayout)
 				.defaultLayoutParameters();
-		//.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 
 		if (postProcessing != null) 
@@ -295,6 +300,9 @@ public abstract class Experiment {
 	 * @return
 	 */
 	public List<String> computeVisoneMetrics(String visoneTime) {
+		
+		System.out.println("\n# Computing VISONE metrics #");
+		
 		List<String> lines = new ArrayList<>();
 
 		DyGraph visoneGraph = null;
@@ -364,6 +372,7 @@ public abstract class Experiment {
 		DyGraph discGraph = discretise();        
 		List<Double> snapTimes = readSnapTimes(discGraph);
 
+		System.out.println("\n# Starting DynNoSlice Experiment #");		
 
 		if(discrete) {
 			System.out.println("\tExecuting Discrete DynNoSlice");
@@ -435,7 +444,8 @@ public abstract class Experiment {
 	}
 
 	public List<String> computeSFDPMetrics() {
-		System.out.println("\tExecuting SFDP flattened");
+
+		System.out.println("\n# Starting SFDP flattened Experiment #");
 
 		List<String> lines = new ArrayList<>();
 
@@ -498,121 +508,129 @@ public abstract class Experiment {
 	 * @param discrete if to run the discrete experiment (for timesliced graph) as well. 
 	 * @return
 	 */
-	public List<String> computeMultiLevelMetrics(boolean discrete) {
+	public List<String> computeMultiLevelMetrics(boolean discrete, boolean verbose) {
 		List<String> lines = new ArrayList<>();
 		List<Double> snapTimes = readSnapTimes(discretise());
 		HashSet<String> methodologies = new HashSet<String>();
 		methodologies.add("wi_id");
 		methodologies.add("iset_grip");
 		methodologies.add("sm_sp");
-		for(String s : methodologies) {
-			GraphCoarsener gc;
-			MultilevelNodePlacementStrategy ps;
-			if(s.equals("wi_id")) {
-				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
-				gc = new IndependentSet.WalshawIndependentSet();
-				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
-			}else if(s.equals("iset_grip")) {
-				System.out.println("Setting IndependentSet and GRIP Placement");        			
-				gc = new IndependentSet();
-				ps = new WeightedBarycenterPlacementStrategy();
-			}else{
-				System.out.println("Setting Solar Merger and Placer");        			        			
-				gc = new SolarMerger();
-				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
-			}
-			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");     
-			
-			try {			
-				MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
-				callables.clear();
-				callables.add(new Callable<ModularStatistics>() {
-					public ModularStatistics call() throws Exception {
-						contMultiDyn.runMultiLevelLayout();
-						//contMultiDyn.runCoarsening();
-						return contMultiDyn.getComputationStatistics();
-					}
-				});
+		HashSet<AVAILABLE_STATIC_LAYOUTS> singleLevelLayouts = new HashSet<AVAILABLE_STATIC_LAYOUTS>();
+		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
+		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.sfdp);
+		
+		System.out.println("\n# Starting Multi-Level Experiment #");
+		
+		for(AVAILABLE_STATIC_LAYOUTS singleLevel : singleLevelLayouts) {
+			System.out.println("Using Single Level Layout: " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel));
+			for(String s : methodologies) {
+				GraphCoarsener gc;
+				MultilevelNodePlacementStrategy ps;
+				if(s.equals("wi_id")) {
+					System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+					gc = new IndependentSet.WalshawIndependentSet();
+					ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+				}else if(s.equals("iset_grip")) {
+					System.out.println("Setting IndependentSet and GRIP Placement");        			
+					gc = new IndependentSet();
+					ps = new WeightedBarycenterPlacementStrategy();
+				}else{
+					System.out.println("Setting Solar Merger and Placer");        			        			
+					gc = new SolarMerger();
+					ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+				}
+				System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");     
 
-				ExecutorService exec = Executors.newSingleThreadExecutor();
-				ModularStatistics multiContStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
+				try {			
+					MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, singleLevel, ps, null, verbose);
+					callables.clear();
+					callables.add(new Callable<ModularStatistics>() {
+						public ModularStatistics call() throws Exception {
+							contMultiDyn.runMultiLevelLayout();
+							//contMultiDyn.runCoarsening();
+							return contMultiDyn.getComputationStatistics();
+						}
+					});
 
-				double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
-
-				System.out.println("total running time " + multiContTime);
-
-				SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();	
-
-				double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
-				applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
-
-				System.out.println("Applied scaling " + multiContinuousScaling);
-
-				//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
-
-				DyGraph multiDiscContinuous = discretise();
-				copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
-
-				String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
-				System.out.println("\tDone! Computing metrics...");
-				String line = name + ";" + "multic_" + s + ";" + multiContTime + STAT_SEPARATOR + 1 / multiContinuousScaling + STAT_SEPARATOR
-						+ computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
-
-				//System.out.println(line);
-
-				lines.add(line); 
-			}catch (InterruptedException | ExecutionException e) {
-				e.printStackTrace();
-			}catch (TimeoutException timeout) {
-				System.out.println("Timeout reached!");
-			}catch (URISyntaxException uri) {
-				System.out.println("Can't load graph");
-			}
-
-			//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), name + " Multi-C");
-			//			MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " Multi-C");
-
-			if(discrete) {
-				System.out.println("\t\tExecuting Discrete Multi-Level Algorithm");
-				MultiLevelDynNoSlice discMultiDyn = getMultiLevelDiscreteLayoutAlgorithm(discretise(), gc, ps, null);
-				callables.clear();
-				callables.add(new Callable<ModularStatistics>() {
-					public ModularStatistics call() throws Exception {
-						discMultiDyn.runMultiLevelLayout();
-						return discMultiDyn.getComputationStatistics();
-					}
-				});
-				try {
 					ExecutorService exec = Executors.newSingleThreadExecutor();
-					ModularStatistics multiDiscStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
+					ModularStatistics multiContStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
+
+					double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
+
+					System.out.println("total running time " + multiContTime);
+
+					SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();	
+
+					double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
+					applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
+
+					System.out.println("Applied scaling " + multiContinuousScaling);
+
+					//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
+
+					DyGraph multiDiscContinuous = discretise();
+					copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
+
+					String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
 					System.out.println("\tDone! Computing metrics...");
-					SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
-					double multiDiscTime = multiDiscStats.getTotalRunningTime().toMillis()/1000.0d;      
+					String line = name + ";" + "multic-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + "_" + s + ";" + multiContTime + STAT_SEPARATOR + 1 / multiContinuousScaling + STAT_SEPARATOR
+							+ computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
-					double multiDiscreteScaling = computeIdealScaling(discMultiDyn.getDrawnGraph(), snapTimes);
-					applyIdealScaling(discMultiDynSyncro, multiDiscreteScaling);
+					//System.out.println(line);
 
-					DyGraph multiContDiscrete = getContinuousCopy();
-					copyNodeLayoutFromTo(discMultiDyn.getDrawnGraph(), multiContDiscrete);
-
-					String extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
-
-					String line = name + STAT_SEPARATOR + "multid_" + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR + 1 / multiDiscreteScaling + STAT_SEPARATOR
-							+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
-
-					System.out.println(line);
-
-					lines.add(line);
+					lines.add(line); 
 				}catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
 				}catch (TimeoutException timeout) {
 					System.out.println("Timeout reached!");
 				}catch (URISyntaxException uri) {
-					System.out.println("ERROR: Can't load graph!");
+					System.out.println("Can't load graph");
+				}
+
+				//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), name + " Multi-C");
+				//			MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " Multi-C");
+
+				if(discrete) {
+					System.out.println("\t\tExecuting Discrete Multi-Level Algorithm");
+					MultiLevelDynNoSlice discMultiDyn = getMultiLevelDiscreteLayoutAlgorithm(discretise(), gc, singleLevel, ps, null, verbose);
+					callables.clear();
+					callables.add(new Callable<ModularStatistics>() {
+						public ModularStatistics call() throws Exception {
+							discMultiDyn.runMultiLevelLayout();
+							return discMultiDyn.getComputationStatistics();
+						}
+					});
+					try {
+						ExecutorService exec = Executors.newSingleThreadExecutor();
+						ModularStatistics multiDiscStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
+						System.out.println("\tDone! Computing metrics...");
+						SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
+						double multiDiscTime = multiDiscStats.getTotalRunningTime().toMillis()/1000.0d;      
+
+						double multiDiscreteScaling = computeIdealScaling(discMultiDyn.getDrawnGraph(), snapTimes);
+						applyIdealScaling(discMultiDynSyncro, multiDiscreteScaling);
+
+						DyGraph multiContDiscrete = getContinuousCopy();
+						copyNodeLayoutFromTo(discMultiDyn.getDrawnGraph(), multiContDiscrete);
+
+						String extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
+
+						String line = name + STAT_SEPARATOR + "multid-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR + 1 / multiDiscreteScaling + STAT_SEPARATOR
+								+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
+
+						//System.out.println(line);
+
+						lines.add(line);
+					}catch (InterruptedException | ExecutionException e) {
+						e.printStackTrace();
+					}catch (TimeoutException timeout) {
+						System.out.println("Timeout reached!");
+					}catch (URISyntaxException uri) {
+						System.out.println("ERROR: Can't load graph!");
+					}
 				}
 			}
 		}
-
 		return lines;
 	}
 
@@ -714,7 +732,7 @@ public abstract class Experiment {
 				bestScaling = scaling;
 			}
 		}
-		System.out.println("\tBest scaling: " + bestScaling);
+		//System.out.println("\tBest scaling: " + bestScaling);
 		return bestScaling;
 	}
 
@@ -855,20 +873,27 @@ public abstract class Experiment {
 		return snapTimes;
 	}
 
-	private List<Map<Node, Coordinates>> readNodePositions(String directory, DyGraph discreteGraph, NodeMap map) throws URISyntaxException{
+	private List<Map<Node, Coordinates>> readNodePositions(String directory, DyGraph discreteGraph, NodeMap map){
 		List<Map<Node, Coordinates>> nodePositions = new ArrayList<>();
+		ZipInputStream visoneInputStream = new ZipInputStream(Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip"));
+		try {		
+			//visoneInputStream = new ZipInputStream(Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip")); 
+			//for (File fileEntry : new File(Experiment.class.getResource(directory + "/visoneAfter").toURI()).listFiles()) {
+			ZipEntry zie = visoneInputStream.getNextEntry();
+			while(zie != null){
+				int sliceNumber = Integer.parseInt(zie.getName().replaceAll("[^\\d]", ""));
+				while (nodePositions.size() <= sliceNumber) {
+					nodePositions.add(new HashMap<>());
+				}
 
-		for (File fileEntry : new File(Experiment.class.getResource(directory + "/visoneAfter").toURI()).listFiles()) {
-
-			int sliceNumber = Integer.parseInt(fileEntry.getName().replaceAll("[^\\d]", ""));
-			while (nodePositions.size() <= sliceNumber) {
-				nodePositions.add(new HashMap<>());
-			}
-
-			try {
 				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-				Document doc = dBuilder.parse(fileEntry);
+				Document doc = dBuilder.parse(
+						new FilterInputStream(visoneInputStream) {
+							public void close() throws IOException {
+								visoneInputStream.closeEntry();
+							}
+						});
 				doc.getDocumentElement().normalize();
 				NodeList nList = doc.getElementsByTagName("node");
 
@@ -890,10 +915,20 @@ public abstract class Experiment {
 					nodePositions.get(sliceNumber).put(node, position);
 				}
 
-			} catch (SAXException | IOException | ParserConfigurationException ex) {
-				throw new IllegalStateException("Cannot read the xml file.");
+				zie = visoneInputStream.getNextEntry();
 			}
-		}
+		} catch (SAXException | IOException | ParserConfigurationException ex) {
+			if(visoneInputStream != null)
+				try {
+					visoneInputStream.close();
+				} catch (IOException e) {}			
+			throw new IllegalStateException("Cannot read the xml file.");
+		}		
+		if(visoneInputStream != null)
+			try {
+				visoneInputStream.close();
+			} catch (IOException e) {}
+
 		return nodePositions;
 	}
 
@@ -991,7 +1026,7 @@ public abstract class Experiment {
 	public static class InfoVis extends Experiment {
 
 		public InfoVis() throws Exception{
-			super("InfoVis", "data/InfoVis_citations/", InfoVisCitations.class, Commons.Mode.plain, 5.0);
+			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0);
 		}
 
 		@Override
@@ -1016,7 +1051,7 @@ public abstract class Experiment {
 	public static class Rugby extends Experiment {
 
 		public Rugby() throws Exception{
-			super("Rugby", "data/Rugby_tweets/", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d);			
+			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d);			
 			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
 		}
 
@@ -1045,7 +1080,7 @@ public abstract class Experiment {
 	public static class Pride extends Experiment {
 
 		public Pride() throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice/", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1073,7 +1108,7 @@ public abstract class Experiment {
 	public static class Bunt extends Experiment {
 
 		public Bunt() throws Exception {
-			super("VanDeBunt", "data/van_De_Bunt/", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1097,7 +1132,7 @@ public abstract class Experiment {
 	public static class Newcomb extends Experiment {
 
 		public Newcomb() throws Exception {
-			super("Newcomb", "data/Newcomb/", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5);
+			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5);
 		}
 
 		@Override
@@ -1121,7 +1156,7 @@ public abstract class Experiment {
 	public static class College extends Experiment {
 
 		public College() throws Exception {
-			super("CollegeMsg", "data/CollegeMsg/", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1148,7 +1183,7 @@ public abstract class Experiment {
 	public static class BitAlpha extends Experiment {
 
 		public BitAlpha() throws Exception {
-			super("BitcoinAlpha", "data/BitcoinAlpha/", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1175,7 +1210,7 @@ public abstract class Experiment {
 	public static class BitOTC extends Experiment {
 
 		public BitOTC() throws Exception {
-			super("BitcoinOTC", "data/BitcoinOTC/", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1202,7 +1237,7 @@ public abstract class Experiment {
 	public static class RealMining extends Experiment {
 
 		public RealMining() throws Exception{
-			super("Reality Mining", "data/RealityMining/", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d);
+			super("Reality Mining", "data/RealityMining", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d);
 		}
 
 		@Override
@@ -1230,7 +1265,7 @@ public abstract class Experiment {
 	public static class MOOC extends Experiment {
 
 		public MOOC() throws Exception {
-			super("MOOC", "data/act-mooc/", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("MOOC", "data/act-mooc", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override
@@ -1257,7 +1292,7 @@ public abstract class Experiment {
 	public static class RampInfectionMap extends Experiment {
 
 		public RampInfectionMap() throws Exception {
-			super("RampInfectionMap", "data/RampInfectionMap/", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("RampInfectionMap", "data/RampInfectionMap", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		@Override

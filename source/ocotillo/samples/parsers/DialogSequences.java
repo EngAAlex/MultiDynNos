@@ -163,7 +163,7 @@ public class DialogSequences extends PreloadedGraphParser{
 		DialogDataset dataset = new DialogDataset();
 		ZipEntry zie = inputStream.getNextEntry();
 		while(zie != null) {
-			System.out.print("\rLoading file " + zie.getName());
+			//			System.out.print("\rLoading file " + zie.getName());
 			//			for (File fileEntry : inputStream.getNextEntry()) {			
 			//				if (fileEntry.getName().toLowerCase().endsWith(".txt")) {
 			List<String> fileLines = ParserTools.readFileLinesFromStream(
@@ -201,7 +201,7 @@ public class DialogSequences extends PreloadedGraphParser{
 			//				}
 			//}
 		}
-		System.out.println("\nLoading complete");
+		//System.out.println("\nLoading complete");
 		return dataset;
 	}
 }

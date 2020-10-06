@@ -17,7 +17,6 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
 import ocotillo.graph.layout.fdl.modular.ModularMetric;
 import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
-import ocotillo.graph.layout.fdl.modular.ModularPreMovement;
 import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
@@ -300,7 +299,7 @@ public class MultiLevelDynNoSlice {
 
 	private Graph computeStaticLayout(Graph currentGraph) {
 		SfdpBuilder sfdp = new SfdpBuilder().withCommandLine(singleLevelLayout);
-		System.out.println("Using " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevelLayout) + " for first layout");
+		logger.log("Using " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevelLayout) + " for first layout");
 		SfdpExecutor sfdpInstance = sfdp.build();
 		sfdpInstance.execute(currentGraph);	
 		return currentGraph;
@@ -349,7 +348,7 @@ public class MultiLevelDynNoSlice {
 	}
 
 	public void showMirrorGraph() {
-		currentAlgorithm.showMirrorGraph();;
+		currentAlgorithm.showMirrorGraph();
 	}
 
 	public SpaceTimeCubeSynchroniser getSyncro() {
