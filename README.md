@@ -22,13 +22,12 @@ $ mvn clean package -DskipTests
 Building the software will produce, in the **target** folder, several files. The build that contains the software, its dependencies, and its data is **multi-dynnoslice-1.0.0-complete.jar**. To show a quick help description, please run the following command:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <COMMANDS>
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar
 ```
-Please substitute ```<COMMANDS>``` above with the desired parameters according to the following instructions.
 This software has **two** modes: **Layout** and **Metrics**.
 
 #### Layout Mode:
-It is used to run either DynNoSlice or Multi-DynNoSlice on a single graph and either plot the space time cube or show the corresponding animation on a new window.
+It is used to run DynNoSlice or Multi-DynNoSlice on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
 
 To run the system in this mode, please run:
 
