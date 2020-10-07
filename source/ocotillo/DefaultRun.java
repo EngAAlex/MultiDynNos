@@ -304,6 +304,7 @@ public class DefaultRun {
 
 			DyDataSet data = null;
 			String selectedGraph = args[1];
+			boolean customGraph = false;
 
 			if(preloadedGraphs.containsKey(selectedGraph)) {
 				try {
@@ -333,11 +334,12 @@ public class DefaultRun {
 				System.err.println("Graph Dataset not found!"); 
 				showHelp();
 				System.exit(0);				
-			}
+			} else
+				customGraph = true;
 
 			Run drawingAlgorithm;
 
-			AvailableMethods selectedMethod = AvailableMethods.parse(args[2]);
+			AvailableMethods selectedMethod = AvailableMethods.parse(customGraph ? args[4] : args[2]);
 
 			switch(selectedMethod) {
 			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data); break;
@@ -377,11 +379,11 @@ public class DefaultRun {
 			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-			largerDatasets.add("RealMining");
-			largerDatasets.add("BitOTC");
-			largerDatasets.add("MOOC");
-			largerDatasets.add("BitAlpha");  
-			largerDatasets.add("College");
+//			largerDatasets.add("RealMining");
+//			largerDatasets.add("BitOTC");
+//			largerDatasets.add("MOOC");
+//			largerDatasets.add("BitAlpha");  
+//			largerDatasets.add("College");
 			largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();

@@ -33,7 +33,7 @@ It is used to run either DynNoSlice or Multi-DynNoSlice on a single graph and ei
 To run the system in this mode, please run:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT> <OPTIONS>
 ```
 
 | Mode | Command Line Argument | Description |
@@ -58,6 +58,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | College Message | ```college``` | SThis dataset is comprised of private messages sent on an online social network at the University of California, Irvine. | [*]()
 | Reality Mining | ```reality``` | This data comes from The Reality Mining study. | [*]()
 | Ramp Infection Map | ```ramp``` | Contact-tracing Network. | [*]()
+| *Custom Graph* | ```custom``` | See below for how to run the system with custom graphs. | ------ |
 
 
 **Timesliced graph*
@@ -71,6 +72,35 @@ As an example, to show the animation of RAMP graph using Multi-DynNoSlice, the c
 
 ```
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
+```
+
+| Options | Command Line Argument | Description |
+| ------ | ------ | ------ |
+| Delta | ```-d <value>``` | Run the layout with a custom delta. |
+| Tau | ```-t <value>``` | Run the layout with a custom tau. |
+| Text Out | ```-o /path/to/graph``` | If specified, the output graph will be converted to text file and saved where specified.
+
+##### Custom Graph:
+
+To run the system with a user-provided graph, please use the following syntax:
+
+```
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate custom /path/to/node/file /path/to/edge/file <LAYOUT> <OPTIONS>
+```
+
+With ```<LAYOUT>``` and ```<OPTIONS>``` the same as above. An example of node and edge files can be found below.
+
+```
+Node dataset example:
+	Alice,1,5
+	Bob,2,4.6
+	Carol,1.5,3
+	<Node ID>,<Start Time>,<Duration>
+
+Edge dataset example:
+	Alice,Bob,2.5,1
+	Bob,Carol,2.1,0.6
+	<Source Node ID>, <Target Node ID>,<Start Time>,<Duration>
 ```
 
 #### Metrics Mode: 
@@ -100,11 +130,11 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smal
 
 At least one graph category and one layout method must be selected for the experiment to run.
 
-### Todos
+# Todos
 
  - Write MORE Tests
 
-### Acknowledgments
+# Acknowledgments
 
 Contains original *DynNoSlice* software by Paolo Simonetto.
 

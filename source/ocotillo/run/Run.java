@@ -60,17 +60,17 @@ public abstract class Run {
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
-			File nodeDataSetFile = new File(argv[1]);
+			File nodeDataSetFile = new File(argv[2]);
 			if (!nodeDataSetFile.exists()) {
-				System.err.println("The node data set file \"" + argv[1] + "\" does not exist. \n");
+				System.err.println("The node data set file \"" + argv[2] + "\" does not exist. \n");
 				showHelp();
 				System.exit(1);				
 			}
 			List<String> nodeDataSetLines = ParserTools.readFileLines(nodeDataSetFile);
 
-			File edgeDataSetFile = new File(argv[2]);
+			File edgeDataSetFile = new File(argv[3]);
 			if (!edgeDataSetFile.exists()) {
-				System.err.println("The node edge set file \"" + argv[2] + "\" does not exist. \n");
+				System.err.println("The node edge set file \"" + argv[3] + "\" does not exist. \n");
 				showHelp();
 				System.exit(1);				
 			}
@@ -90,7 +90,7 @@ public abstract class Run {
 			graphName = argv[1];
 		}		
 
-		for(int i=3; i<argv.length; i++) {
+		for(int i=0; i<argv.length; i++) {
 			switch(AvailableDrawingOption.parse(argv[i].split("-")[1])) {
 			case delta:  {
 				try {				
@@ -331,7 +331,7 @@ public abstract class Run {
 		System.out.println("nodeDataSetPath:       the path to the node dataset (csv file with nodeId,startTime,duration)");
 		System.out.println("edgeDataSetPath:       the path to the edge dataset (csv file with sourceId,targetId,startTime,duration)");
 		System.out.println("Command example:");
-		System.out.println("java -jar MultiDynNos.jar custom <path-to-nodeset> <path-to-edgeset> [OPTIONS]");
+		System.out.println("java -jar /path/to/multidynnos.jar custom <path-to-nodeset> <path-to-edgeset> [OPTIONS]");
 		System.out.println("Node dataset example:");
 		System.out.println("Alice,1,5");
 		System.out.println("Bob,2,4.6");
