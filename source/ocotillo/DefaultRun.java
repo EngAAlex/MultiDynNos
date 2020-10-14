@@ -39,6 +39,7 @@ import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
 import ocotillo.run.Run;
 import ocotillo.run.Run.AvailableDrawingOption;
+import ocotillo.run.SFDPRun;
 import ocotillo.samples.DyGraphSamples;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
@@ -139,7 +140,7 @@ public class DefaultRun {
 		bitalpha,
 		bitotc,
 		reality,
-		collegemsg,
+		college,
 		ramp;
 
 		public static void printHelp() {
@@ -154,6 +155,7 @@ public class DefaultRun {
 	private enum AvailableMethods{
 		help,
 		dynnos,
+		sfdp,
 		multi;
 
 		public static void printHelp() {
@@ -173,7 +175,9 @@ public class DefaultRun {
 			case dynnos: 
 				return new CMDLineOption("DynNoSlice", "single", "Uses DynNoSlice for the drawing");			
 			case multi: 
-				return new CMDLineOption("MultiDynNoSlice", "multi", "Uses MultiDynNoSlice for the drawing");			
+				return new CMDLineOption("MultiDynNoSlice", "multi", "Uses MultiDynNoSlice for the drawing");		
+			case sfdp: 
+				return new CMDLineOption("SFDP", "sfdp", "Uses SFDP for the drawing");					
 			default: return null;
 			}
 		}
@@ -185,7 +189,9 @@ public class DefaultRun {
 			case "single": 
 				return AvailableMethods.dynnos;
 			case "multi": 
-				return AvailableMethods.multi;    			
+				return AvailableMethods.multi;    
+			case "sfdp":
+				return AvailableMethods.sfdp;
 			default: return null;			
 			}			
 		}
@@ -343,6 +349,7 @@ public class DefaultRun {
 
 			switch(selectedMethod) {
 			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data); break;
+			case sfdp: drawingAlgorithm = new SFDPRun(args, data); break;
 			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data); break;
 			}
 			

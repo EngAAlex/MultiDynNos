@@ -46,7 +46,7 @@ public class GMLOutputWriter {
 			pw.println(indentString("node [", indentLevel));
 			indentLevel++;
 			double[] coords = coordsAttribute.get(graph.getNode(id)).getArray();
-			pw.println(indentString("id " + id, indentLevel));
+			pw.println(indentString("id " + id.replace(' ', '_'), indentLevel));
 			//			pw.println(indentString("label \"" + label +"\"", indentLevel));			
 			pw.println(indentString("graphics [ ", indentLevel));	
 			indentLevel++;
@@ -67,8 +67,8 @@ public class GMLOutputWriter {
 			Edge currentEdge = edges.next();
 			pw.println(indentString("edge [", indentLevel));
 			indentLevel++;
-			pw.println(indentString("source " + currentEdge.source(), indentLevel));
-			pw.println(indentString("target " + currentEdge.target(), indentLevel));
+			pw.println(indentString("source " + currentEdge.source().id().replace(' ', '_'), indentLevel));
+			pw.println(indentString("target " + currentEdge.target().id().replace(' ', '_'), indentLevel));
 			pw.println(indentString("graphics [", indentLevel));
 			//			indentLevel++;
 			//			pw.println(indentString("type \"line\"", indentLevel));

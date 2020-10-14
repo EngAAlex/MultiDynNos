@@ -466,7 +466,7 @@ public abstract class Experiment {
 			//			return lines;
 
 			long epochEnd = System.currentTimeMillis();
-			System.out.println("\tDone! Computing metrics...");
+
 			DyGraph sfdpCont = getContinuousCopy();
 			copyNodeLayoutFromTo(flattened, sfdpCont);
 
@@ -736,7 +736,7 @@ public abstract class Experiment {
 		return bestScaling;
 	}
 
-	public void applyIdealScaling(DyGraph graph, double idealScaling) {
+	public static void applyIdealScaling(DyGraph graph, double idealScaling) {
 		DyNodeAttribute<Coordinates> positions = graph.nodeAttribute(StdAttribute.nodePosition);
 		for (Node node : graph.nodes()) {
 			Evolution<Coordinates> evolution = new Evolution<>(new Coordinates(0, 0));
@@ -954,18 +954,18 @@ public abstract class Experiment {
 		}
 	}
 
-	private void copyNodeLayoutFromTo(Graph source, DyGraph target) {
+	public static void copyNodeLayoutFromTo(Graph source, DyGraph target) {
 		NodeAttribute<Coordinates> sourcePositions = source.nodeAttribute(StdAttribute.nodePosition);
 		DyNodeAttribute<Coordinates> targetPositions = target.nodeAttribute(StdAttribute.nodePosition);
-		DyNodeAttribute<Boolean> targetPresences = target.nodeAttribute(StdAttribute.dyPresence);
+		//		DyNodeAttribute<Boolean> targetPresences = target.nodeAttribute(StdAttribute.dyPresence);
 
 		for (Node node : source.nodes()) {
 			Coordinates coords = sourcePositions.get(node);
 			Evolution<Coordinates> newEvolution = new Evolution<>(new Coordinates(coords.x(), coords.y()));
 			targetPositions.set(target.getNode(node.id()), newEvolution);
 
-			Evolution<Boolean> newPresence = new Evolution<>(true);
-			targetPresences.set(target.getNode(node.id()), newPresence);
+			//			Evolution<Boolean> newPresence = new Evolution<>(true);
+			//			targetPresences.set(target.getNode(node.id()), newPresence);
 		}
 	}
 

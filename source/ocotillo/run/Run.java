@@ -53,7 +53,7 @@ public abstract class Run {
 	public Run(String[] argv, DyDataSet requestedDataSet) {
 
 		System.out.println(getDescription() + " layout selected");
-		
+
 		double delta = defaultDelta;
 		double tau = defaultTau;
 		String output = defaultOutput;
@@ -91,37 +91,39 @@ public abstract class Run {
 		}		
 
 		for(int i=0; i<argv.length; i++) {
-			switch(AvailableDrawingOption.parse(argv[i].split("-")[1])) {
-			case delta:  {
-				try {				
-					double possibleDelta = Double.parseDouble(argv[i+1]);
-					delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
-					System.out.println("Set delta " + delta);
-				} catch (Exception e) {
-					//					System.err.println("Cannot parse delta correctly. \n");
-					//					showHelp();
-				} 				
-				break;
-			}
-			case tau: {
-				try {
-					double possibleTau = Double.parseDouble(argv[i+1]);
-					tau = possibleTau >= 0 ? possibleTau : defaultTau;
-					System.out.println("Set tau " + tau);
-				} catch (Exception e) {
-					//System.err.println("Cannot parse tau correctly. \n");
-					//showHelp();								
+			try {
+				switch(AvailableDrawingOption.parse(argv[i].split("-")[1])) {
+				case delta:  {
+					try {				
+						double possibleDelta = Double.parseDouble(argv[i+1]);
+						delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
+						System.out.println("Set delta " + delta);
+					} catch (Exception e) {
+						//					System.err.println("Cannot parse delta correctly. \n");
+						//					showHelp();
+					} 				
+					break;
 				}
-				break;
-			}
-			case text: {
-				output = argv[i+1];
-			}
-//			case o: {
-//				output = argv[i+1];
-//			}
-			default: break;
-			}
+				case tau: {
+					try {
+						double possibleTau = Double.parseDouble(argv[i+1]);
+						tau = possibleTau >= 0 ? possibleTau : defaultTau;
+						System.out.println("Set tau " + tau);
+					} catch (Exception e) {
+						//System.err.println("Cannot parse tau correctly. \n");
+						//showHelp();								
+					}
+					break;
+				}
+				case text: {
+					output = argv[i+1];
+				}
+				//			case o: {
+				//				output = argv[i+1];
+				//			}
+				default: break;
+				}
+			}catch (IndexOutOfBoundsException ie) {}
 		}
 
 		this.tau = tau;
@@ -136,9 +138,9 @@ public abstract class Run {
 		System.out.println("Beginning Layout");
 		this.drawnGraph = run();
 	}
-	
+
 	protected abstract String getDescription();
-	
+
 	protected abstract void completeSetup();
 
 	protected abstract DyGraph run();
@@ -239,7 +241,7 @@ public abstract class Run {
 			}
 		}
 	}
-	
+
 	public void saveOutput() {
 		if(output != null) {
 			System.out.println("Saving graph on file");
@@ -345,8 +347,8 @@ public abstract class Run {
 
 	public enum AvailableDrawingOption {
 		delta,
-//		nodes,
-//		edges,
+		//		nodes,
+		//		edges,
 		text,
 		tau;
 
@@ -367,20 +369,20 @@ public abstract class Run {
 				return new CMDLineOption("Tau", "-t", "Specifies a user defined tau value");	
 			case text: 
 				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    										
-//			case nodes: 
-//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
-//			case edges: 
-//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");				
+				//			case nodes: 
+				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
+				//			case edges: 
+				//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");				
 			default: return null;
 			}
 		}
-		
+
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
 			case "-d": return delta;
 			case "-t": return tau;
-//			case "-n:": return nodes;
-//			case "-e:": return edges;
+			//			case "-n:": return nodes;
+			//			case "-e:": return edges;
 			case "-o": return text;
 			default: return null;
 			}

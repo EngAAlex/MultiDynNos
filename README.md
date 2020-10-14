@@ -65,7 +65,8 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | Layout | Command Line Argument | Description |
 | ------ | ------ | ------ |
 | Multi-DynNoSlice | ```multi``` | Run the multi-level algorithm on the selected graph. |
-| DynNoSlice | ```single``` | Run a single level event-based layout on the selected graph.
+| DynNoSlice | ```single``` | Run a single level event-based layout on the selected graph. |
+| SFDP | ```sfdp``` | Run the sfdp layout algorithm on the selected graph. |
 
 As an example, to show the animation of RAMP graph using Multi-DynNoSlice, the command would be the following:
 
@@ -101,6 +102,10 @@ Edge dataset example:
 	Bob,Carol,2.1,0.6
 	<Source Node ID>, <Target Node ID>,<Start Time>,<Duration>
 ```
+
+##### Window interaction:
+
+It is possible to pan and rotate the space time cube and animation by dragging with the mouse left and right buttons respectively. In animation mode, press ```P``` to play the animation and ```S``` to stop it.
 
 #### Metrics Mode: 
 It is used to compute the stress, movement, and crowing metrics for the selected layout methods and graph typologies. To run it, please run the following command:
