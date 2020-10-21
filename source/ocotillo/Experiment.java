@@ -1,14 +1,25 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright © 2020 Alessio Arleo
+ * Copyright © 2014-2017 Paolo Simonetto
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
+
 package ocotillo;
 
 import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
@@ -55,7 +66,6 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
 import ocotillo.dygraph.rendering.Animation;
-import ocotillo.export.GMLOutputWriter;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Geom;
 import ocotillo.geometry.Interval;
@@ -332,33 +342,33 @@ public abstract class Experiment {
 	//		return lines;
 	//	}
 
-	//	public void probeLayout() {
-	//		HashSet<String> methodologies = new HashSet<String>();
-	//		methodologies.add("wi_id");
-	//		methodologies.add("iset_grip");
-	//		methodologies.add("sm_sp");
-	//		for(String s : methodologies) {
-	//			GraphCoarsener gc;
-	//			MultilevelNodePlacementStrategy ps;
-	//			if(s.equals("wi_id")) {
-	//				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
-	//				gc = new IndependentSet.WalshawIndependentSet();
-	//				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
-	//			}else if(s.equals("iset_grip")) {
-	//				System.out.println("Setting IndependentSet and GRIP Placement");        			
-	//				gc = new IndependentSet();
-	//				ps = new WeightedBarycenterPlacementStrategy();
-	//			}else{
-	//				System.out.println("Setting Solar Merger and Placer");        			        			
-	//				gc = new SolarMerger();
-	//				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
-	//			}
-	//			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
-	//			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, ps, null);
-	//			contMultiDyn.runMultiLevelLayout();
-	//			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
-	//		}
-	//	}
+//		public void probeLayout() throws URISyntaxException {
+//			HashSet<String> methodologies = new HashSet<String>();
+////			methodologies.add("wi_id");
+//			methodologies.add("iset_grip");
+////			methodologies.add("sm_sp");
+//			for(String s : methodologies) {
+//				GraphCoarsener gc;
+//				MultilevelNodePlacementStrategy ps;
+//				if(s.equals("wi_id")) {
+//					System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+//					gc = new IndependentSet.WalshawIndependentSet();
+//					ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+//				}else if(s.equals("iset_grip")) {
+//					System.out.println("Setting IndependentSet and GRIP Placement");        			
+//					gc = new IndependentSet();
+//					ps = new WeightedBarycenterPlacementStrategy();
+//				}else{
+//					System.out.println("Setting Solar Merger and Placer");        			        			
+//					gc = new SolarMerger();
+//					ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+//				}
+//				System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+//				MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, SfdpExecutor.AVAILABLE_STATIC_LAYOUTS.fdp, ps, null, true);
+//				contMultiDyn.runMultiLevelLayout();
+//				dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
+//			}
+//		}
 
 	/**
 	 * Compute the metrics for the current experiment for VisOne.
@@ -448,7 +458,7 @@ public abstract class Experiment {
 		System.out.println("\n# Starting SFDP flattened Experiment #");
 
 		List<String> lines = new ArrayList<>();
-
+		
 		try {
 			DyGraph contGraph = dataset.dygraph;
 			List<Double> snapTimes = readSnapTimes(discretise());
@@ -461,7 +471,7 @@ public abstract class Experiment {
 			long epochStart = System.currentTimeMillis();
 			sfdpInstance.execute(flattened);
 
-			//		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"-sfdp" +".gml"), flattened);
+			//		GMLOutputWriter.writeOutput(new File(name+"-sfdp.gml"), flattened);
 			//		if(true)
 			//			return lines;
 
@@ -474,10 +484,13 @@ public abstract class Experiment {
 			//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " SFDP");
 
 			double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
+			
 			applyIdealScaling(sfdpCont, sfdpScaling);
 
 			System.out.println("Applied " + sfdpScaling);
 
+			//		Run.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name);
+			
 			DyGraph sfdpDisc = discretise();
 			copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
 
@@ -699,9 +712,9 @@ public abstract class Experiment {
 		StcGraphMetric<Double> nodeMovement = new StcGraphMetric.AverageNodeMovement2D();
 		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.suggestedInterval, 600);
 
-		//		return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
-		//		+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
-		//		+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
+//				return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
+//				+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+//				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
 		return stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR
 				+ stressOn.computeMetric(contGraph) + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
@@ -719,14 +732,11 @@ public abstract class Experiment {
 
 		for (int i = -20; i <= 20; i++) {
 
-			//System.out.println("\t\tIteration " + i);
-
 			double scaling = Math.pow(1.1, i);
 			DyGraphMetric<Double> stressMetric = new DyGraphMetric.AverageSnapshotMetricCalculation(
 					new GraphMetric.StressMetric.Builder().withScaling(delta * scaling).build(),
 					interval, snapTimes.size());
 			double stress = stressMetric.computeMetric(graph);
-			//System.out.println("\t\t\tComputed Stress: " + stress);
 			if (stress < bestStress) {
 				bestStress = stress;
 				bestScaling = scaling;
@@ -739,7 +749,9 @@ public abstract class Experiment {
 	public static void applyIdealScaling(DyGraph graph, double idealScaling) {
 		DyNodeAttribute<Coordinates> positions = graph.nodeAttribute(StdAttribute.nodePosition);
 		for (Node node : graph.nodes()) {
-			Evolution<Coordinates> evolution = new Evolution<>(new Coordinates(0, 0));
+//			Evolution<Coordinates> evolution = new Evolution<>(new Coordinates(0, 0));
+			Coordinates defaults = new Coordinates(positions.get(node).getDefaultValue().divide(idealScaling));			
+			Evolution<Coordinates> evolution = new Evolution<>(defaults);
 			for (Function<Coordinates> function : positions.get(node)) {
 				if (function instanceof FunctionConst) {
 					evolution.insert(new FunctionConst<>(function.interval(),
@@ -877,8 +889,6 @@ public abstract class Experiment {
 		List<Map<Node, Coordinates>> nodePositions = new ArrayList<>();
 		ZipInputStream visoneInputStream = new ZipInputStream(Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip"));
 		try {		
-			//visoneInputStream = new ZipInputStream(Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip")); 
-			//for (File fileEntry : new File(Experiment.class.getResource(directory + "/visoneAfter").toURI()).listFiles()) {
 			ZipEntry zie = visoneInputStream.getNextEntry();
 			while(zie != null){
 				int sliceNumber = Integer.parseInt(zie.getName().replaceAll("[^\\d]", ""));
@@ -962,6 +972,7 @@ public abstract class Experiment {
 		for (Node node : source.nodes()) {
 			Coordinates coords = sourcePositions.get(node);
 			Evolution<Coordinates> newEvolution = new Evolution<>(new Coordinates(coords.x(), coords.y()));
+			newEvolution.insert(new FunctionConst<Coordinates>(Interval.global, new Coordinates(coords.x(), coords.y())));
 			targetPositions.set(target.getNode(node.id()), newEvolution);
 
 			//			Evolution<Boolean> newPresence = new Evolution<>(true);
@@ -1038,11 +1049,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return InfoVisCitations.parse(Commons.Mode.plain).dygraph;
-		//		}
-
 	}
 
 	/**
@@ -1067,11 +1073,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return RugbyTweets.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
-
 	}
 
 	/**
@@ -1095,11 +1096,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return DialogSequences.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
-
 	}
 
 	/**
@@ -1120,10 +1116,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return VanDeBunt.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1144,10 +1136,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return NewcombFraternity.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1171,10 +1159,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return CollegeMsg.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1198,10 +1182,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return BitcoinAlpha.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1225,10 +1205,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return BitcoinOTC.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1252,10 +1228,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return RealityMining.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 
@@ -1280,10 +1252,6 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return Mooc.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
 	/**
@@ -1307,31 +1275,27 @@ public abstract class Experiment {
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
 		}
 
-		//		@Override
-		//		public DyGraph getContinuousCopy() {
-		//			return ocotillo.samples.parsers.RampInfectionMap.parse(Commons.Mode.keepAppearedNode).dygraph;
-		//		}
 	}
 
-	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
-		DyGraph discretizedGraph = discretise();
-		List<Double> snapTimes = readSnapTimes(discretizedGraph);
-		System.out.println("Dumping Slices");
-		int lastSnap = 0;
-		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
-		boolean stoppingCondition = true;
-		int needle = step;
-		while(stoppingCondition) {    		
-			if(needle >= snapTimes.size()) {
-				stoppingCondition = false;
-				needle = snapTimes.size() - 1;
-			}    		
-			System.out.println("Start " + lastSnap + " end " + needle);
-			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-			GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
-			lastSnap = needle;
-			needle += step;
-		}	
-	}
+//	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
+//		DyGraph discretizedGraph = discretise();
+//		List<Double> snapTimes = readSnapTimes(discretizedGraph);
+//		System.out.println("Dumping Slices");
+//		int lastSnap = 0;
+//		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
+//		boolean stoppingCondition = true;
+//		int needle = step;
+//		while(stoppingCondition) {    		
+//			if(needle >= snapTimes.size()) {
+//				stoppingCondition = false;
+//				needle = snapTimes.size() - 1;
+//			}    		
+//			System.out.println("Start " + lastSnap + " end " + needle);
+//			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+//			GMLOutputWriter.writeOutput(new File(name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
+//			lastSnap = needle;
+//			needle += step;
+//		}	
+//	}
 
 }

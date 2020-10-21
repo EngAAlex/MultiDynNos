@@ -208,7 +208,7 @@ public class SpaceTimeCubeSynchroniser {
     public void updateOriginal() {
         originalGraph.startBulkNotification();
         for (Node node : originalGraph.nodes()) {
-            Evolution<Coordinates> evolution = new Evolution<>(new Coordinates(0, 0));
+            Evolution<Coordinates> evolution = new Evolution<>(dyNodePositions.get(node).getDefaultValue());
             dyNodePositions.set(node, evolution);
             for (MirrorLine mirrorEdge : directNodeMap.get(node)) {
                 for (Function<Coordinates> function : mirrorEdge.computeFunctions()) {

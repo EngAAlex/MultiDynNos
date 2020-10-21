@@ -1,4 +1,5 @@
 /**
+ * Copyright © 2020 Alessio Arleo
  * Copyright © 2014-2017 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -13,6 +14,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package ocotillo;
 
 import java.io.File;
@@ -375,7 +377,7 @@ public class DefaultRun {
 			Boolean executeVisone = false;
 			Boolean verbose = false;
 			//                Boolean plotSliceSize = false;
-			//                Boolean dumpSlicesPicture = false;
+			//			Boolean dumpSlicesPicture = true;
 
 			HashSet<String> expNames = new HashSet<String>();
 			HashSet<String> smallerDatasets = new HashSet<String>();
@@ -386,11 +388,11 @@ public class DefaultRun {
 			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-//			largerDatasets.add("RealMining");
-//			largerDatasets.add("BitOTC");
-//			largerDatasets.add("MOOC");
-//			largerDatasets.add("BitAlpha");  
-//			largerDatasets.add("College");
+			largerDatasets.add("RealMining");
+			largerDatasets.add("BitOTC");
+			largerDatasets.add("MOOC");
+			largerDatasets.add("BitAlpha");  
+			largerDatasets.add("College");
 			largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
@@ -473,9 +475,9 @@ public class DefaultRun {
 				//                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).provideSnapshotSize()
 				//                			);                		
 				//                	}   
-				//                	if(dumpSlicesPicture) {
-				//           				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).probeLayout();
-				//                	}                    	
+				//            	if(dumpSlicesPicture) {
+				//       				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).probeLayout();
+				//            	}                    	
 
 			}
 

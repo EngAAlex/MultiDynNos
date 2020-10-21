@@ -1,10 +1,23 @@
-package ocotillo.run;
+/**
+ * Copyright © 2020 Alessio Arleo
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
-import java.io.File;
+package ocotillo.run;
 
 import ocotillo.Experiment;
 import ocotillo.dygraph.DyGraph;
-import ocotillo.export.GMLOutputWriter;
 import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
@@ -37,15 +50,8 @@ public class SFDPRun extends Run {
 
 		sfdpInstance.execute(flattened);
 
-		//		GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+name+"-sfdp" +".gml"), flattened);
-		//		if(true)
-		//			return lines;
-
 		Experiment.copyNodeLayoutFromTo(flattened, dygraph);
-		//Experiment.applyIdealScaling(dygraph, 1/1.31);
-
-		//GMLOutputWriter.writeOutput(new File("C:\\Users\\Alessio Arleo\\Desktop\\"+this.graphName+"-sfdp.gml"), flattened);
-		
+				
 		//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), name + " SFDP");
 		//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " SFDP");
 

@@ -155,7 +155,7 @@ public abstract class Run {
 		showGraphOnWindow(drawnGraph, staticTiming, graphName);
 	}
 
-	protected void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+	protected static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
 
 		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName + " animation");
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
