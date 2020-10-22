@@ -45,18 +45,19 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | Graph | Command Line option | Description | Reference |
 | ------ | ------ | ------ | ------ |
 | *Smaller Graphs* | ------ | ------ | ------ |
-| Newcomb* | ```newcomb``` | Contains the sociometric preference of 17 members of a fraternity | [*]()
-| VanDeBunt* | ```vandebunt``` | Shows the relationships between 32 freshmen at seven different time points. | [*]()
-| InfoVis* | ```infovis``` | Is a co-authorship network for papers published in the InfoVis conference from 1995 to 2015. | [*]()
-| Dialogs | ```pride``` | lists the dialogues between characters in the novel Pride and Prejudice in order. | [*]()
-| Rugby-Tweets | ```rugby``` | Is a network derived from over 3,000 tweets involving teams in the "Guinness Pro12" rugby competition. | [*]()
+| VanDeBunt* | ```vandebunt``` | Shows the relationships between 32 freshmen at seven different time points. | [*](https://link.springer.com/article/10.1023/A:1009683123448)
+| Newcomb* | ```newcomb``` | Contains the sociometric preference of 17 members of a fraternity | [*](https://psycnet.apa.org/record/2008-17460-015)
+| InfoVis* | ```infovis``` | Is a co-authorship network for papers published in the InfoVis conference from 1995 to 2015. | [*](http://www.cc.gatech.edu/gvu/ii/
+citevis/infovis-citation-data.txt)
+| Dialogs | ```pride``` | lists the dialogues between characters in the novel Pride and Prejudice in order. | [*](https://link.springer.com/chapter/10.1007/978-3-319-46224-0_7)
+| Rugby-Tweets | ```rugby``` | Is a network derived from over 3,000 tweets involving teams in the "Guinness Pro12" rugby competition. | [*](https://ieeexplore.ieee.org/abstract/document/8580419/)
 | *Larger Graphs* | ------ | ------ | ------ | 
-| MOOC | ```mooc``` | This dataset represents the actions taken by users on a popular massive open online class platform. | [*]()
-| Bitcoin Alpha | ```bitalpha``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin Alpha. | [*]()
-| Bitcoin OTC | ```bitotc``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin OTC. | [*]()
-| College Message | ```college``` | SThis dataset is comprised of private messages sent on an online social network at the University of California, Irvine. | [*]()
-| Reality Mining | ```reality``` | This data comes from The Reality Mining study. | [*]()
-| Ramp Infection Map | ```ramp``` | Contact-tracing Network. | [*]()
+| MOOC | ```mooc``` | This dataset represents the actions taken by users on a popular massive open online class platform. | [*](https://dl.acm.org/doi/abs/10.1145/3292500.3330895?casa_token=nUM3JyeDa24AAAAA:eSXXwXuBdb0Nz2hU-prOM53jKea12sxcLEuz3WRpWTeZ-PZN5dZMdfWZjerfObhnBaJt9CgLcpUd)
+| Bitcoin Alpha | ```bitalpha``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin Alpha. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
+| Bitcoin OTC | ```bitotc``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin OTC. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
+| College Message | ```college``` | SThis dataset is comprised of private messages sent on an online social network at the University of California, Irvine. | [*](https://asistdl.onlinelibrary.wiley.com/doi/abs/10.1002/asi.21015?casa_token=hJRB2bR4UvEAAAAA:Twq4CupkDrrejnj9KnOOXssiA_8Agx_sqAjc_oh-qeYDTp1jp1f6XAbNnFp69M_OuOnz50dSEwJprFg)
+| Reality Mining | ```reality``` | This data comes from The Reality Mining study. | [*](https://link.springer.com/content/pdf/10.1007/s00779-005-0046-3.pdf)
+| Ramp Infection Map | ```ramp``` | Contact-tracing Network. | [*](https://github.com/ScottishCovidResponse/Contact-Tracing-Model)
 | *Custom Graph* | ```custom``` | See below for how to run the system with custom graphs. | ------ |
 
 
