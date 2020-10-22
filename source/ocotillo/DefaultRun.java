@@ -370,7 +370,7 @@ public class DefaultRun {
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
 			lines.add("Graph;Type;Time;Scaling;StressOn(d);StressOff(d);StressOn(c);StressOff(c);Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");
-			String outputFolder = "."+File.separator;
+			String outputFolder = System.getProperty("user.dir");
 			Boolean executeMulti = false;
 			Boolean executeSFDP = false;
 			Boolean executeSingle = false;
@@ -488,8 +488,11 @@ public class DefaultRun {
 			//				System.out.println(line);
 			//			}
 
+			if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
+				outputFolder += File.separator; 
+			
 			ParserTools.writeFileLines(lines,
-					new File(outputFolder + File.separator + fileName));
+					new File(outputFolder + fileName));
 			
 			System.out.println("\n##### Experiments complete! #####");
 			
