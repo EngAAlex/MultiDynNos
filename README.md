@@ -47,8 +47,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | *Smaller Graphs* | ------ | ------ | ------ |
 | VanDeBunt* | ```vandebunt``` | Shows the relationships between 32 freshmen at seven different time points. | [*](https://link.springer.com/article/10.1023/A:1009683123448)
 | Newcomb* | ```newcomb``` | Contains the sociometric preference of 17 members of a fraternity | [*](https://psycnet.apa.org/record/2008-17460-015)
-| InfoVis* | ```infovis``` | Is a co-authorship network for papers published in the InfoVis conference from 1995 to 2015. | [*](http://www.cc.gatech.edu/gvu/ii/
-citevis/infovis-citation-data.txt)
+| InfoVis* | ```infovis``` | Is a co-authorship network for papers published in the InfoVis conference from 1995 to 2015. | [*](http://www.cc.gatech.edu/gvu/ii/citevis/infovis-citation-data.txt)
 | Dialogs | ```pride``` | lists the dialogues between characters in the novel Pride and Prejudice in order. | [*](https://link.springer.com/chapter/10.1007/978-3-319-46224-0_7)
 | Rugby-Tweets | ```rugby``` | Is a network derived from over 3,000 tweets involving teams in the "Guinness Pro12" rugby competition. | [*](https://ieeexplore.ieee.org/abstract/document/8580419/)
 | *Larger Graphs* | ------ | ------ | ------ | 
