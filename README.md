@@ -122,7 +122,6 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics <OPTIONS>
 | Single | ```--single``` | Executes the experiment using DynNoSlice |
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
-| Discrete | ```--discrete``` | Graphs will be evaluated with discretized metrics. Will apply only to timesliced (non-event based) graphs.
 | Verbose | ```--verbose``` | Extra output on console during computation |
 | Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. |
 

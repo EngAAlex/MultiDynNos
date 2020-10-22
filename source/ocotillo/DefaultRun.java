@@ -207,7 +207,7 @@ public class DefaultRun {
 		visone,		
 		sfdp,
 		help,
-		discrete,
+//		discrete,
 		verbose,
 		output;
 
@@ -236,8 +236,8 @@ public class DefaultRun {
 				return new CMDLineOption("DynNoS", "--single", "Executes the experiment using DynNoS");    			
 			case sfdp: 
 				return new CMDLineOption("SFDP", "--sfdp", "Flattens graphs and executes the experiment using SFDP"); 
-			case discrete: 
-				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
+//			case discrete: 
+//				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
 			case output:
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
@@ -261,8 +261,8 @@ public class DefaultRun {
 				return MetricsCalculationOptions.single;    			
 			case "sfdp": 
 				return MetricsCalculationOptions.sfdp;
-			case "discrete": 
-				return MetricsCalculationOptions.discrete;    		
+//			case "discrete": 
+//				return MetricsCalculationOptions.discrete;    		
 			case "out":
 				return MetricsCalculationOptions.output;
 			case "verbose":
@@ -398,6 +398,9 @@ public class DefaultRun {
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
 			HashSet<String> discreteExperiment = new HashSet<String>();
+			discreteExperiment.add("Bunt");
+			discreteExperiment.add("Newcomb");
+			discreteExperiment.add("InfoVis");
 
 			for(int i = 1; i < args.length; i++) {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
@@ -407,14 +410,14 @@ public class DefaultRun {
 				case multi: executeMulti = true; break;
 				case sfdp: 	executeSFDP = true; break;
 				case verbose: verbose = true; break;
-				case discrete: {
-					discreteExperiment.add("Bunt");
-					discreteExperiment.add("Newcomb");
-					discreteExperiment.add("InfoVis");
-					//                    	discreteExperiment.add("Rugby");
-					//                    	discreteExperiment.add("Pride");     
-					break;
-				}
+//				case discrete: {
+//					discreteExperiment.add("Bunt");
+//					discreteExperiment.add("Newcomb");
+//					discreteExperiment.add("InfoVis");
+//					//                    	discreteExperiment.add("Rugby");
+//					//                    	discreteExperiment.add("Pride");     
+//					break;
+//				}
 				case output: {
 					if(i+1 < args.length) {
 						i++;
