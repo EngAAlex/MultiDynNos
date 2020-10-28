@@ -26,16 +26,21 @@ import ocotillo.gui.GraphCanvas;
 public class QuickView extends JFrame {
 
     private GraphCanvas canvas;
+    private String title;
 
     private static final long serialVersionUID = 1L;
 
+    public QuickView(Graph graph) {
+    	this(graph, "Graph QuickView");
+    }
+    
     /**
      * Constructs a QuickView for the graph.
      *
      * @param graph the graph to be visualised.
      */
-    public QuickView(Graph graph) {
-        setTitle("Graph QuickView");
+    public QuickView(Graph graph, String title) {
+        setTitle(title);
         add(new GraphCanvas(graph));
         setSize(1200, 1200);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);

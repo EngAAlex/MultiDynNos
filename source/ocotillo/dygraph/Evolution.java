@@ -16,8 +16,14 @@
 package ocotillo.dygraph;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
 import lombok.EqualsAndHashCode;
+import ocotillo.geometry.Interval;
 import ocotillo.structures.IntervalTree;
 
 /**
@@ -28,135 +34,199 @@ import ocotillo.structures.IntervalTree;
 @EqualsAndHashCode
 public class Evolution<T> implements Iterable<Function<T>> {
 
-    private final IntervalTree<Function<T>> intervalTree = new IntervalTree<>();
-    private T defaultValue;
+	public static interface EvolutionMergeValue<T> {		
 
-    /**
-     * Defines a new evolution.
-     *
-     * @param defaultValue the value returned by the evolution for an undefined
-     * point.
-     */
-    public Evolution(T defaultValue) {
-        this.defaultValue = defaultValue;
-    }
+		public T left(T a, T b);
+		public T right(T a, T b);
+	}
 
-    /**
-     * Gets the default value, that is the of an undefined point.
-     *
-     * @return the default value.
-     */
-    public T getDefaultValue() {
-        return defaultValue;
-    }
+	public static class EvolutionORMerge implements EvolutionMergeValue<Boolean>{
 
-    /**
-     * Sets the default value, that is the value of an undefined point.
-     *
-     * @param defaultValue the default value.
-     */
-    public void setDefaultValue(T defaultValue) {
-        this.defaultValue = defaultValue;
-    }
+		@Override
+		public Boolean left(Boolean a, Boolean b) {
+			return a || b;
+		}
 
-    /**
-     * Checks if the evolution is defined ad a given point.
-     *
-     * @param x the point to check.
-     * @return true if the evolution is defined for that point.
-     */
-    public boolean isDefinedAt(double x) {
-        return intervalTree.getAnyContaining(x) != null;
-    }
+		@Override
+		public Boolean right(Boolean a, Boolean b) {
+			return a || b;
+		}
 
-    /**
-     * Gets the value of the evolution at a given point.
-     *
-     * @param x the point.
-     * @return the evolution value at that point.
-     */
-    public T valueAt(double x) {
-        Function<T> function = intervalTree.getAnyContaining(x);
-        if (function != null) {
-            return function.valueAt(x);
-        } else {
-            return defaultValue;
-        }
-    }
+	}
 
-    /**
-     * Inserts a function in the evolution.
-     *
-     * @param function the function to insert.
-     */
-    public void insert(Function<T> function) {
-        intervalTree.insert(function);
-    }
+	private final IntervalTree<Function<T>> intervalTree = new IntervalTree<>();
+	private T defaultValue;
 
-    /**
-     * Inserts all the given functions in the evolution.
-     *
-     * @param functionSet the functions to insert.
-     */
-    public void insertAll(Collection<Function<T>> functionSet) {
-        intervalTree.insertAll(functionSet);
-    }
+	/**
+	 * Defines a new evolution.
+	 *
+	 * @param defaultValue the value returned by the evolution for an undefined
+	 * point.
+	 */
+	public Evolution(T defaultValue) {
+		this.defaultValue = defaultValue;
+	}
 
-    /**
-     * Deletes a function from the evolution.
-     *
-     * @param function the function to delete.
-     */
-    public void delete(Function<T> function) {
-        intervalTree.delete(function);
-    }
 
-    /**
-     * Deletes all given functions from the evolution.
-     *
-     * @param functionSet the functions to delete.
-     */
-    public void deleteAll(Collection<Function<T>> functionSet) {
-        intervalTree.deleteAll(functionSet);
-    }
+	/**
+	 * Gets the default value, that is the of an undefined point.
+	 *
+	 * @return the default value.
+	 */
+	public T getDefaultValue() {
+		return defaultValue;
+	}
 
-    /**
-     * Checks if a function is contained in the evolution.
-     *
-     * @param function the function.
-     * @return true if the function is contained.
-     */
-    public boolean contains(Function<T> function) {
-        return intervalTree.contains(function);
-    }
+	/**
+	 * Sets the default value, that is the value of an undefined point.
+	 *
+	 * @param defaultValue the default value.
+	 */
+	public void setDefaultValue(T defaultValue) {
+		this.defaultValue = defaultValue;
+	}
 
-    /**
-     * Returns the number of functions in the evolution.
-     *
-     * @return the number of functions in the evolution.
-     */
-    public int size() {
-        return intervalTree.size();
-    }
+	/**
+	 * Checks if the evolution is defined ad a given point.
+	 *
+	 * @param x the point to check.
+	 * @return true if the evolution is defined for that point.
+	 */
+	public boolean isDefinedAt(double x) {
+		return intervalTree.getAnyContaining(x) != null;
+	}
+	
+	public T getLastValue() {
+		List<Function<T>> orderedList = intervalTree.inOrderTraversal();
+		if(orderedList.size() == 0)
+			return getDefaultValue();
+		return orderedList.get(orderedList.size()-1).rightValue();
+	}
 
-    /**
-     * Checks if the evolution is empty.
-     *
-     * @return true if the evolution contains no functions.
-     */
-    public boolean isEmpty() {
-        return intervalTree.isEmpty();
-    }
+	/**
+	 * Method to obtain all the overlapping elements in this interval tree with the provided evolution.
+	 * 
+	 * @param query
+	 * @return the set of overlapping intervals
+	 */
+	public Set<Function<T>> getOverlappingIntervals(Evolution<T> query) {
+		Iterator<Function<T>> t = query.iterator();
+		Set<Function<T>> overlapping = new HashSet<Function<T>>();
+		while(t.hasNext()) {
+			Function<T> current = t.next();
+			overlapping.addAll(getOverlappingIntervals(current));
+		}
+		return overlapping;
+	}
 
-    /**
-     * Clears the evolution.
-     */
-    public void clear() {
-        intervalTree.clear();
-    }
+	public Set<Function<T>> getOverlappingIntervals(Function<T> func){
+		return intervalTree.getAllOverlapping(func.interval());
+	}
 
-    @Override
-    public Iterator<Function<T>> iterator() {
-        return intervalTree.iterator();
-    }
+	/**
+	 * Gets the value of the evolution at a given point.
+	 *
+	 * @param x the point.
+	 * @return the evolution value at that point.
+	 */
+	public T valueAt(double x) {
+		Function<T> function = intervalTree.getAnyContaining(x);
+		if (function != null) {
+			return function.valueAt(x);
+		} else {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * Inserts a function in the evolution.
+	 *
+	 * @param function the function to insert.
+	 */
+	public void insert(Function<T> function) {
+		intervalTree.insert(function);
+	}
+
+	/**
+	 * Inserts all the given functions in the evolution.
+	 *
+	 * @param functionSet the functions to insert.
+	 */
+	public void insertAll(Collection<Function<T>> functionSet) {
+		intervalTree.insertAll(functionSet);
+	}
+
+	/**
+	 * Deletes a function from the evolution.
+	 *
+	 * @param function the function to delete.
+	 */
+	public void delete(Function<T> function) {
+		intervalTree.delete(function);
+	}
+
+	/**
+	 * Deletes all given functions from the evolution.
+	 *
+	 * @param functionSet the functions to delete.
+	 */
+	public void deleteAll(Collection<Function<T>> functionSet) {
+		intervalTree.deleteAll(functionSet);
+	}
+
+	/**
+	 * Checks if a function is contained in the evolution.
+	 *
+	 * @param function the function.
+	 * @return true if the function is contained.
+	 */
+	public boolean contains(Function<T> function) {
+		return intervalTree.contains(function);
+	}
+
+	/**
+	 * Returns the number of functions in the evolution.
+	 *
+	 * @return the number of functions in the evolution.
+	 */
+	public int size() {
+		return intervalTree.size();
+	}
+
+	/**
+	 * Checks if the evolution is empty.
+	 *
+	 * @return true if the evolution contains no functions.
+	 */
+	public boolean isEmpty() {
+		return intervalTree.isEmpty();
+	}
+
+	/**
+	 * Clears the evolution.
+	 */
+	public void clear() {
+		intervalTree.clear();
+	}
+
+	@Override
+	public Iterator<Function<T>> iterator() {
+		return intervalTree.iterator();
+	}
+
+	/**
+	 * Method to obtain all the intervals, in the correct order, from the internal tree.
+	 * 
+	 * @return The collection of intervals
+	 */
+	public Collection<Function<T>> getAllIntervals() {
+		LinkedList<Function<T>> list = new LinkedList<Function<T>>();
+		Iterator<Function<T>> it = iterator();
+		while(it.hasNext())
+			list.add(it.next());
+		return list;
+	}
+	
+
+	
 }

@@ -278,7 +278,7 @@ public class DotWriter {
      */
     private String writeNodeLine(String nodeId, DotAttributes nodeAttributes) {
         DotAttributes attributes = new DotAttributes(nodeAttributes);
-        return "\t" + nodeId + " [" + writeAttributes(attributes) + "];";
+        return "\t\"" + nodeId + "\" [" + writeAttributes(attributes) + "];";
     }
 
     /**
@@ -301,7 +301,7 @@ public class DotWriter {
         attributes.remove(DotTools.edgeSourceAttr);
         attributes.remove(DotTools.edgeTargetAttr);
         attributes.remove(DotTools.directedAttr);
-        return "\t" + edgeSource + edge + edgeTarget + " [" + writeAttributes(attributes) + "];";
+        return "\t\"" + edgeSource + "\"" + edge + "\""+ edgeTarget + "\" [" + writeAttributes(attributes) + "];";
     }
 
     /**
