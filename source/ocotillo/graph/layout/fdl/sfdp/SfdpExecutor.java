@@ -1,5 +1,6 @@
 /**
- * Copyright Â© 2014-2016 Paolo Simonetto
+ * Copyright © 2020 Alessio Arleo
+ * Copyright © 2014-2017 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -22,6 +23,7 @@ import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.serialization.dot.DotReader;
 import ocotillo.serialization.dot.DotReader.DotReaderBuilder;
+import ocotillo.serialization.dot.DotValueConverter;
 import ocotillo.serialization.dot.DotWriter;
 import ocotillo.serialization.dot.DotWriter.DotWriterBuilder;
 import ocotillo.serialization.dot.DotValueConverter.PositionConverter;
@@ -40,7 +42,35 @@ import org.apache.commons.exec.PumpStreamHandler;
  * Executor for GraphViz's Scalable Force Directed Placement algorithm.
  */
 public class SfdpExecutor {
+	
+	private final static String FDP_LINE = "wsl fdp";
+	private final static String SFDP_LINE = "wsl sfdp";
+	
+	public enum AVAILABLE_STATIC_LAYOUTS{
+		fdp,
+		sfdp;
+		
+		public static String parse(AVAILABLE_STATIC_LAYOUTS c) {
+			switch(c) {
+			case fdp: return FDP_LINE;
+			case sfdp: return SFDP_LINE;
+			default: return SFDP_LINE;
+			}
+		}
+		
+		public static String toString(AVAILABLE_STATIC_LAYOUTS c) {
+			switch(c) {
+			case fdp: return "FDP";
+			case sfdp: return "SFDP";
+			default: return "Invalid algorithm code";
+			}		
+		}
+	}
 
+	public final static AVAILABLE_STATIC_LAYOUTS DEFAULT_COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.sfdp;
+	private final String COMMAND_LINE;
+	
+	
     private final String[] arguments;
     private final DotReader dotReader;
     private final DotWriter dotWriter;
@@ -53,6 +83,7 @@ public class SfdpExecutor {
         private String[] arguments;
         private DotReader dotReader;
         private DotWriter dotWriter;
+        private AVAILABLE_STATIC_LAYOUTS commandLine = DEFAULT_COMMAND_LINE;        
 
         /**
          * Constructs a SfdpBuilder.
@@ -71,6 +102,9 @@ public class SfdpExecutor {
                     .convert(StdAttribute.nodePosition, "pos")
                     .convert(StdAttribute.nodeSize, "width", new SizeDimensionConverter(0))
                     .convert(StdAttribute.nodeSize, "height", new SizeDimensionConverter(1));
+            
+            writerBuilder.edgeAttributes
+            		.convert(StdAttribute.weight, "weight", new DotValueConverter.DoubleConverter());
             dotWriter = writerBuilder.build();
         }
 
@@ -108,6 +142,11 @@ public class SfdpExecutor {
             this.dotWriter = dotWriter;
             return this;
         }
+        
+        public SfdpBuilder withCommandLine(AVAILABLE_STATIC_LAYOUTS commandLine) {
+        	this.commandLine = commandLine;
+        	return this;
+        }
 
         /**
          * Builds a sfdp executor.
@@ -115,7 +154,7 @@ public class SfdpExecutor {
          * @return the sfdp executor.
          */
         public SfdpExecutor build() {
-            return new SfdpExecutor(arguments, dotReader, dotWriter);
+            return new SfdpExecutor(arguments, dotReader, dotWriter, commandLine);
         }
     }
 
@@ -126,21 +165,22 @@ public class SfdpExecutor {
      * @param dotReader the dot reader.
      * @param dotWriter the dot writer.
      */
-    private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter) {
-        checkExecutable();
+    private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter, AVAILABLE_STATIC_LAYOUTS commandLine) {
+        this.COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.parse(commandLine); 
         this.arguments = arguments;
         this.dotReader = dotReader;
         this.dotWriter = dotWriter;
+    	checkExecutable();        
     }
 
     /**
      * Checks if the executable exists.
      */
-    private static void checkExecutable() {
+    private void checkExecutable() {
         try {
             DefaultExecutor executor = new DefaultExecutor();
             executor.setStreamHandler(new PumpStreamHandler(new ByteArrayOutputStream()));
-            executor.execute(CommandLine.parse("sfdp -V"));
+            executor.execute(CommandLine.parse(COMMAND_LINE + " -V"));
         } catch (IOException ex) {
             throw new IllegalStateException("sfdp executable has not been found.");
         }
@@ -174,7 +214,7 @@ public class SfdpExecutor {
             assert (argment.startsWith("-") && !argment.startsWith("-o") && !argment.startsWith("-O")) : "Arguments that control the input/ouput streams cannot be used here.";
         }
 
-        CommandLine cmdLine = new CommandLine("sfdp");
+        CommandLine cmdLine = new CommandLine(CommandLine.parse(COMMAND_LINE));
         cmdLine.addArguments(arguments);
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(listToString(dotInput).getBytes());
@@ -188,6 +228,7 @@ public class SfdpExecutor {
         } catch (IOException ex) {
             System.err.println("ERROR: " + errorStream.toString() + "\n");
             System.out.println("OUTPUT: " + outputStream.toString() + "\n");
+            ex.printStackTrace();            
             throw new IllegalStateException("Error while executing sfdp.");
         }
 

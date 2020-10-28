@@ -16,7 +16,11 @@
 package ocotillo.samples.parsers;
 
 import java.awt.Color;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -44,8 +48,10 @@ import ocotillo.serialization.ParserTools;
 /**
  * Parses the rugby twitter data set.
  */
-public class RugbyTweets {
+public class RugbyTweets extends PreloadedGraphParser{
 
+	private final static String dataPath = "data/Rugby_tweets/pro12_mentions.csv";
+	
     /**
      * An rugby tweet.
      */
@@ -88,15 +94,24 @@ public class RugbyTweets {
      * @param mode the desired mode.
      * @return the dynamic dataset.
      */
-    public static DyDataSet parse(Mode mode) {
-        File file = new File("data/Rugby_tweets/pro12_mentions.csv");
-        TweetDataSet dataset = parseTweets(file);
+    public DyDataSet parse(Mode mode) throws URISyntaxException {
+//        File file = new File("data/Rugby_tweets/pro12_mentions.csv");
+    	InputStream in = RugbyTweets.class.getClassLoader().getResourceAsStream(dataPath);
+    	try {
+    	TweetDataSet dataset = parseTweets(in);
         return new DyDataSet(
-                parseGraph(file, Duration.ofDays(1), mode),
+                parseGraph(dataset, Duration.ofDays(1), mode),
                 1.0 / Duration.ofDays(5).getSeconds(),
                 Interval.newClosed(
                         dataset.firstTime.toEpochSecond(ZoneOffset.UTC),
                         dataset.lastTime.toEpochSecond(ZoneOffset.UTC)));
+		} catch (IOException e) {
+			System.out.println("Error while reading stream!");
+			throw new URISyntaxException(dataPath, "Stream reading error");
+		} catch (Exception e) {
+			System.out.println("General Error while reading stream!");
+			throw new URISyntaxException(dataPath, e.getMessage());			
+		}
     }
 
     /**
@@ -104,9 +119,10 @@ public class RugbyTweets {
      *
      * @param file the file.
      * @return the tweet dataset.
+     * @throws Exception 
      */
-    public static TweetDataSet parseTweets(File file) {
-        List<String> lines = ParserTools.readFileLines(file);
+    private static TweetDataSet parseTweets(InputStream in) throws Exception {
+        List<String> lines = ParserTools.readFileLinesFromStream(in);
         Set<String> teams = new HashSet<>();
         List<Tweet> tweets = new ArrayList<>(lines.size() - 1);
         for (int i = 1; i < lines.size(); i++) {
@@ -127,7 +143,7 @@ public class RugbyTweets {
      * @param mode the desired mode.
      * @return the dynamic graph.
      */
-    public static DyGraph parseGraph(File file, Duration tweetDuration, Mode mode) {
+    private static DyGraph parseGraph(TweetDataSet dataset, Duration tweetDuration, Mode mode) {
         DyGraph graph = new DyGraph();
         DyNodeAttribute<Boolean> presence = graph.nodeAttribute(StdAttribute.dyPresence);
         DyNodeAttribute<String> label = graph.nodeAttribute(StdAttribute.label);
@@ -137,7 +153,7 @@ public class RugbyTweets {
         DyEdgeAttribute<Color> edgeColor = graph.edgeAttribute(StdAttribute.color);
         long halfDuration = tweetDuration.dividedBy(2).getSeconds();
 
-        TweetDataSet dataset = parseTweets(file);
+//        TweetDataSet dataset = parseTweets(file);
         Map<String, Node> nodeMap = new HashMap<>();
         for (String team : dataset.teams) {
             Node node = graph.newNode(team);

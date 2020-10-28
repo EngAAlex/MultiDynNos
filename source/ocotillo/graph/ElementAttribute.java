@@ -174,12 +174,21 @@ public abstract class ElementAttribute<K extends Element, V> implements Attribut
     }
 
     /**
-     * Copies the content of another attribute into this.
+     * Copies the content of another attribute into this anew.
      *
      * @param otherAttribute the other attribute.
      */
     public void copy(ElementAttribute<K, V> otherAttribute) {
         reset(otherAttribute.defaultValue);
+        merge(otherAttribute);        
+    }
+    
+    /**
+     * Merges the content of another attribute into this.
+     *
+     * @param otherAttribute the other attribute.
+     */
+    public void merge(ElementAttribute<K, V> otherAttribute) {
         for (Entry<K, V> entry : otherAttribute) {
             set(entry.getKey(), entry.getValue());
         }

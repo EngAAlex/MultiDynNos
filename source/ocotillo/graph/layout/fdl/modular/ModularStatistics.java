@@ -44,12 +44,20 @@ public class ModularStatistics {
         this.metrics.addAll(metrics);
     }
 
+    public void addMetric(ModularMetric metric) {
+    	this.metrics.add(metric);
+    }
+    
+    public void addMetrics(Collection<ModularMetric> metrics) {
+        this.metrics.addAll(metrics);
+    }
+    
     /**
      * Performs the metric computation at the end of an iteration.
      *
      * @param iterationRunningTime the running time of this iteration.
      */
-    protected void runAtIterationEnd(Duration iterationRunningTime) {
+    public void runAtIterationEnd(Duration iterationRunningTime) {
         for (ModularMetric metric : metrics) {
             if (metric != iterationRunningTimes) {
                 metric.runAtIterationEnd();
@@ -65,7 +73,7 @@ public class ModularStatistics {
      * @param totalRunningTime the total running time at the end of this
      * computation.
      */
-    protected void runAtComputationEnd(Duration totalRunningTime) {
+    public void runAtComputationEnd(Duration totalRunningTime) {
         for (ModularMetric metric : metrics) {
             metric.runAtComputationEnd();
         }
@@ -77,7 +85,7 @@ public class ModularStatistics {
      *
      * @return the total running time.
      */
-    public Duration getTotalRunnningTime() {
+    public Duration getTotalRunningTime() {
         return totalRunningTime;
     }
 

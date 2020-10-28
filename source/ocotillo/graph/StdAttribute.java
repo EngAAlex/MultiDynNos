@@ -48,6 +48,7 @@ public enum StdAttribute {
     labelOffset(Coordinates.class),
     graphics(String.class),
     background(Color.class),
+    weight(Double.class),    
     dyPresence(Boolean.class);
 
     /**
@@ -223,6 +224,10 @@ public enum StdAttribute {
                 createdAttribute = graph.newNodeAttribute(attrId, true);
                 createdAttribute.setDescription("Dynamic presence in the graph.");
                 break;
+            case weight:
+                createdAttribute = graph.newNodeAttribute(attrId, 0.0);
+                createdAttribute.setDescription("Weight associated to a node.");
+                break;                
             default:
                 return null;
         }
@@ -267,6 +272,10 @@ public enum StdAttribute {
                 createdAttribute = graph.newEdgeAttribute(attrId, "");
                 createdAttribute.setDescription("The edge labels.");
                 break;
+            case weight:
+                createdAttribute = graph.newEdgeAttribute(attrId, 0.0);
+                createdAttribute.setDescription("Weight associated to an edge.");
+                break;                  
             case dyPresence:
                 createdAttribute = graph.newEdgeAttribute(attrId, true);
                 createdAttribute.setDescription("Dynamic presence in the graph.");

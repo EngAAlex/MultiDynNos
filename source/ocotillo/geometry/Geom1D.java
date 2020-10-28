@@ -69,4 +69,48 @@ public class Geom1D extends GeomXD {
             return null;
         }
     }
+
+    /**
+     * Computes the union segment of two overlapping int ranges.
+     *
+     * @param firstLeft the smaller extreme of the first range.
+     * @param firstRight the bigger extreme of the first range.
+     * @param secondLeft the smaller extreme of the second range.
+     * @param secondRight the bigger extreme of the second range.
+     * @return Null if the ranges do not overlap, the union range
+     * otherwise.
+     */
+    public int[] rangesUnion(int firstLeft, int firstRight, int secondLeft, int secondRight) {
+        assert (firstLeft <= firstRight && secondLeft <= secondRight) : "The left indexes must be smaller or equal to the right ones";
+        if(rangesIntersection(firstLeft, firstRight, secondLeft, secondRight) == null)
+        	return null;
+        int left = Math.min(firstLeft, secondLeft);
+        int right = Math.max(firstRight, secondRight);
+        if (left <= right) {
+            return new int[]{left, right};
+        } else {
+            return null;
+        }
+    }
+    
+    /**
+     * Computes the union segment of two overlapping double ranges.
+     *
+     * @param firstLeft the smaller extreme of the first range.
+     * @param firstRight the bigger extreme of the first range.
+     * @param secondLeft the smaller extreme of the second range.
+     * @param secondRight the bigger extreme of the second range.
+     * @return Null if the ranges do not overlap, the union range
+     * otherwise.
+     */    
+    public double[] rangesUnion(double firstLeft, double firstRight, double secondLeft, double secondRight) {
+        assert (firstLeft <= firstRight && secondLeft <= secondRight) : "The left indexes must be smaller or equal to the right ones";
+        double left = Math.max(firstLeft, secondLeft);
+        double right = Math.min(firstRight, secondRight);
+        if (left <= right) {
+            return new double[]{left, right};
+        } else {
+            return null;
+        }
+	}
 }

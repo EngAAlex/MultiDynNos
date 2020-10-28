@@ -182,7 +182,8 @@ public class RedBlackTree<T extends BinarySearchTree.Data<K>, K extends Comparab
     @Override
     public void delete(T data) {
         RbNode<T, K> nodeToDelete = findNode(data.bstKey());
-        if (nodeToDelete == null || !nodeToDelete.dataSet.contains(data)) {
+        //							######## RISKY!!!!
+        if (nodeToDelete == null /* || !nodeToDelete.dataSet.contains(data) */) { 
             return;
         } else if (nodeToDelete.dataSet.size() > 1) {
             deleteDataFromNode(data, nodeToDelete);
