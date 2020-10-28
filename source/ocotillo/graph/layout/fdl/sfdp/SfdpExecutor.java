@@ -1,5 +1,6 @@
 /**
- * Copyright Â© 2014-2016 Paolo Simonetto
+ * Copyright © 2020 Alessio Arleo
+ * Copyright © 2014-2017 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -41,8 +42,34 @@ import org.apache.commons.exec.PumpStreamHandler;
  * Executor for GraphViz's Scalable Force Directed Placement algorithm.
  */
 public class SfdpExecutor {
+	
+	private final static String FDP_LINE = "wsl fdp";
+	private final static String SFDP_LINE = "wsl sfdp";
+	
+	public enum AVAILABLE_STATIC_LAYOUTS{
+		fdp,
+		sfdp;
+		
+		public static String parse(AVAILABLE_STATIC_LAYOUTS c) {
+			switch(c) {
+			case fdp: return FDP_LINE;
+			case sfdp: return SFDP_LINE;
+			default: return SFDP_LINE;
+			}
+		}
+		
+		public static String toString(AVAILABLE_STATIC_LAYOUTS c) {
+			switch(c) {
+			case fdp: return "FDP";
+			case sfdp: return "SFDP";
+			default: return "Invalid algorithm code";
+			}		
+		}
+	}
 
-	private final static String COMMAND_LINE = "sfdp";
+	public final static AVAILABLE_STATIC_LAYOUTS DEFAULT_COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.sfdp;
+	private final String COMMAND_LINE;
+	
 	
     private final String[] arguments;
     private final DotReader dotReader;
@@ -56,6 +83,7 @@ public class SfdpExecutor {
         private String[] arguments;
         private DotReader dotReader;
         private DotWriter dotWriter;
+        private AVAILABLE_STATIC_LAYOUTS commandLine = DEFAULT_COMMAND_LINE;        
 
         /**
          * Constructs a SfdpBuilder.
@@ -114,6 +142,11 @@ public class SfdpExecutor {
             this.dotWriter = dotWriter;
             return this;
         }
+        
+        public SfdpBuilder withCommandLine(AVAILABLE_STATIC_LAYOUTS commandLine) {
+        	this.commandLine = commandLine;
+        	return this;
+        }
 
         /**
          * Builds a sfdp executor.
@@ -121,7 +154,7 @@ public class SfdpExecutor {
          * @return the sfdp executor.
          */
         public SfdpExecutor build() {
-            return new SfdpExecutor(arguments, dotReader, dotWriter);
+            return new SfdpExecutor(arguments, dotReader, dotWriter, commandLine);
         }
     }
 
@@ -132,17 +165,18 @@ public class SfdpExecutor {
      * @param dotReader the dot reader.
      * @param dotWriter the dot writer.
      */
-    private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter) {
-        checkExecutable();
+    private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter, AVAILABLE_STATIC_LAYOUTS commandLine) {
+        this.COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.parse(commandLine); 
         this.arguments = arguments;
         this.dotReader = dotReader;
         this.dotWriter = dotWriter;
+    	checkExecutable();        
     }
 
     /**
      * Checks if the executable exists.
      */
-    private static void checkExecutable() {
+    private void checkExecutable() {
         try {
             DefaultExecutor executor = new DefaultExecutor();
             executor.setStreamHandler(new PumpStreamHandler(new ByteArrayOutputStream()));

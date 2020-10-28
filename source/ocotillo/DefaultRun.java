@@ -369,7 +369,7 @@ public class DefaultRun {
 		}
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
-			lines.add("Graph;Type;Time;Scaling;StressOn(d);StressOff(d);StressOn(c);StressOff(c);Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");
+			lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");
 			String outputFolder = System.getProperty("user.dir");
 			Boolean executeMulti = false;
 			Boolean executeSFDP = false;

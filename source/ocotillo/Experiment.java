@@ -328,7 +328,8 @@ public abstract class Experiment {
 			double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 			applyIdealScaling(visoneGraph, visoneScaling);
 			lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
-					+ computeOtherMetrics(visoneGraph, contVisone, snapTimes, null));
+					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
+									visoneGraph, dataset.suggestedTimeFactor).build()));
 		}catch (URISyntaxException uri) {
 			System.err.println("Could not load graph!");
 		}
@@ -403,7 +404,7 @@ public abstract class Experiment {
 				DyGraph contDiscrete = getContinuousCopy();
 				copyNodeLayoutFromTo(discGraph, contDiscrete);
 				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
-						+ computeOtherMetrics(discGraph, contDiscrete, snapTimes, discSyncro));
+						+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
 			}catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}catch (TimeoutException timeout) {
@@ -439,7 +440,7 @@ public abstract class Experiment {
 				copyNodeLayoutFromTo(contGraph, discContinuous);
 
 				String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
-						+ computeOtherMetrics(discContinuous, contGraph, snapTimes, contSyncro);
+						+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
 
 				//		System.out.println(line);
 
@@ -498,15 +499,16 @@ public abstract class Experiment {
 			//		copyNodeLayoutFromTo(sfdpCont, sfdpContDisc);
 
 			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
-					+ computeOtherMetrics(sfdpDisc, sfdpCont, snapTimes, null) + STAT_SEPARATOR + dataset.eventsProcessed;;
+					+ computeOtherMetrics(sfdpCont, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
+							sfdpDisc, dataset.suggestedTimeFactor).build());
 
-					//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
-					//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
+			//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
+			//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
 
-					//		System.out.println(lineD);
+			//		System.out.println(lineD);
 
-					lines.add(line);
-					//		lines.add(lineD);
+			lines.add(line);
+			//		lines.add(lineD);
 
 		}catch(URISyntaxException uri) {
 			System.err.println("Can't load graph");
@@ -579,7 +581,7 @@ public abstract class Experiment {
 						String extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
 
 						String line = name + STAT_SEPARATOR + "multid-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR + 1 / multiDiscreteScaling + STAT_SEPARATOR
-								+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), multiContDiscrete, snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
+								+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
 						//System.out.println(line);
 
@@ -628,7 +630,7 @@ public abstract class Experiment {
 						String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
 						System.out.println("\tDone! Computing metrics...");
 						String line = name + ";" + "multic-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + "_" + s + ";" + multiContTime + STAT_SEPARATOR + 1 / multiContinuousScaling + STAT_SEPARATOR
-								+ computeOtherMetrics(multiDiscContinuous, contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
+								+ computeOtherMetrics(contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
 						//System.out.println(line);
 
@@ -685,15 +687,12 @@ public abstract class Experiment {
 	 * Computes the other metrics of interest.
 	 *
 	 * @param discGraph the graph with discrete edges.
-	 * @param contGraph the graph with continuous edges.
+	 * @param graph the graph with continuous edges.
 	 * @param snapTimes the snapshot times.
 	 * @param synchro the synchroniser.
 	 * @return the metrics text.
 	 */
-	public String computeOtherMetrics(DyGraph discGraph, DyGraph contGraph, List<Double> snapTimes, SpaceTimeCubeSynchroniser synchro) {
-		SpaceTimeCubeSynchroniser synchroniser = synchro != null ? synchro
-				: new SpaceTimeCubeSynchroniser.StcsBuilder(
-						discGraph, dataset.suggestedTimeFactor).build();
+	public String computeOtherMetrics(DyGraph graph, List<Double> snapTimes, SpaceTimeCubeSynchroniser synchroniser) {
 
 		//        DyQuickView view = new DyQuickView(discGraph, dataset.suggestedInterval.leftBound(), "Disc Graph");
 		//        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
@@ -702,7 +701,7 @@ public abstract class Experiment {
 		//        DyQuickView view2 = new DyQuickView(contGraph, dataset.suggestedInterval.leftBound(), "Cont Graph");
 		//        view2.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
 		//        view2.showNewWindow();
-		//
+		
 		int slicesForOff = snapTimes.size() + (snapTimes.size() - 1) * 10;
 		Interval interval = Interval.newClosed(snapTimes.get(0), snapTimes.get(snapTimes.size() - 1));
 
@@ -717,8 +716,8 @@ public abstract class Experiment {
 		//				+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
 		//				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
-		return stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR
-				+ stressOn.computeMetric(contGraph) + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
+		return /*stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR + */				 
+				stressOn.computeMetric(graph) + STAT_SEPARATOR + stressOff.computeMetric(graph) + STAT_SEPARATOR
 				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
 	}
