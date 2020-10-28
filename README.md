@@ -136,6 +136,10 @@ At least one graph category and one layout method must be selected for the exper
 # Todos
 
  - Write MORE Tests
+ 
+# Known issues
+
+In some systems, due to folder protection, running the jar from the ```target``` folder directly might impede the correct loading of the dataset files. If you get null input streams exception when trying to load a dataset, please move the jar files somewhere else (e.g., Documents folder) before trying again.
 
 # Acknowledgments
 
