@@ -110,6 +110,7 @@ public class RampInfectionMap extends PreloadedGraphParser {
 	}
 
 	private static final boolean EDGE_PERSIST = false;
+	private static final int MAX_EVENTS = 800;
 
 	/**
 	 * Produces the dynamic dataset for this data.
@@ -141,7 +142,7 @@ public class RampInfectionMap extends PreloadedGraphParser {
 			ArrayList<RampEdge> infectionEvents = new ArrayList<RampEdge>(3*lines.size());
 			HashMap<String, RampNode> idToRampNode = new HashMap<String, RampNode> ();
 			for (int i = 0; i < lines.size(); i++) {
-				if(numEvents > 800) break;
+				if(numEvents > MAX_EVENTS) break;
 				String line = lines.get(i);
 				if (line.equals("")) continue;
 				line = line.replaceAll(" ", "");
