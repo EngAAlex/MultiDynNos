@@ -17,6 +17,7 @@ package ocotillo.samples.parsers;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,6 +79,9 @@ public class DialogSequences extends PreloadedGraphParser{
 		InputStream fileStream = DialogSequences.class.getClassLoader().getResourceAsStream(dataPath);        
 		DialogDataset dataset;	
 		try {
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
+			
 			dataset = parseDialogs(new ZipInputStream(fileStream));
 			DyDataSet dyDataSet = new DyDataSet(
 					parseGraph(dataset, 2, mode),

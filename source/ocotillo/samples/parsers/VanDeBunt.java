@@ -17,6 +17,7 @@ package ocotillo.samples.parsers;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,8 +92,11 @@ public class VanDeBunt extends PreloadedGraphParser{
 		//        RelationDataset dataset = parseRelations(file);
 
 		InputStream fileStream = VanDeBunt.class.getClassLoader().getResourceAsStream(dataPath);        
-		RelationDataset dataset;	
 		try {
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
+			//InputStream fileStream = VanDeBunt.class.getClassLoader().getResourceAsStream(dataPath);        
+			RelationDataset dataset;
 			dataset = parseRelations(new ZipInputStream(fileStream));
 			DyDataSet dyDataSet = new DyDataSet(
 					parseGraph(dataset, mode),
@@ -251,7 +255,7 @@ public class VanDeBunt extends PreloadedGraphParser{
 
 			zie = inputStream.getNextEntry();
 		}
-		System.out.println("\nLoading complete");
+		//System.out.println("\nLoading complete");
 		return dataset;
 	}
 }

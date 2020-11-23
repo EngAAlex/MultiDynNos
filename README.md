@@ -122,6 +122,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics <OPTIONS>
 | Single | ```--single``` | Executes the experiment using DynNoSlice |
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
+| Jaccard* | ```--jaccard``` | Computes Jaccard similarity with uniform timeslicing|
 | Verbose | ```--verbose``` | Extra output on console during computation |
 | Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. |
 
@@ -131,7 +132,7 @@ More than one option can be selected. For example, to compute the metrics for bo
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smaller --multi --visone --out /path/to/file
 ```
 
-At least one graph category and one layout method must be selected for the experiment to run.
+At least one graph category and one layout method must be selected for the experiment to run, except for options marked by an asterisk (*): in that case, only the graph category is needed and layout options will be ignored.
 
 # Todos
 

@@ -209,7 +209,8 @@ public class DefaultRun {
 		help,
 //		discrete,
 		verbose,
-		output;
+		output,
+		jaccard;
 
 		public static void printHelp() {
 
@@ -236,6 +237,8 @@ public class DefaultRun {
 				return new CMDLineOption("DynNoS", "--single", "Executes the experiment using DynNoS");    			
 			case sfdp: 
 				return new CMDLineOption("SFDP", "--sfdp", "Flattens graphs and executes the experiment using SFDP"); 
+			case jaccard:
+				return new CMDLineOption("Jaccard", "--jaccard", "Computes Jaccard similarity over timeslices");					
 //			case discrete: 
 //				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
 			case output:
@@ -261,6 +264,8 @@ public class DefaultRun {
 				return MetricsCalculationOptions.single;    			
 			case "sfdp": 
 				return MetricsCalculationOptions.sfdp;
+			case "jaccard":
+				return MetricsCalculationOptions.jaccard;				
 //			case "discrete": 
 //				return MetricsCalculationOptions.discrete;    		
 			case "out":
@@ -376,6 +381,7 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
+			Boolean computeJaccard = false;
 			//                Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
@@ -410,6 +416,7 @@ public class DefaultRun {
 				case multi: executeMulti = true; break;
 				case sfdp: 	executeSFDP = true; break;
 				case verbose: verbose = true; break;
+				case jaccard: computeJaccard = true; break;
 //				case discrete: {
 //					discreteExperiment.add("Bunt");
 //					discreteExperiment.add("Newcomb");
@@ -472,6 +479,11 @@ public class DefaultRun {
 					lines.addAll(
 							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
 							);                		
+				}
+				if(computeJaccard) {
+					lines.addAll(
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeJaccardSimilarity()
+							);
 				}
 				//                	if(plotSliceSize) {
 				//                		lines.addAll(

@@ -17,6 +17,7 @@ package ocotillo.samples.parsers;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +62,10 @@ public class NewcombFraternity extends PreloadedGraphParser{
 
 		InputStream fileStream = DialogSequences.class.getClassLoader().getResourceAsStream(dataPath);        
 		try {
+			
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
+			
 			List<Integer[][]> dataset = parseRelations(new ZipInputStream(fileStream));
 			DyDataSet dyDataSet = 
 					new DyDataSet(

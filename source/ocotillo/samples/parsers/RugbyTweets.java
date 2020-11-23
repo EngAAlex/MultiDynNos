@@ -18,6 +18,7 @@ package ocotillo.samples.parsers;
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -96,9 +97,13 @@ public class RugbyTweets extends PreloadedGraphParser{
      */
     public DyDataSet parse(Mode mode) throws URISyntaxException {
 //        File file = new File("data/Rugby_tweets/pro12_mentions.csv");
-    	InputStream in = RugbyTweets.class.getClassLoader().getResourceAsStream(dataPath);
+    	InputStream fileStream = RugbyTweets.class.getClassLoader().getResourceAsStream(dataPath);
     	try {
-    	TweetDataSet dataset = parseTweets(in);
+
+		if(fileStream == null) //attempt alternative loading method
+			fileStream = new FileInputStream(new File(dataPath));
+    		
+    	TweetDataSet dataset = parseTweets(fileStream);
         return new DyDataSet(
                 parseGraph(dataset, Duration.ofDays(1), mode),
                 1.0 / Duration.ofDays(5).getSeconds(),

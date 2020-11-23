@@ -16,6 +16,8 @@
 package ocotillo.samples.parsers;
 
 import java.awt.Color;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -62,7 +64,9 @@ public class Mooc extends PreloadedGraphParser{
 		long minEpoch = Long.MAX_VALUE;
 		long maxEpoch = Long.MIN_VALUE;
 		try {
-			InputStream fileStream = Mooc.class.getClassLoader().getResourceAsStream(dataPath);    	
+			InputStream fileStream = Mooc.class.getClassLoader().getResourceAsStream(dataPath);   
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
 			List<String> lines = ParserTools.readFileLinesFromStream(fileStream);
 
 			DyNodeAttribute<Boolean> presence = graph.nodeAttribute(StdAttribute.dyPresence);

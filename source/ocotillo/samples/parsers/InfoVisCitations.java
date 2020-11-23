@@ -17,6 +17,7 @@ package ocotillo.samples.parsers;
 
 import java.awt.Color;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -127,6 +128,9 @@ public class InfoVisCitations extends PreloadedGraphParser{
 	public DyDataSet parse(Mode mode) throws URISyntaxException {    	
 		InputStream fileStream = InfoVisCitations.class.getClassLoader().getResourceAsStream(dataPath);        
 		try {
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
+			
 			Map<String, Paper> papers = parsePapers(fileStream);
 			int firstYear = Integer.MAX_VALUE;
 			int lastYear = Integer.MIN_VALUE;

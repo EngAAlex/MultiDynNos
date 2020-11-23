@@ -19,6 +19,7 @@ package ocotillo.samples.parsers;
 import java.awt.Color;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -135,8 +136,11 @@ public class RampInfectionMap extends PreloadedGraphParser {
 			DyEdgeAttribute<Boolean> edgePresence = graph.edgeAttribute(StdAttribute.dyPresence);
 			DyEdgeAttribute<Color> edgeColor = graph.edgeAttribute(StdAttribute.color);
 
-			InputStream fileStream = RampInfectionMap.class.getClassLoader().getResourceAsStream(dataPath);    	
-
+			InputStream fileStream = RampInfectionMap.class.getClassLoader().getResourceAsStream(dataPath);  
+			
+			if(fileStream == null) //attempt alternative loading method
+				fileStream = new FileInputStream(new File(dataPath));
+			
 			List<String> lines = ParserTools.readFileLinesFromStream(fileStream);
 			ArrayList<RampEdge> infectionEvents = new ArrayList<RampEdge>(3*lines.size());
 			HashMap<String, RampNode> idToRampNode = new HashMap<String, RampNode> ();
