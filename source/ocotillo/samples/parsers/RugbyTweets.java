@@ -52,6 +52,7 @@ import ocotillo.serialization.ParserTools;
 public class RugbyTweets extends PreloadedGraphParser{
 
 	private final static String dataPath = "data/Rugby_tweets/pro12_mentions.csv";
+	public static final double INTERVAL_DURATION = 1.0 / Duration.ofDays(5).getSeconds();
 	
     /**
      * An rugby tweet.
@@ -106,7 +107,7 @@ public class RugbyTweets extends PreloadedGraphParser{
     	TweetDataSet dataset = parseTweets(fileStream);
         return new DyDataSet(
                 parseGraph(dataset, Duration.ofDays(1), mode),
-                1.0 / Duration.ofDays(5).getSeconds(),
+                INTERVAL_DURATION,
                 Interval.newClosed(
                         dataset.firstTime.toEpochSecond(ZoneOffset.UTC),
                         dataset.lastTime.toEpochSecond(ZoneOffset.UTC)));

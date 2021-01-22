@@ -51,6 +51,7 @@ import ocotillo.serialization.ParserTools;
 public class DialogSequences extends PreloadedGraphParser{
 
 	private final static String dataPath = "data/DialogSequences/Pride_and_Prejudice/chapters.zip";
+	private static final double FIXED_DURATION = 1;
 	
 	private static class DialogDataset {
 
@@ -85,7 +86,7 @@ public class DialogSequences extends PreloadedGraphParser{
 			dataset = parseDialogs(new ZipInputStream(fileStream));
 			DyDataSet dyDataSet = new DyDataSet(
 					parseGraph(dataset, 2, mode),
-					1,
+					FIXED_DURATION,
 					Interval.newClosed(dataset.startTime, dataset.endTime));
 	        fileStream.close();
 	        return dyDataSet;

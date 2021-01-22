@@ -1290,7 +1290,9 @@ public abstract class Experiment {
 		List<String> lines = new ArrayList<String>();
 
 		DyGraph discretized = discretise();
-		List<Double> snapTimes = readSnapTimes(discretized);
+		List<Double> snapTimes = readSnapTimes(discretise());
+
+		//DyGraph discretized = DyGraphDiscretiser.getEqualDiscretizationWithFixedDuration(dataset.dygraph, snapTimes.size());
 
 		if(snapTimes.size() == 1) {
 			lines.add("1");
@@ -1367,26 +1369,39 @@ public abstract class Experiment {
 
 	}
 
+	protected List<String> dumpGraphSlices(int step) {
+		ArrayList<String> lines = new ArrayList<String>();
+		String value = name + ";";
+		
+		DyGraph discretizedGraph = discretise();
+		value += "default_discretization;";
+		List<Double> snapTimes = readSnapTimes(discretizedGraph);
 
-	//	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
-	//		DyGraph discretizedGraph = discretise();
-	//		List<Double> snapTimes = readSnapTimes(discretizedGraph);
-	//		System.out.println("Dumping Slices");
-	//		int lastSnap = 0;
-	//		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
-	//		boolean stoppingCondition = true;
-	//		int needle = step;
-	//		while(stoppingCondition) {    		
-	//			if(needle >= snapTimes.size()) {
-	//				stoppingCondition = false;
-	//				needle = snapTimes.size() - 1;
-	//			}    		
-	//			System.out.println("Start " + lastSnap + " end " + needle);
-	//			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-	//			GMLOutputWriter.writeOutput(new File(name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
-	//			lastSnap = needle;
-	//			needle += step;
-	//		}	
-	//	}
+		//DyGraph discretizedGraph = DyGraphDiscretiser.getEqualDiscretizationWithFixedDuration(dataset.dygraph, snapTimes.size());
+		//List<Double> snapTimes = DyGraphDiscretiser.getEqualDiscretizationWithFixedDuration(dataset.dygraph, readSnapTimes(discretise()).size());
+		//value += "uniform_discretization;";
+		
+//		System.out.println("Dumping Slices");
+		int lastSnap = 0;
+		//int step = Double.valueOf(Math.floor(snapTimes.size()/aggregation)).intValue();
+		boolean stoppingCondition = true;
+		int needle = lastSnap + step;
+		while(stoppingCondition) {    		
+			if(needle >= snapTimes.size()) {
+				stoppingCondition = false;
+				needle = snapTimes.size() - 1;
+				if(needle == lastSnap)
+					break;
+			}    		
+			//System.out.println("Start " + lastSnap + " end " + needle);
+			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(dataset.dygraph, Interval.newLeftClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			value += snipGraph.edgeCount() + ";";
+			//GMLOutputWriter.writeOutput(new File(name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
+			lastSnap = needle;
+			needle += step;
+		}	
+		lines.add(value);
+		return lines;
+	}
 
 }

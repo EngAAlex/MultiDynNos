@@ -1,5 +1,5 @@
 /**
- * Copyright Â© 2014-2016 Paolo Simonetto
+ * Copyright © 2014-2016 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 package ocotillo.geometry;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 
@@ -418,5 +419,48 @@ public class Interval {
     					return true;
     	}
     	return false;
+    }
+    
+    public static class CompareIntervalsByLeftBound implements Comparator<Interval> {
+
+    	protected int checkInterval(Interval o1, Interval o2) {
+    		return 0;
+    	}
+    	
+		@Override
+		public int compare(Interval o1, Interval o2) {
+			if(o1.equals(o2))
+				return 0;
+			double leftBound1 = o1.leftBound();
+			double leftBound2 = o2.leftBound();
+			if(leftBound1 < leftBound2)
+				return -1;
+			else if(leftBound1 > leftBound2)
+					return 1;
+			
+			return checkInterval(o1, o2);
+			
+		}
+		
+    }
+    
+    public static class CompareIntervalsByLeftBoundWithDuration extends CompareIntervalsByLeftBound{
+    	
+    	@Override
+    	protected int checkInterval(Interval o1, Interval o2) {
+			double leftBound1 = o1.leftBound();
+			double leftBound2 = o2.leftBound();
+    		double rightBound1 = o1.rightBound();
+			double rightBound2 = o2.rightBound();
+			double duration1 = rightBound1 - leftBound1;
+			double duration2 = rightBound2 - leftBound2;
+			if(duration1 < duration2)
+				return -1;
+			else if(duration1 > duration2)
+				return 1;
+			
+			return 0;
+    	}
+    	
     }
 }
