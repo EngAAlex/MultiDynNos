@@ -1,6 +1,6 @@
-# MultiDyNoSlice 
+# MultiDynNoSlice 
 
-MultiDyNoSlice is the first multi-level event based graph drawing algorithm. 
+MultiDynNoSlice is the first multi-level event based graph drawing algorithm. 
 
 [Link to the Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
 
