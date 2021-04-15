@@ -1,5 +1,5 @@
 /**
- * Copyright Â© 2014-2016 Paolo Simonetto
+ * Copyright © 2014-2016 Paolo Simonetto
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 package ocotillo.geometry;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 
@@ -419,4 +420,5 @@ public class Interval {
     	}
     	return false;
     }
+
 }

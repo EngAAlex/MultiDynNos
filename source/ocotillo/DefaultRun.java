@@ -84,13 +84,11 @@ public class DefaultRun {
 	}
 
 	private enum AvailableMode {
-//		discretisationTest,
+
 		animate,
 		showcube,
 		computeMetrics,
 		help;
-//		text;
-//		gui;    	
 
 		public static void printHelp() {
 
@@ -207,7 +205,6 @@ public class DefaultRun {
 		visone,		
 		sfdp,
 		help,
-//		discrete,
 		verbose,
 		output;
 
@@ -236,8 +233,6 @@ public class DefaultRun {
 				return new CMDLineOption("DynNoS", "--single", "Executes the experiment using DynNoS");    			
 			case sfdp: 
 				return new CMDLineOption("SFDP", "--sfdp", "Flattens graphs and executes the experiment using SFDP"); 
-//			case discrete: 
-//				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
 			case output:
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
@@ -260,9 +255,7 @@ public class DefaultRun {
 			case "single": 
 				return MetricsCalculationOptions.single;    			
 			case "sfdp": 
-				return MetricsCalculationOptions.sfdp;
-//			case "discrete": 
-//				return MetricsCalculationOptions.discrete;    		
+				return MetricsCalculationOptions.sfdp;	
 			case "out":
 				return MetricsCalculationOptions.output;
 			case "verbose":
@@ -277,7 +270,7 @@ public class DefaultRun {
 		System.setProperty("swing.aatext", "true");
 
 		System.out.println("MultiDynNoSlyce Demo");
-		
+
 		if (args.length == 0) {
 			showHelp();
 			return;
@@ -354,38 +347,37 @@ public class DefaultRun {
 			case sfdp: drawingAlgorithm = new SFDPRun(args, data); break;
 			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data); break;
 			}
-			
+
 			drawingAlgorithm.computeDrawing();
 
 			switch(selectedMode) {
 			case animate: drawingAlgorithm.animateGraph(); break;
 			default: drawingAlgorithm.plotSpaceTimeCube(); break;			
 			}
-			
+
 			drawingAlgorithm.saveOutput();
-			
+
 			break;
-			
+
 		}
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
-			lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");
 			String outputFolder = System.getProperty("user.dir");
 			Boolean executeMulti = false;
 			Boolean executeSFDP = false;
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			//                Boolean plotSliceSize = false;
+			Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
 			HashSet<String> expNames = new HashSet<String>();
 			HashSet<String> smallerDatasets = new HashSet<String>();
-			smallerDatasets.add("Bunt");
-			smallerDatasets.add("Newcomb");
-			smallerDatasets.add("InfoVis");
+//			smallerDatasets.add("Bunt");
+//			smallerDatasets.add("Newcomb");
+//			smallerDatasets.add("InfoVis");
 			smallerDatasets.add("Rugby");
-			smallerDatasets.add("Pride");
+//			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 			largerDatasets.add("RealMining");
@@ -406,18 +398,30 @@ public class DefaultRun {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
 				case smaller: expNames.addAll(smallerDatasets); break;
 				case larger: expNames.addAll(largerDatasets); break;
-				case single: executeSingle = true; break;
-				case multi: executeMulti = true; break;
-				case sfdp: 	executeSFDP = true; break;
+				case single: {
+					if(lines.isEmpty())
+						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+					executeSingle = true; break;
+				}
+				case multi: {
+					if(lines.isEmpty())
+						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+					executeMulti = true; break;
+				}
+				case sfdp: {
+					if(lines.isEmpty())
+						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+					executeSFDP = true; break;
+				}
 				case verbose: verbose = true; break;
-//				case discrete: {
-//					discreteExperiment.add("Bunt");
-//					discreteExperiment.add("Newcomb");
-//					discreteExperiment.add("InfoVis");
-//					//                    	discreteExperiment.add("Rugby");
-//					//                    	discreteExperiment.add("Pride");     
-//					break;
-//				}
+				//				case discrete: {
+				//					discreteExperiment.add("Bunt");
+				//					discreteExperiment.add("Newcomb");
+				//					discreteExperiment.add("InfoVis");
+				//					//                    	discreteExperiment.add("Rugby");
+				//					//                    	discreteExperiment.add("Pride");     
+				//					break;
+				//				}
 				case output: {
 					if(i+1 < args.length) {
 						i++;
@@ -425,82 +429,73 @@ public class DefaultRun {
 					}
 					break;
 				} 
-				case visone: {
+				case visone: {					
 					executeVisone = true;
 					visoneTimes.put("Bunt", "0.128");
 					visoneTimes.put("Newcomb", "0.109");
 					visoneTimes.put("InfoVis", "77.430");
 					visoneTimes.put("Rugby", "0.079");
-					visoneTimes.put("Pride", "3.391");  
+					visoneTimes.put("Pride", "3.391");
+					if(lines.isEmpty())
+						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
 					break;
 				}
 				default: break;
-				}
-
-				//                	else if(args[i].equals("--slices"))
-				//                		plotSliceSize = true;
 				//                	else if(args[i].equals("--dump"))
 				//						dumpSlicesPicture = true;
 
-                
-			}               
 
-			LocalDateTime ld = LocalDateTime.now();
-			String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
-			String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
-			time = time.replace(':', '-');
+				}               
+			}
+				LocalDateTime ld = LocalDateTime.now();
+				String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
+				String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
+				time = time.replace(':', '-');
 
-			String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
-			
-			for(String graphName : expNames) {
-				System.out.println("\n### Starting " + graphName + " Experiment ###");
-				if(executeVisone && visoneTimes.containsKey(graphName)) {
-					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
-							);
-				}
-				if(executeSingle) {
-					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
-							);                		
-				}if(executeMulti) {
-					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
-							);                		
-				}
-				if(executeSFDP) {
-					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
-							);                		
-				}
-				//                	if(plotSliceSize) {
-				//                		lines.addAll(
-				//                				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).provideSnapshotSize()
-				//                			);                		
-				//                	}   
-				//            	if(dumpSlicesPicture) {
-				//       				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).probeLayout();
-				//            	}                    	
+				String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
+				for(String graphName : expNames) {
+					System.out.println("\n### Starting " + graphName + " Experiment ###");
+					if(executeVisone && visoneTimes.containsKey(graphName)) {
+						lines.addAll(
+								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
+								);
+					}
+					if(executeSingle) {
+						lines.addAll(
+								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
+								);                		
+					}if(executeMulti) {
+						lines.addAll(
+								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
+								);                		
+					}
+					if(executeSFDP) {
+						lines.addAll(
+								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
+								);                		
+					}               	
+
+				}
+
+				//			for (String line : lines) {
+				//				System.out.println(line);
+				//			}
+
+				if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
+					outputFolder += File.separator; 
+
+				ParserTools.writeFileLines(lines,
+						new File(outputFolder + fileName));
+
+				System.out.println("\n##### Experiments complete! #####");
+
+				System.exit(0);
+				return;
 			}
 
-			//			for (String line : lines) {
-			//				System.out.println(line);
-			//			}
-
-			if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
-				outputFolder += File.separator; 
-			
-			ParserTools.writeFileLines(lines,
-					new File(outputFolder + fileName));
-			
-			System.out.println("\n##### Experiments complete! #####");
-			
-			System.exit(0);
-			return;
 		}
-
-		}
+		
 	}
 
 	private static void showHelp() {
@@ -514,25 +509,25 @@ public class DefaultRun {
 		System.out.println("#NAME\t#COMMAND\t#DESCRIPTION");	
 		AvailableMode.printHelp();
 		System.out.println("");
-		
+
 		System.out.println("In custom, animate, and showcube modes the following options are available:");
 		System.out.println("#NAME\t#OPTION\t#DESCRIPTION");	
 		AvailableDrawingOption.printHelp();
 		System.out.println("");
-		
+
 		System.out.println("\nAvailable Layout Methods:");
 		System.out.println("#NAME\t#COMMAND\t#DESCRIPTION");	
 		AvailableMethods.printHelp();
 		System.out.println("");
-		
+
 		System.out.println("\nAvailable Datasets:");	
 		AvailableDataset.printHelp();
 		System.out.println("");
-		
+
 		System.out.println("The user can specify a dataset using the custom mode.");
 		Run.showHelp();
 		System.out.println("");		
-		
+
 		System.out.println("\nExperiment Options:");
 		System.out.println("The following options define how to perform the experiment.");				
 		System.out.println("#NAME\t#OPTION\t#DESCRIPTION");	

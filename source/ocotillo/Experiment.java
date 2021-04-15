@@ -329,7 +329,7 @@ public abstract class Experiment {
 			applyIdealScaling(visoneGraph, visoneScaling);
 			lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
-									visoneGraph, dataset.suggestedTimeFactor).build()));
+							visoneGraph, dataset.suggestedTimeFactor).build()));
 		}catch (URISyntaxException uri) {
 			System.err.println("Could not load graph!");
 		}
@@ -701,7 +701,7 @@ public abstract class Experiment {
 		//        DyQuickView view2 = new DyQuickView(contGraph, dataset.suggestedInterval.leftBound(), "Cont Graph");
 		//        view2.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
 		//        view2.showNewWindow();
-		
+
 		int slicesForOff = snapTimes.size() + (snapTimes.size() - 1) * 10;
 		Interval interval = Interval.newClosed(snapTimes.get(0), snapTimes.get(snapTimes.size() - 1));
 
@@ -1276,26 +1276,5 @@ public abstract class Experiment {
 		}
 
 	}
-
-	//	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
-	//		DyGraph discretizedGraph = discretise();
-	//		List<Double> snapTimes = readSnapTimes(discretizedGraph);
-	//		System.out.println("Dumping Slices");
-	//		int lastSnap = 0;
-	//		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
-	//		boolean stoppingCondition = true;
-	//		int needle = step;
-	//		while(stoppingCondition) {    		
-	//			if(needle >= snapTimes.size()) {
-	//				stoppingCondition = false;
-	//				needle = snapTimes.size() - 1;
-	//			}    		
-	//			System.out.println("Start " + lastSnap + " end " + needle);
-	//			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-	//			GMLOutputWriter.writeOutput(new File(name+"_slices" + lastSnap + "-" + needle + ".gml"), snipGraph);
-	//			lastSnap = needle;
-	//			needle += step;
-	//		}	
-	//	}
-
+	
 }

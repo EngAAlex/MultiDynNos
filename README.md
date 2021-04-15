@@ -1,18 +1,18 @@
-# MultiDyNoSlice 
+# MultiDynNoS
 
-MultiDyNoSlice is the first multi-level event based graph drawing algorithm. 
+MultiDynNoS is the first multi-level event based graph drawing algorithm. 
+
+[Link to the Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
+
+[Link to the Paper](https://www.cvast.tuwien.ac.at/multidynnos)
+
 
 # Installation
 
 #### Requirements
 
 - **Build**: To build MultiDynNos, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoSlice requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WSL) install. Please modify the following variables in ```ocotillo.graph.layout.fdl.sfdp.SFDPExecutor``` class if needed to point at the command to run Graphviz on your machine:
-
-```
-	private final static String FDP_LINE = "wsl fdp"; //insert the cmd command to launch either sfdp and fdp
-	private final static String SFDP_LINE = "wsl sfdp";
-```
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
 
 #### Build
 
@@ -32,7 +32,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar
 This software has **two** modes: **Layout** and **Metrics**.
 
 #### Layout Mode:
-It is used to run DynNoSlice or Multi-DynNoSlice on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
+It is used to run DynNoSlice or MultiDynNoS on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
 
 To run the system in this mode, please run:
 
@@ -127,6 +127,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics <OPTIONS>
 | Single | ```--single``` | Executes the experiment using DynNoSlice |
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
+| Jaccard* | ```--jaccard``` | Computes Jaccard similarity with uniform timeslicing|
 | Verbose | ```--verbose``` | Extra output on console during computation |
 | Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. |
 
@@ -136,7 +137,7 @@ More than one option can be selected. For example, to compute the metrics for bo
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smaller --multi --visone --out /path/to/file
 ```
 
-At least one graph category and one layout method must be selected for the experiment to run.
+At least one graph category and one layout method must be selected for the experiment to run, except for options marked by an asterisk (*): in that case, only the graph category is needed and layout options will be ignored.
 
 # Todos
 
