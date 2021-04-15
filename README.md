@@ -1,6 +1,6 @@
-# MultiDynNoSlice 
+# MultiDynNoS
 
-MultiDynNoSlice is the first multi-level event based graph drawing algorithm. 
+MultiDynNoS is the first multi-level event based graph drawing algorithm. 
 
 [Link to the Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
 
@@ -12,7 +12,7 @@ MultiDynNoSlice is the first multi-level event based graph drawing algorithm.
 #### Requirements
 
 - **Build**: To build MultiDynNos, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoSlice requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
 
 #### Build
 
@@ -32,7 +32,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar
 This software has **two** modes: **Layout** and **Metrics**.
 
 #### Layout Mode:
-It is used to run DynNoSlice or Multi-DynNoSlice on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
+It is used to run DynNoSlice or MultiDynNoS on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
 
 To run the system in this mode, please run:
 
