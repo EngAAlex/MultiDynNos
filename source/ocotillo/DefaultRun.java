@@ -210,7 +210,6 @@ public class DefaultRun {
 		//		discrete,
 		verbose,
 		output,
-		jaccard,
 		slices;
 
 		public static void printHelp() {
@@ -238,8 +237,6 @@ public class DefaultRun {
 				return new CMDLineOption("DynNoS", "--single", "Executes the experiment using DynNoS");    			
 			case sfdp: 
 				return new CMDLineOption("SFDP", "--sfdp", "Flattens graphs and executes the experiment using SFDP"); 
-			case jaccard:
-				return new CMDLineOption("Jaccard", "--jaccard", "Computes Jaccard similarity over timeslices");	
 			case slices:
 				return new CMDLineOption("Slices", "--slices", "Prints the slices sizes");					
 				//			case discrete: 
@@ -267,8 +264,6 @@ public class DefaultRun {
 				return MetricsCalculationOptions.single;    			
 			case "sfdp": 
 				return MetricsCalculationOptions.sfdp;
-			case "jaccard":
-				return MetricsCalculationOptions.jaccard;		
 			case "slices":
 				return MetricsCalculationOptions.slices;
 				//			case "discrete": 
@@ -385,7 +380,6 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			Boolean computeJaccard = false;
 			Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
@@ -432,11 +426,6 @@ public class DefaultRun {
 					executeSFDP = true; break;
 				}
 				case verbose: verbose = true; break;
-				case jaccard: {
-					if(lines.isEmpty())
-						lines.add("Graph;Similarity_by_timeslice");					
-					computeJaccard = true; break;
-				}
 				//				case discrete: {
 				//					discreteExperiment.add("Bunt");
 				//					discreteExperiment.add("Newcomb");
@@ -503,20 +492,7 @@ public class DefaultRun {
 						lines.addAll(
 								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
 								);                		
-					}
-					if(computeJaccard) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeJaccardSimilarity()
-								);
-					}
-					if(plotSliceSize) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).dumpGraphSlices(1)
-								);                		
-					}   
-					//            	if(dumpSlicesPicture) {
-					//       				((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).probeLayout();
-					//            	}                    	
+					}               	
 
 				}
 

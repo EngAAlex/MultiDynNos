@@ -2,6 +2,11 @@
 
 MultiDyNoSlice is the first multi-level event based graph drawing algorithm. 
 
+[Link to the Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
+
+[Link to the Paper](https://www.cvast.tuwien.ac.at/multidynnos)
+
+
 # Installation
 
 #### Requirements
