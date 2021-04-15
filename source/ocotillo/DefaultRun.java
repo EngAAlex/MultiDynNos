@@ -18,7 +18,6 @@
 package ocotillo;
 
 import java.io.File;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -26,23 +25,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import ocotillo.dygraph.DyGraph;
-import ocotillo.dygraph.extra.DyGraphDiscretiser;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
-import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
-import ocotillo.dygraph.rendering.Animation;
-import ocotillo.geometry.Geom;
-import ocotillo.graph.layout.fdl.modular.ModularConstraint;
-import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
 import ocotillo.run.Run;
 import ocotillo.run.Run.AvailableDrawingOption;
 import ocotillo.run.SFDPRun;
-import ocotillo.samples.DyGraphSamples;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
@@ -84,13 +71,10 @@ public class DefaultRun {
 	}
 
 	private enum AvailableMode {
-		//		discretisationTest,
 		animate,
 		showcube,
 		computeMetrics,
-		help;
-		//		text;
-		//		gui;    	
+		help; 	
 
 		public static void printHelp() {
 
@@ -209,8 +193,7 @@ public class DefaultRun {
 		help,
 		//		discrete,
 		verbose,
-		output,
-		slices;
+		output;
 
 		public static void printHelp() {
 
@@ -237,10 +220,6 @@ public class DefaultRun {
 				return new CMDLineOption("DynNoS", "--single", "Executes the experiment using DynNoS");    			
 			case sfdp: 
 				return new CMDLineOption("SFDP", "--sfdp", "Flattens graphs and executes the experiment using SFDP"); 
-			case slices:
-				return new CMDLineOption("Slices", "--slices", "Prints the slices sizes");					
-				//			case discrete: 
-				//				return new CMDLineOption("Discrete", "--discrete", "If included, graphs will be evaluated with discretized metrics");
 			case output:
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
@@ -263,11 +242,7 @@ public class DefaultRun {
 			case "single": 
 				return MetricsCalculationOptions.single;    			
 			case "sfdp": 
-				return MetricsCalculationOptions.sfdp;
-			case "slices":
-				return MetricsCalculationOptions.slices;
-				//			case "discrete": 
-				//				return MetricsCalculationOptions.discrete;    		
+				return MetricsCalculationOptions.sfdp; 		
 			case "out":
 				return MetricsCalculationOptions.output;
 			case "verbose":
@@ -327,7 +302,7 @@ public class DefaultRun {
 					case 1: 
 						data = new NewcombFraternity().parse(Mode.keepAppearedNode); break;
 					case 2: 
-						data = new InfoVisCitations().parse(Mode.keepAppearedNode); break;
+						data = new InfoVisCitations().parse(Mode.plain); break;
 					case 3: data = new RugbyTweets().parse(Mode.keepAppearedNode); break;
 					case 4: data = new DialogSequences().parse(Mode.keepAppearedNode); break;
 					case 5: data = new CollegeMsg().parse(Mode.keepAppearedNode); break;
@@ -380,16 +355,15 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			Boolean plotSliceSize = false;
-			//			Boolean dumpSlicesPicture = true;
+
 
 			HashSet<String> expNames = new HashSet<String>();
 			HashSet<String> smallerDatasets = new HashSet<String>();
-//			smallerDatasets.add("Bunt");
-//			smallerDatasets.add("Newcomb");
-//			smallerDatasets.add("InfoVis");
+			smallerDatasets.add("Bunt");
+			smallerDatasets.add("Newcomb");
+			smallerDatasets.add("InfoVis");
 			smallerDatasets.add("Rugby");
-//			smallerDatasets.add("Pride");
+			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 			largerDatasets.add("RealMining");
@@ -426,14 +400,6 @@ public class DefaultRun {
 					executeSFDP = true; break;
 				}
 				case verbose: verbose = true; break;
-				//				case discrete: {
-				//					discreteExperiment.add("Bunt");
-				//					discreteExperiment.add("Newcomb");
-				//					discreteExperiment.add("InfoVis");
-				//					//                    	discreteExperiment.add("Rugby");
-				//					//                    	discreteExperiment.add("Pride");     
-				//					break;
-				//				}
 				case output: {
 					if(i+1 < args.length) {
 						i++;
@@ -452,17 +418,7 @@ public class DefaultRun {
 						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
 					break;
 				}
-				case slices: {
-					if(lines.isEmpty())
-						lines.add("Graph;Slice_size");										
-					plotSliceSize = true;
-					break;
-				}
 				default: break;
-				//                	else if(args[i].equals("--dump"))
-				//						dumpSlicesPicture = true;
-
-
 				}               
 			}
 				LocalDateTime ld = LocalDateTime.now();
@@ -495,10 +451,6 @@ public class DefaultRun {
 					}               	
 
 				}
-
-				//			for (String line : lines) {
-				//				System.out.println(line);
-				//			}
 
 				if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
 					outputFolder += File.separator; 
@@ -551,53 +503,5 @@ public class DefaultRun {
 		System.out.println("#NAME\t#OPTION\t#DESCRIPTION");	
 		MetricsCalculationOptions.printHelp();		
 	}
-
-	public static void discretisationTest() {
-		DyDataSet dataset = DyGraphSamples.discretisationExample();
-
-		DyQuickView initialView = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		initialView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		initialView.showNewWindow();
-
-		List<Double> snapshotTimes = new ArrayList<>();
-		snapshotTimes.add(25.0);
-		snapshotTimes.add(50.0);
-		snapshotTimes.add(75.0);
-		snapshotTimes.add(100.0);
-		DyGraph discreteGraph = DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes);
-
-		DyModularFdl discreteAlgorithm = new DyModularFdlBuilder(discreteGraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPreMovmement(new DyModularPreMovement.ForbidTimeShitfing())
-				.build();
-
-		discreteAlgorithm.iterate(100);
-
-		DyQuickView discreteView = new DyQuickView(discreteGraph, dataset.suggestedInterval.leftBound());
-		discreteView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		discreteView.showNewWindow();
-
-		DyModularFdl algorithm = new DyModularFdlBuilder(dataset.dygraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPostProcessing(new DyModularPostProcessing.FlexibleTimeTrajectories(7, 8))
-				.build();
-
-		algorithm.iterate(100);
-
-		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		view.showNewWindow();
-	}
+	
 }
