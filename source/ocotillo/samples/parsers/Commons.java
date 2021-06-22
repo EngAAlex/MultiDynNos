@@ -43,8 +43,23 @@ public class Commons {
     public static class DyDataSet {
 
         public final DyGraph dygraph;
-        public final double suggestedTimeFactor;
-        public final Interval suggestedInterval;
+        
+        public double getSuggestedTimeFactor(boolean computed) {
+			if(!computed)
+				return suggestedTimeFactor;
+			else
+				return dygraph.getComputedSuggestedInterval()
+		}
+
+		public Interval getSuggestedInterval(boolean computed) {
+			if(!computed)
+				return suggestedInterval;
+			else
+				return dygraph.getComputedSuggestedInterval();
+		}
+
+		double suggestedTimeFactor;
+        Interval suggestedInterval;
         public final int eventsProcessed;
         
         /**

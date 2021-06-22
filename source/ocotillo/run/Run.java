@@ -46,8 +46,8 @@ public abstract class Run {
 	protected final double delta;
 	protected final double tau;
 	protected final String output;
-	protected final double staticTiming;
-	protected final Interval suggestedInterval;
+	protected double staticTiming;
+	protected Interval suggestedInterval;
 	protected final String graphName;
 
 	public Run(String[] argv, DyDataSet requestedDataSet) {
@@ -57,6 +57,7 @@ public abstract class Run {
 		double delta = defaultDelta;
 		double tau = defaultTau;
 		String output = defaultOutput;
+		boolean autoTau = true;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
@@ -108,6 +109,7 @@ public abstract class Run {
 					try {
 						double possibleTau = Double.parseDouble(argv[i+1]);
 						tau = possibleTau >= 0 ? possibleTau : defaultTau;
+						autoTau = false;
 						System.out.println("Set tau " + tau);
 					} catch (Exception e) {
 						//System.err.println("Cannot parse tau correctly. \n");
@@ -125,8 +127,18 @@ public abstract class Run {
 				}
 			}catch (IndexOutOfBoundsException ie) {}
 		}
-
-		this.tau = tau;
+		
+		if(!autoTau)
+			this.tau = tau;
+		else {
+			double computedTau = dygraph.autocomputeTau();
+			System.out.println("Auto Computed Tau\tSuggestedTau");			
+			System.out.println(computedTau +"\t" + tau);	
+			this.tau = computedTau;
+			suggestedInterval = dygraph.getComputedSuggestedInterval();
+			staticTiming = suggestedInterval.leftBound();	
+		}
+				
 		this.delta = delta;
 		this.output = output;
 

@@ -227,6 +227,8 @@ public class Evolution<T> implements Iterable<Function<T>> {
 		return list;
 	}
 	
-
+	public void copyFrom(Evolution<T> otherEvolution) {
+		insertAll(otherEvolution.getAllIntervals());
+	}
 	
 }

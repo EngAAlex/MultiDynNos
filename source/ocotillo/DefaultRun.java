@@ -315,7 +315,7 @@ public class DefaultRun {
 					case 1: 
 						data = new NewcombFraternity().parse(Mode.keepAppearedNode); break;
 					case 2: 
-						data = new InfoVisCitations().parse(Mode.keepAppearedNode); break;
+						data = new InfoVisCitations().parse(Mode.plain); break;
 					case 3: data = new RugbyTweets().parse(Mode.keepAppearedNode); break;
 					case 4: data = new DialogSequences().parse(Mode.keepAppearedNode); break;
 					case 5: data = new CollegeMsg().parse(Mode.keepAppearedNode); break;

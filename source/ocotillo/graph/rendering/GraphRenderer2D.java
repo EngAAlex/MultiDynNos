@@ -83,8 +83,8 @@ public class GraphRenderer2D extends GraphRenderer {
     public void draw(Graphics2D graphics) {
         drawGraphics(graphics, graph);
         drawHeatMap(graphics);
+        drawEdges(graphics);        
         drawNodes(graphics);
-        drawEdges(graphics);
     }
 
     /**

@@ -266,7 +266,7 @@ public abstract class Experiment {
 	public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc,  AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
-				.setCoarsener(gc) //WalshawIndependentSet
+				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters()

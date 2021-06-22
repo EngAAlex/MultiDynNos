@@ -38,6 +38,8 @@ public class MultiDynNoSliceRun extends Run {
 	@Override
 	protected DyGraph run() {
 
+		System.out.println("Applying tau " + tau);
+		
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dygraph, tau, Run.defaultDelta)
 				.setCoarsener(new SolarMerger()) //WalshawIndependentSet

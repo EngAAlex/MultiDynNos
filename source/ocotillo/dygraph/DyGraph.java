@@ -16,6 +16,8 @@
 package ocotillo.dygraph;
 
 import java.util.Map;
+
+import ocotillo.geometry.Interval;
 import ocotillo.graph.Attribute;
 import ocotillo.graph.Edge;
 import ocotillo.graph.Graph;
@@ -28,7 +30,22 @@ import ocotillo.graph.StdAttribute;
  */
 public class DyGraph extends GraphWithAttributes<DyGraph, DyGraphAttribute<?>, DyNodeAttribute<?>, DyEdgeAttribute<?>> {
 
-    @Override
+	Interval computedSuggestedInterval;
+	double computedTau = Double.NEGATIVE_INFINITY;
+	
+    public double getComputedTau() {
+    	if(Double.isInfinite(computedTau))
+    		autocomputeTau();
+		return computedTau;
+	}
+
+	public Interval getComputedSuggestedInterval() {
+		if(computedSuggestedInterval == null)
+			autocomputeTau();
+		return computedSuggestedInterval;
+	}
+
+	@Override
     protected DyGraph createGraph() {
         return new DyGraph();
     }
@@ -466,4 +483,62 @@ public class DyGraph extends GraphWithAttributes<DyGraph, DyGraphAttribute<?>, D
             }
         }
     }
+
+	public double autocomputeTau() {
+		double nodeTotalDuration = 0, nodeNoOfEvents = 0, nodeTimeSpanLow = Double.MAX_VALUE, nodeTimeSpanMax = Double.MIN_VALUE, nodeTimeSpan = 0;
+		double edgeTotalDuration = 0, edgeNoOfEvents = 0, edgeTimeSpanLow = Double.MAX_VALUE, edgeTimeSpanMax = Double.MIN_VALUE, edgeTimeSpan = 0;
+		DyNodeAttribute<Boolean> nodePresence = nodeAttribute(StdAttribute.dyPresence);
+		DyEdgeAttribute<Boolean> edgePresence = edgeAttribute(StdAttribute.dyPresence);
+			
+		
+		for(Node n : nodes()) {
+			Evolution<Boolean> nodeEv = nodePresence.get(n);
+			for(Function<Boolean> f : nodeEv.getAllIntervals()) {
+				nodeNoOfEvents++;
+				Interval i = f.interval(); 				
+				double left = i.leftBound();
+				double right = i.rightBound();
+				if(Double.isFinite(left) && Double.isFinite(right)) { // ONLY FINITE VALUES ARE CONSIDERED
+					nodeTimeSpanLow = Math.min(nodeTimeSpanLow, left);
+					nodeTimeSpanMax = Math.max(nodeTimeSpanMax, right);
+					nodeTotalDuration += right - left;
+				}else
+					System.out.println("Node - InfiniteValue detected");
+			}
+		}
+		
+		nodeTimeSpan = nodeTimeSpanMax - nodeTimeSpanLow;
+		
+		System.out.println("Node Analysis");
+		System.out.println("Total Duration\tnoOfEvents\tTimeSpan");
+		System.out.println(nodeTotalDuration + "\t" + nodeNoOfEvents + "\t" + nodeTimeSpan);
+		
+		for(Edge e : edges()) {
+			Evolution<Boolean> edgeEv = edgePresence.get(e);
+			for(Function<Boolean> f : edgeEv.getAllIntervals()) {
+				edgeNoOfEvents++;
+				Interval i = f.interval(); 				
+				double left = i.leftBound();
+				double right = i.rightBound();
+				if(Double.isFinite(left) && Double.isFinite(right)) { // ONLY FINITE VALUES ARE CONSIDERED
+					edgeTimeSpanLow = Math.min(edgeTimeSpanMax, left);
+					edgeTimeSpanMax = Math.max(edgeTimeSpanLow, right);
+					edgeTotalDuration += right - left;
+				}else
+					System.out.println("Edge - InfiniteValue detected");					
+			}
+		}
+		
+		edgeTimeSpan = edgeTimeSpanMax - edgeTimeSpanLow;
+		
+		System.out.println("Edge Analysis");
+		System.out.println("Total Duration\tnoOfEvents\tTimeSpan");
+		System.out.println(edgeTotalDuration + "\t" + edgeNoOfEvents + "\t" + edgeTimeSpan);		
+		
+		computedSuggestedInterval = Interval.newClosed(nodeTimeSpanLow, nodeTimeSpanMax);
+		computedTau = ((nodeTotalDuration + edgeTotalDuration)/(nodeNoOfEvents+edgeNoOfEvents))/(/*nodeTimeSpan + */ edgeTimeSpan);
+		
+		return computedTau;
+		
+	}
 }
