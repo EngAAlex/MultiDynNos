@@ -51,7 +51,7 @@ import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 
 public class MultiLevelDynNoSlice {
 
-	private final double tau;
+	public final double tau;
 	private final double delta;
 
 	public static final String NOT_NUKE_HIERARCHY = "notNuke";

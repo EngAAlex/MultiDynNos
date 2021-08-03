@@ -40,19 +40,27 @@ public class Commons {
     /**
      * Returns a dynamic dataset created with the default values.
      */
-    public static class DyDataSet {
+    public static class DyDataSet {    
 
         public final DyGraph dygraph;
         
         public double getSuggestedTimeFactor(boolean computed) {
 			if(!computed)
+				if(suggestedTimeFactor == 0.0d) {
+					System.out.println("Suggested time factor unavailable - switching to auto-computed");
+					return dygraph.getComputedTau();
+				}else
 				return suggestedTimeFactor;
 			else
-				return dygraph.getComputedSuggestedInterval()
+				return dygraph.getComputedTau();
 		}
 
 		public Interval getSuggestedInterval(boolean computed) {
 			if(!computed)
+				if(suggestedInterval == null) {
+					System.out.println("Suggested interval unavailable - switching to auto-computed");
+					return dygraph.getComputedSuggestedInterval();					
+				}else
 				return suggestedInterval;
 			else
 				return dygraph.getComputedSuggestedInterval();

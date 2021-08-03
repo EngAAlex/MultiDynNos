@@ -39,7 +39,7 @@ public class DyModularFdl {
 
     protected final DyGraph originalGraph;
     protected final Graph mirrorGraph;
-    protected final double timeFactor;
+    public final double tau;
 
     protected final DyNodeAttribute<Boolean> dyNodePresence;
     protected final DyEdgeAttribute<Boolean> dyEdgePresence;
@@ -217,7 +217,7 @@ public class DyModularFdl {
 
         this.originalGraph = originalGraph;
         this.mirrorGraph = synchronizer.mirrorGraph();
-        this.timeFactor = timeFactor;
+        this.tau = timeFactor;
         this.geometry = geometry;
 
         this.dyNodePresence = originalGraph.nodeAttribute(StdAttribute.dyPresence);

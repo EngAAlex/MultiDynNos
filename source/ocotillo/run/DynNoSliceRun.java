@@ -34,7 +34,7 @@ public class DynNoSliceRun extends Run{
      *
      * @param the preloaded graph dataset.
      * @param delta the delta parameter.
-     * @param tau the tau parameter.
+     * @param timeFactor the tau parameter.
      * @param output the path of the output file.
      * @param graphpreloaded if the graph has already been loaded (no need to parse from command line input)
      */

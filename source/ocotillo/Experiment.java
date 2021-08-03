@@ -125,6 +125,7 @@ public abstract class Experiment {
 	protected final PreloadedGraphParser parserInstance;
 	protected final Commons.Mode loadMode;
 	protected final double delta;
+	protected final boolean automaticTau;
 
 	protected HashSet<Callable<ModularStatistics>> callables = new HashSet<Callable<ModularStatistics>>();
 
@@ -162,6 +163,16 @@ public abstract class Experiment {
 		this.parserInstance = ((PreloadedGraphParser)(parserClass.getDeclaredConstructor().newInstance()));
 		this.loadMode = loadMode;
 		this.dataset = this.parserInstance.parse(this.loadMode);
+		this.automaticTau = false;
+	}
+	public Experiment(String name, String directory, Class<? extends PreloadedGraphParser> parserClass, Mode loadMode, double delta, boolean autoTau) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, URISyntaxException {
+		this.name = name;
+		this.directory = directory;
+		this.delta = delta;		
+		this.parserInstance = ((PreloadedGraphParser)(parserClass.getDeclaredConstructor().newInstance()));
+		this.loadMode = loadMode;
+		this.dataset = this.parserInstance.parse(this.loadMode);
+		this.automaticTau = autoTau;
 	}
 
 	/**
@@ -179,13 +190,13 @@ public abstract class Experiment {
 
 		if (k > 1) {
 			DyClustering clustering = new DyClustering.Stc.KMeans3D(
-					dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+					dataset.dygraph, dataset.getSuggestedTimeFactor(automaticTau), delta / 3.0, k,
 					ColorCollection.cbQualitativePastel);
 			clustering.colorGraph();
 		}
 
-		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.getSuggestedInterval(automaticTau).leftBound());
+		view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
 		view.showNewWindow();
 	}
 
@@ -205,13 +216,13 @@ public abstract class Experiment {
 
 		if (k > 1) {
 			DyClustering clustering = new DyClustering.Stc.KMeans3D(
-					dataset.dygraph, dataset.suggestedTimeFactor, delta / 3.0, k,
+					dataset.dygraph, dataset.getSuggestedTimeFactor(automaticTau), delta / 3.0, k,
 					ColorCollection.cbQualitativePastel);
 			clustering.colorGraph();
 		}
 
-		DyQuickView view = new DyQuickView(discreteGraph, dataset.suggestedInterval.leftBound());
-		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+		DyQuickView view = new DyQuickView(discreteGraph, dataset.getSuggestedInterval(automaticTau).leftBound());
+		view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
 		view.showNewWindow();
 	}
 
@@ -223,7 +234,7 @@ public abstract class Experiment {
 	 * @return the graph drawing algorithm.
 	 */
 	public DyModularFdl getContinuousLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
-		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.suggestedTimeFactor)
+		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(automaticTau))
 				.withForce(new DyModularForce.TimeStraightning(delta))
 				.withForce(new DyModularForce.Gravity())
 				.withForce(new DyModularForce.ConnectionAttraction(delta))
@@ -247,7 +258,7 @@ public abstract class Experiment {
 	 * @return the graph drawing algorithm.
 	 */
 	public DyModularFdl getDiscreteLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
-		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.suggestedTimeFactor)
+		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(automaticTau))
 				.withForce(new DyModularForce.TimeStraightning(delta))
 				.withForce(new DyModularForce.Gravity())
 				.withForce(new DyModularForce.ConnectionAttraction(delta))
@@ -265,7 +276,7 @@ public abstract class Experiment {
 
 	public MultiLevelDynNoSlice getMultiLevelDiscreteLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc,  AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 		MultiLevelDynNoSlice multiDyn = 
-				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
+				new MultiLevelDynNoSlice(dyGraph, dataset.getSuggestedTimeFactor(automaticTau), Run.defaultDelta)
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
@@ -285,7 +296,7 @@ public abstract class Experiment {
 
 	public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 		MultiLevelDynNoSlice multiDyn = 
-				new MultiLevelDynNoSlice(dyGraph, dataset.suggestedTimeFactor, Run.defaultDelta)
+				new MultiLevelDynNoSlice(dyGraph, dataset.getSuggestedTimeFactor(automaticTau), Run.defaultDelta)
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
@@ -329,7 +340,7 @@ public abstract class Experiment {
 			applyIdealScaling(visoneGraph, visoneScaling);
 			lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
-							visoneGraph, dataset.suggestedTimeFactor).build()));
+							visoneGraph, dataset.getSuggestedTimeFactor(automaticTau)).build()));
 		}catch (URISyntaxException uri) {
 			System.err.println("Could not load graph!");
 		}
@@ -371,12 +382,6 @@ public abstract class Experiment {
 	//			}
 	//		}
 
-	/**
-	 * Compute the metrics for the current experiment for VisOne.
-	 * @param visoneTime
-	 * @param runMultiDyn if to run the experiment for Multi-DynNoSlice as well. 
-	 * @return
-	 */
 	public List<String> computeDynNoSliceMetrics(boolean discrete) {
 		List<String> lines = new ArrayList<>();
 
@@ -403,8 +408,9 @@ public abstract class Experiment {
 				applyIdealScaling(discSyncro, discreteScaling);
 				DyGraph contDiscrete = getContinuousCopy();
 				copyNodeLayoutFromTo(discGraph, contDiscrete);
-				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
-						+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
+				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false) 
+							+ STAT_SEPARATOR + discAlgorithm.tau + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
+								+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
 			}catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}catch (TimeoutException timeout) {
@@ -434,13 +440,14 @@ public abstract class Experiment {
 
 				System.out.println("Applied scaling " + continuousScaling);
 
-				//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " DynNoSlice");
+				//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " DynNoSlice");
 
 				DyGraph discContinuous = discretise();
 				copyNodeLayoutFromTo(contGraph, discContinuous);
 
-				String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
-						+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
+				String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false) 
+								+ STAT_SEPARATOR + contAlgorithm.tau + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
+									+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
 
 				//		System.out.println(line);
 
@@ -481,8 +488,8 @@ public abstract class Experiment {
 			DyGraph sfdpCont = getContinuousCopy();
 			copyNodeLayoutFromTo(flattened, sfdpCont);
 
-			//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), name + " SFDP");
-			//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " SFDP");
+			//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), name + " SFDP");
+			//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " SFDP");
 
 			double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
 
@@ -490,7 +497,7 @@ public abstract class Experiment {
 
 			System.out.println("Applied " + sfdpScaling);
 
-			//		Run.animateGraphOnWindow(sfdpCont, dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name);
+			//		Run.animateGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name);
 
 			DyGraph sfdpDisc = discretise();
 			copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
@@ -500,7 +507,7 @@ public abstract class Experiment {
 
 			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(sfdpCont, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
-							sfdpDisc, dataset.suggestedTimeFactor).build());
+							sfdpDisc, dataset.getSuggestedTimeFactor(automaticTau)).build());
 
 			//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
 			//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
@@ -528,8 +535,8 @@ public abstract class Experiment {
 		List<Double> snapTimes = readSnapTimes(discretise());
 		HashSet<String> methodologies = new HashSet<String>();
 		methodologies.add("wi_id");
-		methodologies.add("iset_grip");
 		methodologies.add("sm_sp");
+		methodologies.add("iset_grip");		
 		HashSet<AVAILABLE_STATIC_LAYOUTS> singleLevelLayouts = new HashSet<AVAILABLE_STATIC_LAYOUTS>();
 		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
 		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.sfdp);
@@ -580,7 +587,9 @@ public abstract class Experiment {
 
 						String extraLines = stringifyMultiLevelMetrics(discMultiDyn.getComputationStatistics().getMetrics());
 
-						String line = name + STAT_SEPARATOR + "multid-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR + 1 / multiDiscreteScaling + STAT_SEPARATOR
+						String line = name + STAT_SEPARATOR + "multid-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + s + STAT_SEPARATOR + multiDiscTime + STAT_SEPARATOR 
+								+ dataset.getSuggestedTimeFactor(false) + STAT_SEPARATOR + discMultiDyn.tau + STAT_SEPARATOR
+								+ 1 / multiDiscreteScaling + STAT_SEPARATOR
 								+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
 						//System.out.println(line);
@@ -622,14 +631,16 @@ public abstract class Experiment {
 
 						System.out.println("Applied scaling " + multiContinuousScaling);
 
-						//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " MultiDynNoSlice");				
+						//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " MultiDynNoSlice");				
 
 						DyGraph multiDiscContinuous = discretise();
 						copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
 
 						String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
 						System.out.println("\tDone! Computing metrics...");
-						String line = name + ";" + "multic-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + "_" + s + ";" + multiContTime + STAT_SEPARATOR + 1 / multiContinuousScaling + STAT_SEPARATOR
+						String line = name + ";" + "multic-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + "_" + s + ";" + multiContTime + STAT_SEPARATOR 
+								+ dataset.getSuggestedTimeFactor(false) + STAT_SEPARATOR + contMultiDyn.tau + STAT_SEPARATOR								
+								+ 1 / multiContinuousScaling + STAT_SEPARATOR
 								+ computeOtherMetrics(contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
 						//System.out.println(line);
@@ -642,8 +653,8 @@ public abstract class Experiment {
 					}catch (URISyntaxException uri) {
 						System.out.println("Can't load graph");
 					}
-					//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), name + " Multi-C");
-					//			MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.suggestedInterval.leftBound(), dataset.suggestedInterval, name + " Multi-C");
+					//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), name + " Multi-C");
+					//			MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " Multi-C");
 				}
 			}
 		}
@@ -686,20 +697,19 @@ public abstract class Experiment {
 	/**
 	 * Computes the other metrics of interest.
 	 *
-	 * @param discGraph the graph with discrete edges.
-	 * @param graph the graph with continuous edges.
+	 * @param graph the graph to test.
 	 * @param snapTimes the snapshot times.
 	 * @param synchro the synchroniser.
 	 * @return the metrics text.
 	 */
 	public String computeOtherMetrics(DyGraph graph, List<Double> snapTimes, SpaceTimeCubeSynchroniser synchroniser) {
 
-		//        DyQuickView view = new DyQuickView(discGraph, dataset.suggestedInterval.leftBound(), "Disc Graph");
-		//        view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+		//        DyQuickView view = new DyQuickView(discGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), "Disc Graph");
+		//        view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
 		//        view.showNewWindow();
 		//
-		//        DyQuickView view2 = new DyQuickView(contGraph, dataset.suggestedInterval.leftBound(), "Cont Graph");
-		//        view2.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(30)));
+		//        DyQuickView view2 = new DyQuickView(contGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), "Cont Graph");
+		//        view2.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
 		//        view2.showNewWindow();
 
 		int slicesForOff = snapTimes.size() + (snapTimes.size() - 1) * 10;
@@ -710,7 +720,7 @@ public abstract class Experiment {
 		DyGraphMetric<Double> stressOff = new DyGraphMetric.AverageSnapshotMetricCalculation(
 				new GraphMetric.StressMetric.Builder().withScaling(delta).build(), interval, slicesForOff);
 		StcGraphMetric<Double> nodeMovement = new StcGraphMetric.AverageNodeMovement2D();
-		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.suggestedInterval, 600);
+		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.getSuggestedInterval(automaticTau), 600);
 
 		//				return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
 		//				+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
@@ -1039,6 +1049,10 @@ public abstract class Experiment {
 		public InfoVis() throws Exception{
 			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0);
 		}
+		
+		public InfoVis(Boolean autoTau) throws Exception{
+			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0, autoTau);
+		}
 
 		@Override
 		public DyGraph discretise() {
@@ -1060,14 +1074,19 @@ public abstract class Experiment {
 			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d);			
 			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
 		}
+		
+		public Rugby(Boolean autoTau) throws Exception{
+			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);			
+			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
+		}		
 
 		@Override
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1083,14 +1102,18 @@ public abstract class Experiment {
 		public Pride() throws Exception{
 			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
+		
+		public Pride(Boolean autoTau) throws Exception{
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+		}		
 
 		@Override
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
-			int slices = (int) dataset.suggestedInterval.width();
-			double gap = dataset.suggestedInterval.width() / slices;
+			int slices = (int) dataset.getSuggestedInterval(automaticTau).width();
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1106,6 +1129,10 @@ public abstract class Experiment {
 		public Bunt() throws Exception {
 			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
+		
+		public Bunt(Boolean autoTau) throws Exception {
+			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+		}		
 
 		@Override
 		public DyGraph discretise() {
@@ -1126,6 +1153,10 @@ public abstract class Experiment {
 		public Newcomb() throws Exception {
 			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5);
 		}
+		
+		public Newcomb(Boolean autoTau) throws Exception {
+			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5, autoTau);
+		}		
 
 		@Override
 		public DyGraph discretise() {
@@ -1151,9 +1182,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1174,9 +1205,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1197,9 +1228,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1220,9 +1251,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1244,9 +1275,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
@@ -1267,9 +1298,9 @@ public abstract class Experiment {
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
 			int slices = 20;
-			double gap = dataset.suggestedInterval.width() / slices;
+			double gap = dataset.getSuggestedInterval(automaticTau).width() / slices;
 			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.suggestedInterval.leftBound() + gap * (i + 0.5);
+				double snapTime = dataset.getSuggestedInterval(automaticTau).leftBound() + gap * (i + 0.5);
 				snapshotTimes.add(snapTime);
 			}
 			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);

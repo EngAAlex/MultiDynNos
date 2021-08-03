@@ -18,7 +18,6 @@
 package ocotillo;
 
 import java.io.File;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -26,23 +25,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import ocotillo.dygraph.DyGraph;
-import ocotillo.dygraph.extra.DyGraphDiscretiser;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
-import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
-import ocotillo.dygraph.rendering.Animation;
-import ocotillo.geometry.Geom;
-import ocotillo.graph.layout.fdl.modular.ModularConstraint;
-import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
 import ocotillo.run.Run;
 import ocotillo.run.Run.AvailableDrawingOption;
 import ocotillo.run.SFDPRun;
-import ocotillo.samples.DyGraphSamples;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
@@ -206,7 +193,8 @@ public class DefaultRun {
 		sfdp,
 		help,
 		verbose,
-		output;
+		output,
+		autoTau;
 
 		public static void printHelp() {
 
@@ -237,6 +225,8 @@ public class DefaultRun {
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
 				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
+			case autoTau:
+				return new CMDLineOption("Dataset Tau", "--autoTau", "Use the time factor suggested in the dataset code (if available)");					
 			default: return null;
 			}
 		}
@@ -260,6 +250,8 @@ public class DefaultRun {
 				return MetricsCalculationOptions.output;
 			case "verbose":
 				return MetricsCalculationOptions.verbose;
+			case "autoTau":
+				return MetricsCalculationOptions.autoTau;				
 			default: return null;			
 			}			
 		}
@@ -368,16 +360,17 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			Boolean plotSliceSize = false;
+			Boolean computedTau = true;
+			//Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
 			HashSet<String> expNames = new HashSet<String>();
 			HashSet<String> smallerDatasets = new HashSet<String>();
-//			smallerDatasets.add("Bunt");
-//			smallerDatasets.add("Newcomb");
-//			smallerDatasets.add("InfoVis");
-			smallerDatasets.add("Rugby");
-//			smallerDatasets.add("Pride");
+			smallerDatasets.add("Bunt");
+			smallerDatasets.add("Newcomb");
+			smallerDatasets.add("InfoVis");
+			smallerDatasets.add("Pride");
+			smallerDatasets.add("Rugby");			
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 			largerDatasets.add("RealMining");
@@ -400,12 +393,12 @@ public class DefaultRun {
 				case larger: expNames.addAll(largerDatasets); break;
 				case single: {
 					if(lines.isEmpty())
-						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					executeSingle = true; break;
 				}
 				case multi: {
 					if(lines.isEmpty())
-						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					executeMulti = true; break;
 				}
 				case sfdp: {
@@ -440,6 +433,9 @@ public class DefaultRun {
 						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
 					break;
 				}
+				case autoTau: {
+					computedTau = false;
+				}
 				default: break;
 				//                	else if(args[i].equals("--dump"))
 				//						dumpSlicesPicture = true;
@@ -462,12 +458,26 @@ public class DefaultRun {
 								);
 					}
 					if(executeSingle) {
+						Experiment exp;
+						try {
+							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+							System.out.println("Computed Tau constructor found");
+						}catch(NoSuchMethodException nse) {
+							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						}
 						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
+								exp.computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
 								);                		
 					}if(executeMulti) {
+						Experiment exp;
+						try {
+							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+							System.out.println("Computed Tau constructor found");							
+						}catch(NoSuchMethodException nse) {
+							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						}						
 						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
+								exp.computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
 								);                		
 					}
 					if(executeSFDP) {
@@ -534,7 +544,7 @@ public class DefaultRun {
 		MetricsCalculationOptions.printHelp();		
 	}
 
-	public static void discretisationTest() {
+	/*public static void discretisationTest() {
 		DyDataSet dataset = DyGraphSamples.discretisationExample();
 
 		DyQuickView initialView = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
@@ -581,5 +591,5 @@ public class DefaultRun {
 		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
 		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
 		view.showNewWindow();
-	}
+	}*/
 }

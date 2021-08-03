@@ -538,6 +538,8 @@ public class DyGraph extends GraphWithAttributes<DyGraph, DyGraphAttribute<?>, D
 		computedSuggestedInterval = Interval.newClosed(nodeTimeSpanLow, nodeTimeSpanMax);
 		computedTau = ((nodeTotalDuration + edgeTotalDuration)/(nodeNoOfEvents+edgeNoOfEvents))/(/*nodeTimeSpan + */ edgeTimeSpan);
 		
+		System.out.println("Computed Tau: " + computedTau);
+		
 		return computedTau;
 		
 	}

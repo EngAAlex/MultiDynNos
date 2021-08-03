@@ -56,8 +56,10 @@ public abstract class Run {
 
 		double delta = defaultDelta;
 		double tau = defaultTau;
+		//Interval suggestedInterval;
 		String output = defaultOutput;
 		boolean autoTau = true;
+		boolean cliTau = false;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
@@ -79,18 +81,18 @@ public abstract class Run {
 
 			dygraph = createDynamicGraph(NodeAppearance.parseDataSet(nodeDataSetLines), EdgeAppearance.parseDataSet(edgeDataSetLines));
 
-			suggestedInterval = Interval.newClosed(0, 30);
-			staticTiming = suggestedInterval.leftBound();
+			//suggestedInterval = //Interval.newClosed(0, 30);
+			//staticTiming = suggestedInterval.leftBound();
 			graphName = "Custom Graph";
-			System.out.println("Loading Done");
+			System.out.println("Custom Graph Loading Done");
 		}else{
 			dygraph = requestedDataSet.dygraph;
-			tau = requestedDataSet.suggestedTimeFactor;
-			suggestedInterval = requestedDataSet.suggestedInterval;
-			staticTiming = requestedDataSet.suggestedInterval.leftBound();	
+//			tau = requestedDataSet.getSuggestedTimeFactor(false);
+//			suggestedInterval = requestedDataSet.getSuggestedInterval(false);
+//			staticTiming = suggestedInterval.leftBound();	
 			graphName = argv[1];
 		}		
-
+		
 		for(int i=0; i<argv.length; i++) {
 			try {
 				switch(AvailableDrawingOption.parse(argv[i].split("-")[1])) {
@@ -98,7 +100,7 @@ public abstract class Run {
 					try {				
 						double possibleDelta = Double.parseDouble(argv[i+1]);
 						delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
-						System.out.println("Set delta " + delta);
+						System.out.println("Set delta from CLI " + delta);
 					} catch (Exception e) {
 						//					System.err.println("Cannot parse delta correctly. \n");
 						//					showHelp();
@@ -109,16 +111,20 @@ public abstract class Run {
 					try {
 						double possibleTau = Double.parseDouble(argv[i+1]);
 						tau = possibleTau >= 0 ? possibleTau : defaultTau;
-						autoTau = false;
-						System.out.println("Set tau " + tau);
+						cliTau = true;
+						System.out.println("Set tau from CLI");
 					} catch (Exception e) {
-						//System.err.println("Cannot parse tau correctly. \n");
+						System.err.println("Cannot parse CLI tau correctly - switching to computed Tau. \n");
+						cliTau = false;
 						//showHelp();								
 					}
 					break;
 				}
 				case text: {
 					output = argv[i+1];
+				}
+				case autoTau: {
+					autoTau = false;
 				}
 				//			case o: {
 				//				output = argv[i+1];
@@ -127,19 +133,24 @@ public abstract class Run {
 				}
 			}catch (IndexOutOfBoundsException ie) {}
 		}
-		
-		if(!autoTau)
+			
+		if(cliTau) {
 			this.tau = tau;
-		else {
-			double computedTau = dygraph.autocomputeTau();
-			System.out.println("Auto Computed Tau\tSuggestedTau");			
-			System.out.println(computedTau +"\t" + tau);	
-			this.tau = computedTau;
-			suggestedInterval = dygraph.getComputedSuggestedInterval();
-			staticTiming = suggestedInterval.leftBound();	
-		}
+			this.suggestedInterval = requestedDataSet.getSuggestedInterval(autoTau);
+		}else
+			if(!autoTau) {
+				this.suggestedInterval = requestedDataSet.getSuggestedInterval(false);
+				this.tau = requestedDataSet.getSuggestedTimeFactor(false);
+			} else {
+				double computedTau = requestedDataSet.getSuggestedTimeFactor(true);
+				System.out.println("Auto Computed Tau\tSuggestedTau");			
+				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedInterval(false));	
+				this.tau = computedTau;
+				suggestedInterval = requestedDataSet.getSuggestedInterval(true);
+			}
 				
 		this.delta = delta;
+		this.staticTiming = this.suggestedInterval.leftBound();
 		this.output = output;
 
 		completeSetup();
@@ -362,6 +373,7 @@ public abstract class Run {
 		//		nodes,
 		//		edges,
 		text,
+		autoTau,
 		tau;
 
 		public static void printHelp() {
@@ -378,9 +390,12 @@ public abstract class Run {
 			switch(option) {
 			case delta: return new CMDLineOption("Delta", "-d", "Specifies a user defined delta value.");
 			case tau: 
-				return new CMDLineOption("Tau", "-t", "Specifies a user defined tau value");	
+				return new CMDLineOption("Manual Tau", "-t", "Specifies a user defined tau value on the command line. Overrides the Semi-Automatic Tau option");	
 			case text: 
-				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    										
+				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    	
+			case autoTau:
+				return new CMDLineOption("Semi-Automatic Tau", "-T", "If included in the dataset code, that specific TAU will be used."
+										+ " If absent, tau will be calculated automatically.");    	
 				//			case nodes: 
 				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
 				//			case edges: 
@@ -396,6 +411,7 @@ public abstract class Run {
 			//			case "-n:": return nodes;
 			//			case "-e:": return edges;
 			case "-o": return text;
+			case "-T": return autoTau;
 			default: return null;
 			}
 		}
