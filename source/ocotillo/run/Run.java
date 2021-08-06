@@ -379,11 +379,11 @@ public abstract class Run {
 
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
-			case "-d": return delta;
-			case "-t": return tau;
-			//			case "-n:": return nodes;
-			//			case "-e:": return edges;
-			case "-o": return text;
+			case "d": return delta;
+			case "t": return tau;
+			//			case "n:": return nodes;
+			//			case "e:": return edges;
+			case "o": return text;
 			default: return null;
 			}
 		}
