@@ -22,6 +22,8 @@ import java.util.HashMap;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.graph.Graph;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
+import ocotillo.multilevel.coarsening.IndependentSet;
+import ocotillo.multilevel.coarsening.IndependentSet.WalshawIndependentSet;
 import ocotillo.multilevel.coarsening.SolarMerger;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
@@ -42,7 +44,7 @@ public class MultiDynNoSliceRun extends Run {
 		
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dygraph, tau, Run.defaultDelta)
-				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
+				.setCoarsener(new IndependentSet()) //WalshawIndependentSet
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters()

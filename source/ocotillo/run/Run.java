@@ -121,10 +121,10 @@ public abstract class Run {
 					break;
 				}
 				case text: {
-					output = argv[i+1];
-				}
+					output = argv[i+1]; break;
+				} 
 				case autoTau: {
-					autoTau = false;
+					autoTau = false; break;
 				}
 				//			case o: {
 				//				output = argv[i+1];
@@ -144,7 +144,7 @@ public abstract class Run {
 			} else {
 				double computedTau = requestedDataSet.getSuggestedTimeFactor(true);
 				System.out.println("Auto Computed Tau\tSuggestedTau");			
-				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedInterval(false));	
+				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedTimeFactor(false));	
 				this.tau = computedTau;
 				suggestedInterval = requestedDataSet.getSuggestedInterval(true);
 			}
@@ -169,16 +169,15 @@ public abstract class Run {
 	protected abstract DyGraph run();
 
 	public void animateGraph() {
-		System.out.println("Opening animation window...");		
 		animateGraphOnWindow(drawnGraph, staticTiming, suggestedInterval, graphName);
 	}
 
 	public void plotSpaceTimeCube() {
-		System.out.println("Loading space-time cube...");				
 		showGraphOnWindow(drawnGraph, staticTiming, graphName);
 	}
 
-	protected static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+	public static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+		System.out.println("Opening animation window...");		
 
 		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName + " animation");
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
@@ -186,7 +185,8 @@ public abstract class Run {
 		dyWindow.showNewWindow();
 	}
 
-	protected void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+	public void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+		System.out.println("Visualizing space-time cube...");				
 
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
 		QuickView window = new QuickView(stcs.mirrorGraph(), graphName + " space-time cube");
@@ -406,12 +406,12 @@ public abstract class Run {
 
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
-			case "-d": return delta;
-			case "-t": return tau;
-			//			case "-n:": return nodes;
-			//			case "-e:": return edges;
-			case "-o": return text;
-			case "-T": return autoTau;
+			case "d": return delta;
+			case "t": return tau;
+			//			case "n:": return nodes;
+			//			case "e:": return edges;
+			case "o": return text;
+			case "T": return autoTau;
 			default: return null;
 			}
 		}

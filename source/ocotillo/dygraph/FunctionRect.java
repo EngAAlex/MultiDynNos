@@ -234,6 +234,17 @@ public abstract class FunctionRect<T> implements Function<T> {
                 ocotillo.geometry.Coordinates finalValue, Interpolation.Std interpolation) {
             super(definitionInterval, initialValue, finalValue, interpolation.get());
         }
+        
+        public Coordinates copy() {
+        	return new Coordinates(
+        			Interval.newCustom(interval().leftBound(), interval().rightBound(), interval().isLeftClosed(), interval().isRightClosed()),
+        			new ocotillo.geometry.Coordinates(leftValue().getArray()), new ocotillo.geometry.Coordinates(rightValue().getArray()), interpolation()
+        			);
+        }
+        
+        public Coordinates copyTypeAndInterval(ocotillo.geometry.Coordinates leftValue, ocotillo.geometry.Coordinates rightValue){
+        	return new Coordinates(interval(), leftValue, rightValue, interpolation());
+        }
 
         @Override
         protected ocotillo.geometry.Coordinates subtract(ocotillo.geometry.Coordinates a, ocotillo.geometry.Coordinates b) {
