@@ -96,6 +96,23 @@ public class Evolution<T> implements Iterable<Function<T>> {
 		return intervalTree.getAnyContaining(x) != null;
 	}
 	
+	/**
+	 * Gets the first (left) value of the first interval.
+	 *
+	 * @return the first (left) value of the first interval.
+	 */
+	public T getFirstValue() {
+		List<Function<T>> orderedList = intervalTree.inOrderTraversal();
+		if(orderedList.size() == 0)
+			return getDefaultValue();
+		return orderedList.get(0).leftValue();
+	}	
+	
+	/**
+	 * Gets the last (right) value of the last interval.
+	 *
+	 * @return the last (right) value of the last interval or the default value if undefined.
+	 */
 	public T getLastValue() {
 		List<Function<T>> orderedList = intervalTree.inOrderTraversal();
 		if(orderedList.size() == 0)

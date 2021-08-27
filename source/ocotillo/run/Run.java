@@ -126,10 +126,10 @@ public abstract class Run {
 					break;
 				}
 				case text: {
-					output = argv[i+1];
-				}
+					output = argv[i+1]; break;
+				} 
 				case autoTau: {
-					autoTau = false;
+					autoTau = false; break;
 				}
 				case verbose: {
 					verbose = true;
@@ -181,16 +181,15 @@ public abstract class Run {
 	protected abstract DyGraph run();
 
 	public void animateGraph() {
-		System.out.println("Opening animation window...");		
 		animateGraphOnWindow(drawnGraph, staticTiming, suggestedInterval, graphName);
 	}
 
 	public void plotSpaceTimeCube() {
-		System.out.println("Loading space-time cube...");				
 		showGraphOnWindow(drawnGraph, staticTiming, graphName);
 	}
 
-	protected static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+	public static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+		System.out.println("Opening animation window...");		
 
 		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName + " animation");
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
@@ -198,7 +197,8 @@ public abstract class Run {
 		dyWindow.showNewWindow();
 	}
 
-	protected void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+	public void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+		System.out.println("Visualizing space-time cube...");				
 
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
 		QuickView window = new QuickView(stcs.mirrorGraph(), graphName + " space-time cube");

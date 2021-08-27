@@ -37,6 +37,7 @@ import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
+import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
 import ocotillo.multilevel.MultilevelMetrics.MultiLevelPreProcessTime;
@@ -48,6 +49,7 @@ import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.logger.Logger;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
+import ocotillo.run.Run;
 
 public class MultiLevelDynNoSlice {
 
@@ -212,7 +214,7 @@ public class MultiLevelDynNoSlice {
 	public void nodesFirstPlacement() {
 		DyGraph currentGraph = gc.getCoarsestGraph();		
 		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
-		placement.placeVertices(currentGraph, initialPositionedGraph);
+		placement.transferCoordinatesFromStaticGraph(currentGraph, initialPositionedGraph);
 	}
 
 	public DyGraph runMultiLevelLayout() {
@@ -260,30 +262,38 @@ public class MultiLevelDynNoSlice {
 
 		Iterator<DyGraph> hierarchy = gc.getGraphIterator();
 
-		DyGraph currentGraph = hierarchy.next(); //gc.getCoarsestGraph();	
-
-		//LayoutTime lt = new LayoutTime(); 
+		DyGraph currentGraph = hierarchy.next(); 
 
 		logger.log("Working on level " + (gc.getHierarchyDepth() - current_iteration));
 		printParameters();
-		computeDynamicLayout(currentGraph);
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
+		if(currentGraph.nodes().size() > 1)		
+			computeDynamicLayout(currentGraph);
+		
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
 		endTime = System.nanoTime();
 		addedNanos += endTime - startTime;				
 		computationStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
-		logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");
+		logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");		
 		startTime = endTime;
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
 		current_iteration++;
-		logger.log("Round complete!");
+		logger.log("Round complete!");		
 		
-		//while(currentGraph.parentGraph() != null) {
 		while(hierarchy.hasNext()) {
 			updateThermostats();
 			DyGraph finerGraph = placeVertices(/*currentGraph.parentGraph()*/ hierarchy.next(), currentGraph);
+			
+			//Run.animateGraphOnWindow(finerGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+			
 			endTime = System.nanoTime();
 			addedNanos += endTime - startTime;    		
 			pt.values().add(endTime - startTime);
 			startTime = endTime;
-//
+
 			logger.log("Working on level " + (gc.getHierarchyDepth() - current_iteration));
 			printParameters();
 

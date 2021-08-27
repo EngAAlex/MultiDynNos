@@ -54,67 +54,63 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 	protected Coordinates computeNewCoordinates(Node lowerLevelNode, Node upperLevelNode, DyGraph finerLevel,
 			Function<Node, Coordinates> getUpperLevelCoords) {
 		Coordinates ownUpperClusterCoordinates = getUpperLevelCoords.apply(upperLevelNode); //upperLevelNodeCoordinates.get(upperLevelNode).getLastValue();
-		if(GraphCoarsener.checkNodeIdEquivalence(lowerLevelNode.id(), upperLevelNode.id())) {
-			return new Coordinates(ownUpperClusterCoordinates.x() + Math.random()*fuzzyness, ownUpperClusterCoordinates.y() + Math.random()*fuzzyness);
-		}else{
-			HashMap<String, HashSet<String>> neighborsMap = new HashMap<String, HashSet<String>>();
-			Coordinates result = new Coordinates(0.0, 0.0);
+		HashMap<String, HashSet<String>> neighborsMap = new HashMap<String, HashSet<String>>();
+		Coordinates result = new Coordinates(0.0, 0.0);
 
-			for(Edge e : finerLevel.inOutEdges(lowerLevelNode)) {
-				Node otherEnd = e.otherEnd(lowerLevelNode);
-				String otherGroupLeader = coarsener.getGroupLeader(otherEnd.id());
-				if(otherGroupLeader.equals(upperLevelNode.id()))
-					continue;
-				else {
-					if(!neighborsMap.containsKey(otherGroupLeader)) {
-						HashSet<String> set = new HashSet<String>();
-						set.add(otherEnd.id());
-						neighborsMap.put(otherGroupLeader, set);
-					}else
-						neighborsMap.get(otherGroupLeader).add(otherEnd.id());
-				}		
-			}
-			//System.out.println("Placing new vertex " + lowerLevelNode.id());
-			//System.out.println("\tMy master is: " + upperLevelNode.id() + " " + ownUpperClusterCoordinates);
-			
-			if(neighborsMap.size() == 0) {
-				//System.out.println("\tMy neighbors all belong to the same cluster -- randomizing around my master");
-				double angle = Math.random()*(2*Math.PI);
-				result.setX(ownUpperClusterCoordinates.x()+Math.cos(angle)*opt_distance);
-				result.setY(ownUpperClusterCoordinates.y()+Math.sin(angle)*opt_distance);
-			}else{
-
-				float totalSum = 0;
-				for(Set<String> set : neighborsMap.values())
-					totalSum += set.size();
-				for(Entry<String, HashSet<String>> current : neighborsMap.entrySet()) {
-					Coordinates otherUpperClusterCoordinates = getUpperLevelCoords.apply(getNodeFromUpperLevel(current.getKey()));
-					int currentSize = current.getValue().size();
-					//System.out.println("\t\tAnother cluster is: " + otherUpperClusterCoordinates + " with weight " + current.getValue().size());
-					result.setX(result.x()+otherUpperClusterCoordinates.x()*currentSize);
-					result.setY(result.y()+otherUpperClusterCoordinates.y()*currentSize);
-				}
-
-				float ownClusterWeight = getOwnClusterWeight(totalSum, lowerLevelNode, finerLevel);
-				//System.out.println("\tMy cluster has a weight of: " + ownClusterWeight);
-
-				//ownClusterWeight += totalSum;
-
-				result.setX(result.x()+ownUpperClusterCoordinates.x()*ownClusterWeight);
-				result.setY(result.y()+ownUpperClusterCoordinates.y()*ownClusterWeight);
-
-				totalSum += ownClusterWeight;
-
-				result.setX(result.x()/totalSum);
-				result.setY(result.y()/totalSum);
-			}
-			
-			//System.out.println("\tCOMPUTED COORDINATES (no fuzzyness): " + result);
-
-			result.setX(result.x()+Math.random()*fuzzyness*(Math.random()>0.5 ? 1 : -1));
-			result.setY(result.y()+Math.random()*fuzzyness*(Math.random()>0.5 ? 1 : -1));
-			return result;
+		for(Edge e : finerLevel.inOutEdges(lowerLevelNode)) {
+			Node otherEnd = e.otherEnd(lowerLevelNode);
+			String otherGroupLeader = coarsener.getGroupLeader(otherEnd.id());
+			if(otherGroupLeader.equals(upperLevelNode.id()))
+				continue;
+			else {
+				if(!neighborsMap.containsKey(otherGroupLeader)) {
+					HashSet<String> set = new HashSet<String>();
+					set.add(otherEnd.id());
+					neighborsMap.put(otherGroupLeader, set);
+				}else
+					neighborsMap.get(otherGroupLeader).add(otherEnd.id());
+			}		
 		}
+		//System.out.println("Placing new vertex " + lowerLevelNode.id());
+		//System.out.println("\tMy master is: " + upperLevelNode.id() + " " + ownUpperClusterCoordinates);
+
+		if(neighborsMap.size() == 0) {
+			//System.out.println("\tMy neighbors all belong to the same cluster -- randomizing around my master");
+			double angle = Math.random()*(2*Math.PI);
+			result.setX(ownUpperClusterCoordinates.x()+Math.cos(angle)*opt_distance);
+			result.setY(ownUpperClusterCoordinates.y()+Math.sin(angle)*opt_distance);
+		}else{
+
+			float totalSum = 0;
+			for(Set<String> set : neighborsMap.values())
+				totalSum += set.size();
+			for(Entry<String, HashSet<String>> current : neighborsMap.entrySet()) {
+				Coordinates otherUpperClusterCoordinates = getUpperLevelCoords.apply(getNodeFromUpperLevel(current.getKey()));
+				int currentSize = current.getValue().size();
+				//System.out.println("\t\tAnother cluster is: " + otherUpperClusterCoordinates + " with weight " + current.getValue().size());
+				result.setX(result.x()+otherUpperClusterCoordinates.x()*currentSize);
+				result.setY(result.y()+otherUpperClusterCoordinates.y()*currentSize);
+			}
+
+			float ownClusterWeight = getOwnClusterWeight(totalSum, lowerLevelNode, finerLevel);
+			//System.out.println("\tMy cluster has a weight of: " + ownClusterWeight);
+
+			//ownClusterWeight += totalSum;
+
+			result.setX(result.x()+ownUpperClusterCoordinates.x()*ownClusterWeight);
+			result.setY(result.y()+ownUpperClusterCoordinates.y()*ownClusterWeight);
+
+			totalSum += ownClusterWeight;
+
+			result.setX(result.x()/totalSum);
+			result.setY(result.y()/totalSum);
+		}
+
+		//System.out.println("\tCOMPUTED COORDINATES (no fuzzyness): " + result);
+
+		result.setX(result.x()+Math.random()*fuzzyness*(Math.random()>0.5 ? 1 : -1));
+		result.setY(result.y()+Math.random()*fuzzyness*(Math.random()>0.5 ? 1 : -1));
+		return result;
 
 	}
 
@@ -142,7 +138,7 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 			default: return totalSum*.6f;
 			}
 		}
-		
+
 		@Override
 		public String getDescription() {
 			return "FM3 - Solar Merger Placement Strategy";

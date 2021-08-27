@@ -44,7 +44,7 @@ public class MultiDynNoSliceRun extends Run {
 		
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dygraph, tau, Run.defaultDelta)
-				.setCoarsener(new IndependentSet.WalshawIndependentSet()) //SolarMerger
+				.setCoarsener(new IndependentSet()) //SolarMerger
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters()
