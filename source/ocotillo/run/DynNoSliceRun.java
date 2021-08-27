@@ -23,6 +23,7 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeT
 import ocotillo.geometry.Geom;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 
 /**
  * DynnoSlice execution with custom data.
@@ -38,8 +39,8 @@ public class DynNoSliceRun extends Run{
      * @param output the path of the output file.
      * @param graphpreloaded if the graph has already been loaded (no need to parse from command line input)
      */
-    public DynNoSliceRun(String[] argv, DyDataSet selectedDataSet) {    	
-    	super(argv, selectedDataSet);
+    public DynNoSliceRun(String[] argv, DyDataSet selectedDataSet, Mode loadMode) {    	
+    	super(argv, selectedDataSet, loadMode);
     }
 	
 	@Override

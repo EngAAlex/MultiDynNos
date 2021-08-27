@@ -31,6 +31,7 @@ import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
 import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.logger.Logger;
 
 /**
  * Parses the InfoVis collaboration data.
@@ -44,26 +45,26 @@ public class Commons {
 
         public final DyGraph dygraph;
         
-        public double getSuggestedTimeFactor(boolean computed) {
+        public double getSuggestedTimeFactor(boolean computed, Mode loadMode) {
 			if(!computed)
 				if(suggestedTimeFactor == 0.0d) {
-					System.out.println("Suggested time factor unavailable - switching to auto-computed");
-					return dygraph.getComputedTau();
+					Logger.getInstance().log("Suggested time factor unavailable - switching to auto-computed");
+					return dygraph.getComputedTau(loadMode == null ? Mode.keepAppearedNode : loadMode);
 				}else
 				return suggestedTimeFactor;
 			else
-				return dygraph.getComputedTau();
+				return dygraph.getComputedTau(loadMode == null ? Mode.keepAppearedNode : loadMode);
 		}
 
-		public Interval getSuggestedInterval(boolean computed) {
+		public Interval getSuggestedInterval(boolean computed, Mode loadMode) {
 			if(!computed)
 				if(suggestedInterval == null) {
-					System.out.println("Suggested interval unavailable - switching to auto-computed");
-					return dygraph.getComputedSuggestedInterval();					
+					Logger.getInstance().log("Suggested interval unavailable - switching to auto-computed");
+					return dygraph.getComputedSuggestedInterval(loadMode == null ? Mode.keepAppearedNode : loadMode);					
 				}else
 				return suggestedInterval;
 			else
-				return dygraph.getComputedSuggestedInterval();
+				return dygraph.getComputedSuggestedInterval(loadMode == null ? Mode.keepAppearedNode : loadMode);
 		}
 
 		double suggestedTimeFactor;
@@ -137,10 +138,10 @@ public class Commons {
         mergePresenceFunctions(graph, dataStartTime, dataEndTime, mode);
 
         for (Node node : graph.nodes()) {
-            Commons.setApparance(graph, node, nodeColor, fadingDuration);
+            Commons.setAppearance(graph, node, nodeColor, fadingDuration);
         }
         for (Edge edge : graph.edges()) {
-            Commons.setApparance(graph, edge, edgeColor, fadingDuration);
+            Commons.setAppearance(graph, edge, edgeColor, fadingDuration);
         }
     }
 
@@ -206,8 +207,8 @@ public class Commons {
      * @param color the solid colour.
      * @param fadingDuration the fading duration.
      */
-    public static void setApparance(DyGraph graph, Node node, Color color, double fadingDuration) {
-        setApparance(color, fadingDuration,
+    public static void setAppearance(DyGraph graph, Node node, Color color, double fadingDuration) {
+        setAppearance(color, fadingDuration,
                 graph.<Boolean>nodeAttribute(StdAttribute.dyPresence).get(node),
                 graph.<Color>nodeAttribute(StdAttribute.color).get(node));
     }
@@ -220,8 +221,8 @@ public class Commons {
      * @param color the solid colour.
      * @param fadingDuration the fading duration.
      */
-    public static void setApparance(DyGraph graph, Edge edge, Color color, double fadingDuration) {
-        setApparance(color, fadingDuration,
+    public static void setAppearance(DyGraph graph, Edge edge, Color color, double fadingDuration) {
+        setAppearance(color, fadingDuration,
                 graph.<Boolean>edgeAttribute(StdAttribute.dyPresence).get(edge),
                 graph.<Color>edgeAttribute(StdAttribute.color).get(edge));
     }
@@ -234,7 +235,7 @@ public class Commons {
      * @param presenceEvo the presence evolution.
      * @param colorEvo the colour evolution.
      */
-    private static void setApparance(Color color, double fadingDuration, Evolution<Boolean> presenceEvo, Evolution<Color> colorEvo) {
+    private static void setAppearance(Color color, double fadingDuration, Evolution<Boolean> presenceEvo, Evolution<Color> colorEvo) {
         for (Function<Boolean> current : presenceEvo) {
             Interval interval = current.interval();
             double endFadeIn = interval.leftBound() + fadingDuration;

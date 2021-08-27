@@ -30,15 +30,20 @@ public class Logger {
 		instance = this;
 	}
 	
-	public static Logger getInstance(boolean log) {
+	/*public static Logger getInstance(boolean log) {
 		instance = new Logger(log); 
 		return instance;
-	}
+	}*/
 	
 	public static Logger getInstance() {
 		if(instance == null)
 			instance = new Logger(); 
 		return instance;
+	}
+	
+	public static void setLog(boolean log) {
+		getInstance();
+		instance.logOn = log;
 	}
 	
 	public static boolean isLogOn() {

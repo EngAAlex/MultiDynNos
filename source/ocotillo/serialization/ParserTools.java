@@ -91,7 +91,7 @@ public class ParserTools {
     public static void writeFileLines(List<String> lines, File file) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (String line : lines) {
-                writer.write(line);
+                writer.write(line.replace(".", ",")); //added for Excel file compatibility
                 writer.newLine();
             }
         } catch (IOException ex) {

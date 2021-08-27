@@ -1,5 +1,6 @@
 /**
- * Copyright Â© 2014-2016 Paolo Simonetto
+ * Copyright © 2014-2016 Paolo Simonetto
+ * Copyright © 2021 Alessio Arleo
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -101,8 +102,8 @@ public abstract class DyModularPostProcessing extends ModularPostProcessing {
             if (refreshCounter % refreshInterval == 0 && temperature() > shutDownTemperature) {
                 expandFlexibleEdges();
                 contractFlexibleEdges();
-                refreshCounter++;
             }
+            refreshCounter++; //CAUTION WITH SINGLE DYNNOSLICE!
         }
 
         /**

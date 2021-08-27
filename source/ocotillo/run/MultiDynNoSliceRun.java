@@ -22,11 +22,13 @@ import java.util.HashMap;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.graph.Graph;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
-import ocotillo.multilevel.coarsening.SolarMerger;
+import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 
 public class MultiDynNoSliceRun extends Run {
 
@@ -38,28 +40,27 @@ public class MultiDynNoSliceRun extends Run {
 	@Override
 	protected DyGraph run() {
 
-		System.out.println("Applying tau " + tau);
+		Logger.getInstance().log("Applying tau " + tau);
 		
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dygraph, tau, Run.defaultDelta)
-				.setCoarsener(new SolarMerger()) //WalshawIndependentSet
+				.setCoarsener(new IndependentSet.WalshawIndependentSet()) //SolarMerger
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy())
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters()
-				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2))
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL))
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 		DyGraph result = multiDyn.runMultiLevelLayout();
 
-		System.out.println("Algorithm elapsed time: " + secondFormat.format((multiDyn.getComputationStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
+		Logger.getInstance().log("Algorithm elapsed time: " + secondFormat.format((multiDyn.getComputationStatistics().getTotalRunningTime().toMillis())/Math.pow(10, 3)) + "s");
 		
 		return result;
 	}
 
-	public MultiDynNoSliceRun(String[] argv, DyDataSet selectedDataset) {
-		super(argv, selectedDataset);
+	public MultiDynNoSliceRun(String[] argv, DyDataSet selectedDataset, Mode loadMode) {
+		super(argv, selectedDataset, loadMode);
 	}		
-
 
 //	public DyGraph testGraphPlacement(MultiLevelDynNoSlice multiDyn, boolean randomCoordinates) {
 //		DyGraph coarsenedGraph = testGraphCoarsening(multiDyn);

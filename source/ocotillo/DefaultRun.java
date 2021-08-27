@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
 import ocotillo.run.Run;
@@ -33,6 +34,7 @@ import ocotillo.run.SFDPRun;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
+import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
 import ocotillo.samples.parsers.DialogSequences;
@@ -51,6 +53,8 @@ import ocotillo.serialization.ParserTools;
 public class DefaultRun {
 
 	protected static HashMap<String, Integer> preloadedGraphs;
+
+	public static final Commons.Mode DEFAULT_GRAPHLOADING_MODE = Mode.plain;
 
 	public static class CMDLineOption{
 
@@ -261,7 +265,7 @@ public class DefaultRun {
 		System.setProperty("awt.useSystemAAFontSettings", "lcd");
 		System.setProperty("swing.aatext", "true");
 
-		System.out.println("MultiDynNoSlyce Demo");
+		System.out.println("MultiDynNoSlice Demo");
 
 		if (args.length == 0) {
 			showHelp();
@@ -299,23 +303,25 @@ public class DefaultRun {
 			String selectedGraph = args[1];
 			boolean customGraph = false;
 
+			Mode loadMode = Mode.plain;
+			
 			if(preloadedGraphs.containsKey(selectedGraph)) {
 				try {
 					switch(preloadedGraphs.get(selectedGraph)) {
 					case 0: 
-						data = new VanDeBunt().parse(Mode.keepAppearedNode); break;
+						loadMode = Mode.keepAppearedNode; data = new VanDeBunt().parse(loadMode); break;
 					case 1: 
-						data = new NewcombFraternity().parse(Mode.keepAppearedNode); break;
+						loadMode = Mode.keepAppearedNode; data = new NewcombFraternity().parse(loadMode); break;
 					case 2: 
-						data = new InfoVisCitations().parse(Mode.plain); break;
-					case 3: data = new RugbyTweets().parse(Mode.keepAppearedNode); break;
-					case 4: data = new DialogSequences().parse(Mode.keepAppearedNode); break;
-					case 5: data = new CollegeMsg().parse(Mode.keepAppearedNode); break;
-					case 6: data = new RealityMining().parse(Mode.keepAppearedNode); break;
-					case 7: data = new BitcoinAlpha().parse(Mode.keepAppearedNode); break;
-					case 8: data = new BitcoinOTC().parse(Mode.keepAppearedNode); break;
-					case 9: data = new Mooc().parse(Mode.keepAppearedNode); break;
-					case 10: data = new RampInfectionMap().parse(Mode.keepAppearedNode); break;
+						data = new InfoVisCitations().parse(loadMode); break;
+					case 3: loadMode = Mode.keepAppearedNode; data = new RugbyTweets().parse(loadMode); break;
+					case 4: loadMode = Mode.keepAppearedNode; data = new DialogSequences().parse(loadMode); break;
+					case 5: loadMode = Mode.keepAppearedNode; data = new CollegeMsg().parse(loadMode); break;
+					case 6: loadMode = Mode.keepAppearedNode; data = new RealityMining().parse(loadMode); break;
+					case 7: loadMode = Mode.keepAppearedNode; data = new BitcoinAlpha().parse(loadMode); break;
+					case 8: loadMode = Mode.keepAppearedNode; data = new BitcoinOTC().parse(loadMode); break;
+					case 9: loadMode = Mode.keepAppearedNode; data = new Mooc().parse(loadMode); break;
+					case 10: loadMode = Mode.keepAppearedNode; data = new RampInfectionMap().parse(loadMode); break;
 					default: break;
 					}
 				}catch (Exception e) {
@@ -335,9 +341,9 @@ public class DefaultRun {
 			AvailableMethods selectedMethod = AvailableMethods.parse(customGraph ? args[4] : args[2]);
 
 			switch(selectedMethod) {
-			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data); break;
-			case sfdp: drawingAlgorithm = new SFDPRun(args, data); break;
-			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data); break;
+			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
+			case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
+			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
 			}
 
 			drawingAlgorithm.computeDrawing();
@@ -365,24 +371,24 @@ public class DefaultRun {
 			//			Boolean dumpSlicesPicture = true;
 
 			HashSet<String> expNames = new HashSet<String>();
-			HashSet<String> smallerDatasets = new HashSet<String>();
+			ArrayList<String> smallerDatasets = new ArrayList<String>();
 			smallerDatasets.add("Bunt");
 			smallerDatasets.add("Newcomb");
-			smallerDatasets.add("InfoVis");
+			smallerDatasets.add("InfoVis");	
+			smallerDatasets.add("Rugby");				
 			smallerDatasets.add("Pride");
-			smallerDatasets.add("Rugby");			
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-			largerDatasets.add("RealMining");
-			largerDatasets.add("BitOTC");
-			largerDatasets.add("MOOC");
-			largerDatasets.add("BitAlpha");  
-			largerDatasets.add("College");
-			largerDatasets.add("RampInfectionMap");
+						largerDatasets.add("RealMining");
+						largerDatasets.add("BitOTC");
+						largerDatasets.add("MOOC");
+						largerDatasets.add("BitAlpha");  
+						largerDatasets.add("College");
+						largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
-			HashSet<String> discreteExperiment = new HashSet<String>();
+			ArrayList<String> discreteExperiment = new ArrayList<String>();
 			discreteExperiment.add("Bunt");
 			discreteExperiment.add("Newcomb");
 			discreteExperiment.add("InfoVis");
@@ -443,69 +449,72 @@ public class DefaultRun {
 
 				}               
 			}
-				LocalDateTime ld = LocalDateTime.now();
-				String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
-				String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
-				time = time.replace(':', '-');
 
-				String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
+			Logger.setLog(verbose);
 
-				for(String graphName : expNames) {
-					System.out.println("\n### Starting " + graphName + " Experiment ###");
-					if(executeVisone && visoneTimes.containsKey(graphName)) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
-								);
-					}
-					if(executeSingle) {
-						Experiment exp;
-						try {
-							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
-							System.out.println("Computed Tau constructor found");
-						}catch(NoSuchMethodException nse) {
-							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
-						}
-						lines.addAll(
-								exp.computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
-								);                		
-					}if(executeMulti) {
-						Experiment exp;
-						try {
-							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
-							System.out.println("Computed Tau constructor found");							
-						}catch(NoSuchMethodException nse) {
-							exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
-						}						
-						lines.addAll(
-								exp.computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
-								);                		
-					}
-					if(executeSFDP) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
-								);                		
-					}               	
+			LocalDateTime ld = LocalDateTime.now();
+			String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
+			String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
+			time = time.replace(':', '-');
 
+			String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
+
+			for(String graphName : expNames) {
+				System.out.println("\n### Starting " + graphName + " Experiment ###");
+				if(executeVisone && visoneTimes.containsKey(graphName)) {
+					lines.addAll(
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
+							);
 				}
+				if(executeSingle) {
+					Experiment exp;
+					try {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+					}catch(NoSuchMethodException nse) {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						Logger.getInstance().log("Reverting to original constructor");
+					}
+					lines.addAll(
+							exp.computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
+							);                		
+				}if(executeMulti) {
+					Experiment exp;
+					try {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+					}catch(NoSuchMethodException nse) {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						Logger.getInstance().log("Reverting to original constructor");							
+					}						
+					lines.addAll(
+							exp.computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
+							);                		
+				}
+				if(executeSFDP) {
+					lines.addAll(
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
+							);                		
+				}               	
 
-				//			for (String line : lines) {
-				//				System.out.println(line);
-				//			}
-
-				if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
-					outputFolder += File.separator; 
-
-				ParserTools.writeFileLines(lines,
-						new File(outputFolder + fileName));
-
-				System.out.println("\n##### Experiments complete! #####");
-
-				System.exit(0);
-				return;
 			}
 
+			//			for (String line : lines) {
+			//				System.out.println(line);
+			//			}
+
+			if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
+				outputFolder += File.separator; 
+
+			ParserTools.writeFileLines(lines,
+					new File(outputFolder + fileName));
+
+			System.out.println("\n##### Experiments complete! #####");
+
+			System.exit(0);
+			return;
 		}
-		
+
+		}
+
 	}
 
 	private static void showHelp() {

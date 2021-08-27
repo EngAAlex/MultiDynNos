@@ -23,11 +23,12 @@ import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 
 public class SFDPRun extends Run {
 
-	public SFDPRun(String[] argv, DyDataSet requestedDataSet) {
-		super(argv, requestedDataSet);
+	public SFDPRun(String[] argv, DyDataSet requestedDataSet, Mode loadMode) {
+		super(argv, requestedDataSet, loadMode);
 	}
 
 	@Override

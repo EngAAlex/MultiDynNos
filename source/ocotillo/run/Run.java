@@ -24,10 +24,12 @@ import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
 import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.gui.quickview.QuickView;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.customrun.EdgeAppearance;
 import ocotillo.run.customrun.NodeAppearance;
 import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 import ocotillo.serialization.ParserTools;
 
 public abstract class Run {
@@ -49,20 +51,23 @@ public abstract class Run {
 	protected double staticTiming;
 	protected Interval suggestedInterval;
 	protected final String graphName;
+	
+	Logger logger;
 
-	public Run(String[] argv, DyDataSet requestedDataSet) {
-
-		System.out.println(getDescription() + " layout selected");
-
+	public Run(String[] argv, DyDataSet requestedDataSet, Mode loadMode) {
+		
 		double delta = defaultDelta;
 		double tau = defaultTau;
 		//Interval suggestedInterval;
 		String output = defaultOutput;
 		boolean autoTau = true;
 		boolean cliTau = false;
+		boolean verbose = false;
+		boolean customGraph = false;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
+			customGraph = true;
 			File nodeDataSetFile = new File(argv[2]);
 			if (!nodeDataSetFile.exists()) {
 				System.err.println("The node data set file \"" + argv[2] + "\" does not exist. \n");
@@ -126,6 +131,9 @@ public abstract class Run {
 				case autoTau: {
 					autoTau = false;
 				}
+				case verbose: {
+					verbose = true;
+				}
 				//			case o: {
 				//				output = argv[i+1];
 				//			}
@@ -136,22 +144,26 @@ public abstract class Run {
 			
 		if(cliTau) {
 			this.tau = tau;
-			this.suggestedInterval = requestedDataSet.getSuggestedInterval(autoTau);
+			this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, null);
 		}else
 			if(!autoTau) {
-				this.suggestedInterval = requestedDataSet.getSuggestedInterval(false);
-				this.tau = requestedDataSet.getSuggestedTimeFactor(false);
+				this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, loadMode);
+				this.tau = requestedDataSet.getSuggestedTimeFactor(false, loadMode);
 			} else {
-				double computedTau = requestedDataSet.getSuggestedTimeFactor(true);
+				double computedTau = requestedDataSet.getSuggestedTimeFactor(true, loadMode);
 				System.out.println("Auto Computed Tau\tSuggestedTau");			
-				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedInterval(false));	
+				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedTimeFactor(false, loadMode));	
 				this.tau = computedTau;
-				suggestedInterval = requestedDataSet.getSuggestedInterval(true);
+				suggestedInterval = requestedDataSet.getSuggestedInterval(true, loadMode);
 			}
 				
 		this.delta = delta;
 		this.staticTiming = this.suggestedInterval.leftBound();
 		this.output = output;
+		
+		Logger.setLog(verbose);
+		
+		Logger.getInstance().log(getDescription() + " layout selected");
 
 		completeSetup();
 
@@ -374,7 +386,8 @@ public abstract class Run {
 		//		edges,
 		text,
 		autoTau,
-		tau;
+		tau, 
+		verbose;
 
 		public static void printHelp() {
 
@@ -395,7 +408,9 @@ public abstract class Run {
 				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    	
 			case autoTau:
 				return new CMDLineOption("Semi-Automatic Tau", "-T", "If included in the dataset code, that specific TAU will be used."
-										+ " If absent, tau will be calculated automatically.");    	
+										+ " If absent, tau will be calculated automatically."); 
+			case verbose:	
+					return new CMDLineOption("Verbose", "-v", "Prints extra information about the drawing process on the console.");
 				//			case nodes: 
 				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
 				//			case edges: 
@@ -406,12 +421,13 @@ public abstract class Run {
 
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
-			case "-d": return delta;
-			case "-t": return tau;
+			case "d": return delta;
+			case "t": return tau;
 			//			case "-n:": return nodes;
 			//			case "-e:": return edges;
-			case "-o": return text;
-			case "-T": return autoTau;
+			case "o": return text;
+			case "T": return autoTau;
+			case "v": return verbose;
 			default: return null;
 			}
 		}

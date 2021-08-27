@@ -26,32 +26,33 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeT
 public class MultiLevelDrawingOption<V> {
 
 	protected V value;
-	protected int activeFromLevel;
+	protected int activeFromLevel = Integer.MAX_VALUE;
 
 	public static class FlexibleTimeTrajectoriesPostProcessing extends MultiLevelDrawingOption<ModularPostProcessing> {
 
 		MultiLevelCoolingStrategy cooling;
+		int refreshInterval = 1;
 		
-		public FlexibleTimeTrajectoriesPostProcessing(int increaseRate) {
-			super();
-			cooling = new MultiLevelCoolingStrategy.LinearCoolingStrategy(increaseRate);
-		}
-		
-		public FlexibleTimeTrajectoriesPostProcessing(int applyFromLevel, int increaseRate) {
+		public FlexibleTimeTrajectoriesPostProcessing(int applyFromLevel, int refreshInterval) {
 			super(applyFromLevel);
-			cooling = new MultiLevelCoolingStrategy.LinearCoolingStrategy(increaseRate);
+			//cooling = new MultiLevelCoolingStrategy.IdentityCoolingStrategy();
+			this.refreshInterval = refreshInterval;
 		}
+		
+		public FlexibleTimeTrajectoriesPostProcessing(int refreshInterval) {
+			this(0, refreshInterval);
+		}
+
 		
 		@Override
 		public ModularPostProcessing getValue(int iteration, int level, double delta, double tau, DynamicLayoutParameter initial_max_movement,
 				DynamicLayoutParameter contractDistance, DynamicLayoutParameter expandDistance) {
 			FlexibleTimeTrajectories opt = new FlexibleTimeTrajectories(contractDistance.getInitialValue(),
 					expandDistance.getInitialValue(), Geom.e3D); 
-			int suggestedInterval = (int) Math.ceil(cooling.getNextValue(iteration));
-			opt.refreshInterval = suggestedInterval;
+			//int suggestedInterval *= (int) Math.ceil(cooling.getNextValue(iteration));
+			opt.refreshInterval = this.refreshInterval;
 			return opt;
 		}
-		
 	}
 	
 	/*public MultiLevelOption() {
