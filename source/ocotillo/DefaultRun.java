@@ -380,11 +380,11 @@ public class DefaultRun {
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 						largerDatasets.add("RealMining");
-						largerDatasets.add("BitOTC");
-						largerDatasets.add("MOOC");
-						largerDatasets.add("BitAlpha");  
-						largerDatasets.add("College");
-						largerDatasets.add("RampInfectionMap");
+//						largerDatasets.add("BitOTC");
+//						largerDatasets.add("MOOC");
+//						largerDatasets.add("BitAlpha");  
+//						largerDatasets.add("College");
+//						largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
@@ -457,7 +457,7 @@ public class DefaultRun {
 			String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
 			time = time.replace(':', '-');
 
-			String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
+			String fileName = "ExperimentWPlacement_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
 			for(String graphName : expNames) {
 				System.out.println("\n### Starting " + graphName + " Experiment ###");

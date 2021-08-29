@@ -295,17 +295,17 @@ public class Gui extends JFrame {
 			onTimeButton.addActionListener((ActionEvent ae) -> {
 				int k = (int) kSpinner.getValue();
 				cluster(new DyClustering.Stc.KMeansTime(
-						synchro.originalGraph(), experiment.dataset.getSuggestedTimeFactor(false),
+						synchro.originalGraph(), experiment.dataset.getSuggestedTimeFactor(false, experiment.loadMode),
 						experiment.delta / 3.0, k,
-						ColorCollection.cbQualitativePastel, experiment.dataset.getSuggestedInterval(false)));
+						ColorCollection.cbQualitativePastel, experiment.dataset.getSuggestedInterval(false, experiment.loadMode)));
 			});
 
 			onCubeButton.addActionListener((ActionEvent ae) -> {
 				int k = (int) kSpinner.getValue();
 				cluster(new DyClustering.Stc.KMeans3D(
-						synchro.originalGraph(), experiment.dataset.getSuggestedTimeFactor(false),
+						synchro.originalGraph(), experiment.dataset.getSuggestedTimeFactor(false, experiment.loadMode),
 						experiment.delta / 3.0, k,
-						ColorCollection.cbQualitativePastel, experiment.dataset.getSuggestedInterval(false)));
+						ColorCollection.cbQualitativePastel, experiment.dataset.getSuggestedInterval(false, experiment.loadMode)));
 			});
 
 			viewClusterButton.addActionListener((ActionEvent ae) -> {
@@ -385,8 +385,8 @@ public class Gui extends JFrame {
 		}
 
 		private void viewAnimation() {
-			DyQuickView view = new DyQuickView(synchro.originalGraph(), experiment.dataset.getSuggestedInterval(false).leftBound());
-			view.setAnimation(new Animation(experiment.dataset.getSuggestedInterval(false), Duration.ofSeconds(30)));
+			DyQuickView view = new DyQuickView(synchro.originalGraph(), experiment.dataset.getSuggestedInterval(false, experiment.loadMode).leftBound());
+			view.setAnimation(new Animation(experiment.dataset.getSuggestedInterval(false, experiment.loadMode), Duration.ofSeconds(30)));
 			view.showNewWindow();
 		}
 
@@ -416,7 +416,7 @@ public class Gui extends JFrame {
 			}
 			updateComputationReport("Graph successfully parsed.");
 			return new SpaceTimeCubeSynchroniser.StcsBuilder(
-					discreteGraph, experiment.dataset.getSuggestedTimeFactor(false)).build();
+					discreteGraph, experiment.dataset.getSuggestedTimeFactor(false, experiment.loadMode)).build();
 		}
 	}
 
