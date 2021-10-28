@@ -35,13 +35,13 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 	protected float opt_distance;
 	private final static float OPT_DISTANCE_DEFAULT = 10;
 
-	public WeightedBarycenterPlacementStrategy() {
-		super();
+	public WeightedBarycenterPlacementStrategy(boolean bendTransferOption) {
+		super(bendTransferOption);
 		opt_distance = OPT_DISTANCE_DEFAULT;
 	}
 
-	public WeightedBarycenterPlacementStrategy(double fuzzyness) {
-		super(fuzzyness);
+	public WeightedBarycenterPlacementStrategy(boolean bendTransferOption, double fuzzyness) {
+		super(bendTransferOption, fuzzyness);
 	}
 
 	public WeightedBarycenterPlacementStrategy setOptimalDistance(float optDistance) {
@@ -120,12 +120,12 @@ public class WeightedBarycenterPlacementStrategy extends MultilevelNodePlacement
 
 	public static class SolarMergerPlacementStrategy extends WeightedBarycenterPlacementStrategy {
 
-		public SolarMergerPlacementStrategy() {
-			super();
+		public SolarMergerPlacementStrategy(boolean bendTransferOption) {
+			super(bendTransferOption);
 		}
 
-		public SolarMergerPlacementStrategy(double fuzzyness) {
-			super(fuzzyness);
+		public SolarMergerPlacementStrategy(boolean bendTransferOption, double fuzzyness) {
+			super(bendTransferOption, fuzzyness);
 		}
 
 		@Override

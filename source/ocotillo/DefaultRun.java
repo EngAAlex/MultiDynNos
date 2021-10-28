@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import ocotillo.DefaultRun.CMDLineOption;
 import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
@@ -79,6 +80,7 @@ public class DefaultRun {
 		animate,
 		showcube,
 		computeMetrics,
+		plotSlices,
 		help;
 
 		public static void printHelp() {
@@ -100,6 +102,8 @@ public class DefaultRun {
 				return new CMDLineOption("Cube", "showcube", "Shows the trajectories of the nodes in a space time cube.");    			
 			case computeMetrics: 
 				return new CMDLineOption("Metrics", "metrics", "Computes the experiment metrics reported in the paper. Add \"--help\" argument for help on experiment settings.");
+			case plotSlices: 
+				return new CMDLineOption("PlotSlices", "dump", "Dumps 4 GMLs showing different slices of animation.");						
 			default: return null;
 			}
 		}
@@ -114,6 +118,8 @@ public class DefaultRun {
 				return AvailableMode.showcube;    			
 			case "metrics": 
 				return AvailableMode.computeMetrics;
+			case "dump": 
+				return AvailableMode.plotSlices;		
 			default: return null;			}
 
 		}
@@ -188,7 +194,7 @@ public class DefaultRun {
 		}
 	}
 
-	private enum MetricsCalculationOptions{
+	public static enum MetricsCalculationOptions{
 		smaller,
 		larger,
 		multi,
@@ -198,7 +204,7 @@ public class DefaultRun {
 		help,
 		verbose,
 		output,
-		autoTau;
+		autoTau, bendTransfer, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -230,7 +236,11 @@ public class DefaultRun {
 			case verbose:
 				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
 			case autoTau:
-				return new CMDLineOption("Dataset Tau", "--autoTau", "Use the time factor suggested in the dataset code (if available)");					
+				return new CMDLineOption("Dataset Tau", "--autoTau", "Use the time factor suggested in the dataset code (if available)");
+			case bendTransfer:	
+				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "-bT", "Enables Bend Transfer (default Disabled).");
+			case vanillaTuning:	
+				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");				
 			default: return null;
 			}
 		}
@@ -239,23 +249,25 @@ public class DefaultRun {
 
 			switch(s) {
 			case "smaller": 
-				return MetricsCalculationOptions.smaller;
+				return smaller;
 			case "larger": 
-				return MetricsCalculationOptions.larger;
+				return larger;
 			case "visone": 
-				return MetricsCalculationOptions.visone;  				
+				return visone;  				
 			case "multi": 
-				return MetricsCalculationOptions.multi;    			
+				return multi;    			
 			case "single": 
-				return MetricsCalculationOptions.single;    			
+				return single;    			
 			case "sfdp": 
-				return MetricsCalculationOptions.sfdp;	
+				return sfdp;	
 			case "out":
-				return MetricsCalculationOptions.output;
+				return output;
 			case "verbose":
-				return MetricsCalculationOptions.verbose;
+				return verbose;
 			case "autoTau":
-				return MetricsCalculationOptions.autoTau;				
+				return autoTau;	
+			case "bT": return bendTransfer;
+			case "vT": return vanillaTuning;				
 			default: return null;			
 			}			
 		}
@@ -347,9 +359,15 @@ public class DefaultRun {
 			}
 
 			drawingAlgorithm.computeDrawing();
-
 			switch(selectedMode) {
 			case animate: drawingAlgorithm.animateGraph(); break;
+			case plotSlices: 
+				if(customGraph) {
+					System.out.println("At the moment the plotSlices option only work with preloaded graphs.");
+					System.exit(1);
+				}					
+				((Experiment) Class.forName("ocotillo.Experiment$"+selectedGraph).getDeclaredConstructor().newInstance()).probeLayout();
+				break;
 			default: drawingAlgorithm.plotSpaceTimeCube(); break;			
 			}
 
@@ -358,6 +376,7 @@ public class DefaultRun {
 			break;
 
 		}
+		
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
 			String outputFolder = System.getProperty("user.dir");
@@ -366,7 +385,9 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			Boolean computedTau = true;
+			
+			String experimentPrefix = "";
+			
 			//Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
@@ -391,8 +412,10 @@ public class DefaultRun {
 			ArrayList<String> discreteExperiment = new ArrayList<String>();
 			discreteExperiment.add("Bunt");
 			discreteExperiment.add("Newcomb");
-			discreteExperiment.add("InfoVis");
+			discreteExperiment.add("InfoVis");					
 
+			HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
+			
 			for(int i = 1; i < args.length; i++) {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
 				case smaller: expNames.addAll(smallerDatasets); break;
@@ -440,15 +463,21 @@ public class DefaultRun {
 					break;
 				}
 				case autoTau: {
-					computedTau = false;
+					multiLevelOptions.add(MetricsCalculationOptions.autoTau); experimentPrefix += "autoTau_"; break;
 				}
+				case bendTransfer: {
+					multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); experimentPrefix += "bendTransfer_"; break;
+				}
+				case vanillaTuning: {
+					multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); experimentPrefix += "multiVanillaTuning_"; break;
+				}				
 				default: break;
 				//                	else if(args[i].equals("--dump"))
 				//						dumpSlicesPicture = true;
 
 
 				}               
-			}
+			}						
 
 			Logger.setLog(verbose);
 
@@ -457,7 +486,7 @@ public class DefaultRun {
 			String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
 			time = time.replace(':', '-');
 
-			String fileName = "ExperimentWPlacement_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
+			String fileName = "Experiment_" + experimentPrefix + "_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
 			for(String graphName : expNames) {
 				System.out.println("\n### Starting " + graphName + " Experiment ###");
@@ -469,7 +498,7 @@ public class DefaultRun {
 				if(executeSingle) {
 					Experiment exp;
 					try {
-						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions));
 					}catch(NoSuchMethodException nse) {
 						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
 						Logger.getInstance().log("Reverting to original constructor");
@@ -480,7 +509,7 @@ public class DefaultRun {
 				}if(executeMulti) {
 					Experiment exp;
 					try {
-						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {Boolean.class}).newInstance(computedTau));
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions));
 					}catch(NoSuchMethodException nse) {
 						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
 						Logger.getInstance().log("Reverting to original constructor");							

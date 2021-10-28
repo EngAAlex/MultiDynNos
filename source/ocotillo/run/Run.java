@@ -51,6 +51,8 @@ public abstract class Run {
 	protected double staticTiming;
 	protected Interval suggestedInterval;
 	protected final String graphName;
+	protected boolean bendTransfer = false;
+	protected boolean vanillaTuning = false;
 	
 	Logger logger;
 
@@ -63,11 +65,11 @@ public abstract class Run {
 		boolean autoTau = true;
 		boolean cliTau = false;
 		boolean verbose = false;
-		boolean customGraph = false;
+		//boolean customGraph = false;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
-			customGraph = true;
+			//customGraph = true;
 			File nodeDataSetFile = new File(argv[2]);
 			if (!nodeDataSetFile.exists()) {
 				System.err.println("The node data set file \"" + argv[2] + "\" does not exist. \n");
@@ -132,7 +134,13 @@ public abstract class Run {
 					autoTau = false; break;
 				}
 				case verbose: {
-					verbose = true;
+					verbose = true; break;
+				}
+				case bendTransfer: {
+					bendTransfer = true; break;
+				}
+				case vanillaTuning: {
+					vanillaTuning = true; break;
 				}
 				//			case o: {
 				//				output = argv[i+1];
@@ -387,7 +395,7 @@ public abstract class Run {
 		text,
 		autoTau,
 		tau, 
-		verbose;
+		verbose, bendTransfer, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -411,10 +419,14 @@ public abstract class Run {
 										+ " If absent, tau will be calculated automatically."); 
 			case verbose:	
 					return new CMDLineOption("Verbose", "-v", "Prints extra information about the drawing process on the console.");
+			case bendTransfer:	
+				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "-bT", "Enables Bend Transfer (default Disabled).");
+			case vanillaTuning:	
+				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");
 				//			case nodes: 
 				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
 				//			case edges: 
-				//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");				
+				//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");					
 			default: return null;
 			}
 		}
@@ -422,6 +434,8 @@ public abstract class Run {
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
 			case "d": return delta;
+			case "bT": return bendTransfer;
+			case "vT": return vanillaTuning;
 			case "t": return tau;
 			//			case "-n:": return nodes;
 			//			case "-e:": return edges;

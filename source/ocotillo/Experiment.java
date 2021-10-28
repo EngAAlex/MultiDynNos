@@ -40,6 +40,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.swing.WindowConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -49,6 +50,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import ocotillo.DefaultRun.MetricsCalculationOptions;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
 import ocotillo.dygraph.Evolution;
@@ -66,6 +68,7 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
 import ocotillo.dygraph.rendering.Animation;
+import ocotillo.export.GMLOutputWriter;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Geom;
 import ocotillo.geometry.Interval;
@@ -85,12 +88,14 @@ import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
+import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice.LIMIT_MINIMUM_TUNING;
 import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.coarsening.SolarMerger;
+import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 import ocotillo.multilevel.logger.Logger;
@@ -98,6 +103,7 @@ import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.run.Run;
+import ocotillo.run.Run.AvailableDrawingOption;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
@@ -127,7 +133,7 @@ public abstract class Experiment {
 	protected final Commons.Mode loadMode;
 	protected final double delta;
 	protected final boolean automaticTau;
-
+	HashSet<MetricsCalculationOptions> opts;
 	protected HashSet<Callable<ModularStatistics>> callables = new HashSet<Callable<ModularStatistics>>();
 
 	private final static String STAT_SEPARATOR = ";";
@@ -163,18 +169,79 @@ public abstract class Experiment {
 		this.delta = delta;		
 		this.parserInstance = ((PreloadedGraphParser)(parserClass.getDeclaredConstructor().newInstance()));
 		this.loadMode = loadMode;
-		this.dataset = this.parserInstance.parse(this.loadMode);
-		this.automaticTau = false;
+		this.dataset = this.parserInstance.parse(this.loadMode);	
+		automaticTau = true;
 	}
-	public Experiment(String name, String directory, Class<? extends PreloadedGraphParser> parserClass, Mode loadMode, double delta, boolean autoTau) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, URISyntaxException {
+	public Experiment(String name, String directory, Class<? extends PreloadedGraphParser> parserClass, Mode loadMode, double delta, HashSet<MetricsCalculationOptions> options) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, URISyntaxException {
 		this.name = name;
 		this.directory = directory;
 		this.delta = delta;		
 		this.parserInstance = ((PreloadedGraphParser)(parserClass.getDeclaredConstructor().newInstance()));
 		this.loadMode = loadMode;
 		this.dataset = this.parserInstance.parse(this.loadMode);
-		this.automaticTau = autoTau;
+		this.opts = options;
+		automaticTau = !options.contains(MetricsCalculationOptions.autoTau);
 	}
+
+	public void probeLayout() throws URISyntaxException {
+		HashSet<String> methodologies = new HashSet<String>();
+		//			methodologies.add("wi_id");
+		methodologies.add("iset_grip");
+		//			methodologies.add("sm_sp");
+		for(String s : methodologies) {
+			GraphCoarsener gc;
+			MultilevelNodePlacementStrategy ps;
+			if(s.equals("wi_id")) {
+				System.out.println("Setting Walshaw IndependentSet and Identity Placement");
+				gc = new IndependentSet.WalshawIndependentSet();
+				ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement(opts.contains(MetricsCalculationOptions.bendTransfer));
+			}else if(s.equals("iset_grip")) {
+				System.out.println("Setting IndependentSet and GRIP Placement");        			
+				gc = new IndependentSet();
+				ps = new WeightedBarycenterPlacementStrategy(opts.contains(MetricsCalculationOptions.bendTransfer));
+			}else{
+				System.out.println("Setting Solar Merger and Placer");        			        			
+				gc = new SolarMerger();
+				ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy(opts.contains(MetricsCalculationOptions.bendTransfer));
+			}
+			System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
+			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, SfdpExecutor.AVAILABLE_STATIC_LAYOUTS.sfdp, ps, null, true);
+			contMultiDyn.runMultiLevelLayout();
+
+			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 4);
+
+			DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
+			dyWindow.setAnimation(new Animation(contMultiDyn.getDrawnGraph().getComputedSuggestedInterval(loadMode), Duration.ofSeconds(30)));
+			dyWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			dyWindow.showNewWindow();					
+		}
+	}
+
+
+	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
+		DyGraph discretizedGraph = discretise();
+		List<Double> snapTimes = readSnapTimes(discretizedGraph);
+		System.out.println("Dumping Slices");
+		int lastSnap = 0;
+		int step = Double.valueOf(Math.floor(snapTimes.size()/snaps)).intValue();
+		boolean stoppingCondition = true;
+		int needle = step;
+		while(stoppingCondition) {    		
+			if(needle >= snapTimes.size()) {
+				stoppingCondition = false;
+				needle = snapTimes.size() - 1;
+			}    		
+			System.out.println("Start " + lastSnap + " end " + needle);
+			//Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			Graph snipGraph = DyGraphDiscretiser.displayWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			File f = new File(name+"_slices" + lastSnap + "-" + needle + ".gml");
+			System.out.println(f.getAbsolutePath());
+			GMLOutputWriter.writeOutput(f, snipGraph);
+			lastSnap = needle;
+			needle += step;
+		}	
+	}
+
 
 	/**
 	 * Runs the layout algorithm treating the graph in continuous time.
@@ -191,14 +258,14 @@ public abstract class Experiment {
 
 		if (k > 1) {
 			DyClustering clustering = new DyClustering.Stc.KMeans3D(
-					dataset.dygraph, dataset.getSuggestedTimeFactor(automaticTau, loadMode), delta / 3.0, k,
+					dataset.dygraph, dataset.getSuggestedTimeFactor(false, loadMode), delta / 3.0, k,
 					ColorCollection.cbQualitativePastel);
 			clustering.colorGraph();
 		}
 
-		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.getSuggestedInterval(automaticTau, loadMode).leftBound());
-		view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau, loadMode), Duration.ofSeconds(30)));
-		view.showNewWindow();
+		/*DyQuickView view = new DyQuickView(dataset.dygraph, dataset.getSuggestedInterval(false, loadMode).leftBound());
+		view.setAnimation(new Animation(dataset.getSuggestedInterval(false, loadMode), Duration.ofSeconds(30)));
+		view.showNewWindow();*/
 	}
 
 	/**
@@ -217,14 +284,14 @@ public abstract class Experiment {
 
 		if (k > 1) {
 			DyClustering clustering = new DyClustering.Stc.KMeans3D(
-					dataset.dygraph, dataset.getSuggestedTimeFactor(automaticTau, loadMode), delta / 3.0, k,
+					dataset.dygraph, dataset.getSuggestedTimeFactor(false, loadMode), delta / 3.0, k,
 					ColorCollection.cbQualitativePastel);
 			clustering.colorGraph();
 		}
 
-		DyQuickView view = new DyQuickView(discreteGraph, dataset.getSuggestedInterval(automaticTau, loadMode).leftBound());
+		/*DyQuickView view = new DyQuickView(discreteGraph, dataset.getSuggestedInterval(automaticTau, loadMode).leftBound());
 		view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau, loadMode), Duration.ofSeconds(30)));
-		view.showNewWindow();
+		view.showNewWindow();*/
 	}
 
 	/**
@@ -235,7 +302,7 @@ public abstract class Experiment {
 	 * @return the graph drawing algorithm.
 	 */
 	public DyModularFdl getContinuousLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
-		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(automaticTau, loadMode))
+		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(false, loadMode))
 				.withForce(new DyModularForce.TimeStraightning(delta))
 				.withForce(new DyModularForce.Gravity())
 				.withForce(new DyModularForce.ConnectionAttraction(delta))
@@ -259,7 +326,7 @@ public abstract class Experiment {
 	 * @return the graph drawing algorithm.
 	 */
 	public DyModularFdl getDiscreteLayoutAlgorithm(DyGraph dyGraph, ModularPostProcessing postProcessing) {
-		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(automaticTau, loadMode))
+		DyModularFdl.DyModularFdlBuilder builder = new DyModularFdl.DyModularFdlBuilder(dyGraph, dataset.getSuggestedTimeFactor(false, loadMode))
 				.withForce(new DyModularForce.TimeStraightning(delta))
 				.withForce(new DyModularForce.Gravity())
 				.withForce(new DyModularForce.ConnectionAttraction(delta))
@@ -281,7 +348,7 @@ public abstract class Experiment {
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultLayoutParameters()
+				.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)
 				.withSingleLevelLayout(staticLayout)
 				.addLayerPreMovementDrawingOption(new MultiLevelDrawingOption<DyModularPreMovement>(new DyModularPreMovement.ForbidTimeShitfing()))
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose);//.build();
@@ -296,15 +363,21 @@ public abstract class Experiment {
 	}
 
 	public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
+
+		MultiLevelDrawingOption<ModularPostProcessing> mdo = opts.contains(MetricsCalculationOptions.vanillaTuning) ?  
+				new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2, new MultiLevelCoolingStrategy.LinearCoolingStrategy(1)) :
+					new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL); 
+
+
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dyGraph, dataset.getSuggestedTimeFactor(automaticTau, loadMode), Run.defaultDelta)
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL))
+				.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)				
+				.addLayerPostProcessingDrawingOption(mdo)
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose)
-				.withSingleLevelLayout(staticLayout)
-				.defaultLayoutParameters();
+				.withSingleLevelLayout(staticLayout);
 
 
 		if (postProcessing != null) 
@@ -410,8 +483,8 @@ public abstract class Experiment {
 				DyGraph contDiscrete = getContinuousCopy();
 				copyNodeLayoutFromTo(discGraph, contDiscrete);
 				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
-							+ STAT_SEPARATOR + discAlgorithm.tau + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
-								+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
+				+ STAT_SEPARATOR + discAlgorithm.tau + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
+				+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
 			}catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			}catch (TimeoutException timeout) {
@@ -447,8 +520,8 @@ public abstract class Experiment {
 				copyNodeLayoutFromTo(contGraph, discContinuous);
 
 				String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
-								+ STAT_SEPARATOR + contAlgorithm.tau + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
-									+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
+				+ STAT_SEPARATOR + contAlgorithm.tau + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
+				+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
 
 				//		System.out.println(line);
 
@@ -552,15 +625,15 @@ public abstract class Experiment {
 				if(s.equals("wi_id")) {
 					Logger.getInstance().log("Setting Walshaw IndependentSet and Identity Placement");
 					gc = new IndependentSet.WalshawIndependentSet();
-					ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
+					ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement(opts.contains(MetricsCalculationOptions.bendTransfer));
 				}else if(s.equals("iset_grip")) {
 					Logger.getInstance().log("Setting IndependentSet and GRIP Placement");        			
 					gc = new IndependentSet();
-					ps = new WeightedBarycenterPlacementStrategy();
+					ps = new WeightedBarycenterPlacementStrategy(opts.contains(MetricsCalculationOptions.bendTransfer));
 				}else{
 					Logger.getInstance().log("Setting Solar Merger and Placer");        			        			
 					gc = new SolarMerger();
-					ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
+					ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy(opts.contains(MetricsCalculationOptions.bendTransfer));
 				}
 
 				if(discrete) {
@@ -1051,9 +1124,9 @@ public abstract class Experiment {
 		public InfoVis() throws Exception{
 			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0);
 		}
-		
-		public InfoVis(Boolean autoTau) throws Exception{
-			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0, autoTau);
+
+		public InfoVis(HashSet<MetricsCalculationOptions> opts) throws Exception{
+			super("InfoVis", "data/InfoVis_citations", InfoVisCitations.class, Commons.Mode.plain, 5.0, opts);
 		}
 
 		@Override
@@ -1076,9 +1149,9 @@ public abstract class Experiment {
 			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d);			
 			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
 		}
-		
-		public Rugby(Boolean autoTau) throws Exception{
-			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);			
+
+		public Rugby(HashSet<MetricsCalculationOptions> opts) throws Exception{
+			super("Rugby", "data/Rugby_tweets", RugbyTweets.class, Commons.Mode.keepAppearedNode, 5.0d, opts);			
 			//			super("Rugby", "data/Rugby_tweets/", RugbyTweets.parse(Commons.Mode.keepAppearedNode), 5);
 		}		
 
@@ -1104,9 +1177,9 @@ public abstract class Experiment {
 		public Pride() throws Exception{
 			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public Pride(Boolean autoTau) throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public Pride(HashSet<MetricsCalculationOptions> opts) throws Exception{
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
@@ -1131,9 +1204,9 @@ public abstract class Experiment {
 		public Bunt() throws Exception {
 			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public Bunt(Boolean autoTau) throws Exception {
-			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public Bunt(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("VanDeBunt", "data/van_De_Bunt", VanDeBunt.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
@@ -1155,9 +1228,9 @@ public abstract class Experiment {
 		public Newcomb() throws Exception {
 			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5);
 		}
-		
-		public Newcomb(Boolean autoTau) throws Exception {
-			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5, autoTau);
+
+		public Newcomb(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("Newcomb", "data/Newcomb", NewcombFraternity.class, Commons.Mode.keepAppearedNode, 5, opts);
 		}		
 
 		@Override
@@ -1179,9 +1252,9 @@ public abstract class Experiment {
 		public College() throws Exception {
 			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public College(Boolean autoTau) throws Exception {
-			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public College(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}
 
 		@Override
@@ -1206,9 +1279,9 @@ public abstract class Experiment {
 		public BitAlpha() throws Exception {
 			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public BitAlpha(Boolean autoTau) throws Exception {
-			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public BitAlpha(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
@@ -1233,9 +1306,9 @@ public abstract class Experiment {
 		public BitOTC() throws Exception {
 			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public BitOTC(Boolean autoTau) throws Exception {
-			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public BitOTC(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}
 
 		@Override
@@ -1261,11 +1334,11 @@ public abstract class Experiment {
 			super("Reality Mining", "data/RealityMining", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d);
 		}
 
-		public RealMining(Boolean autoTau) throws Exception{
-			super("Reality Mining", "data/RealityMining", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d, autoTau);
+		public RealMining(HashSet<MetricsCalculationOptions> opts) throws Exception{
+			super("Reality Mining", "data/RealityMining", RealityMining.class, Commons.Mode.keepAppearedNode , 5.0d, opts);
 		}
 
-		
+
 		@Override
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
@@ -1289,9 +1362,9 @@ public abstract class Experiment {
 		public MOOC() throws Exception {
 			super("MOOC", "data/act-mooc", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
-		
-		public MOOC(Boolean autoTau) throws Exception {
-			super("MOOC", "data/act-mooc", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+
+		public MOOC(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("MOOC", "data/act-mooc", Mooc.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
@@ -1317,10 +1390,10 @@ public abstract class Experiment {
 			super("RampInfectionMap", "data/RampInfectionMap", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
-		public RampInfectionMap(Boolean autoTau) throws Exception {
-			super("RampInfectionMap", "data/RampInfectionMap", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d, autoTau);
+		public RampInfectionMap(HashSet<MetricsCalculationOptions> opts) throws Exception {
+			super("RampInfectionMap", "data/RampInfectionMap", ocotillo.samples.parsers.RampInfectionMap.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
-		
+
 		@Override
 		public DyGraph discretise() {
 			List<Double> snapshotTimes = new ArrayList<>();
@@ -1334,5 +1407,5 @@ public abstract class Experiment {
 		}
 
 	}
-	
+
 }

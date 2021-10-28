@@ -38,13 +38,14 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 
 /**
  * Transforms a continuous dynamic graph into a discrete one.
  */
 public class DyGraphDiscretiser {
 	
-	private static final double FIXED_DURATION = 1.0 / Duration.ofDays(7).getSeconds();
+//	private static final double FIXED_DURATION = 1.0 / Duration.ofDays(7).getSeconds();
 
 //	public static List<Double> getEqualDiscretizationWithFixedDuration(DyGraph original, int timeslices) {
 //		DiscretisationData discretizedData = new DiscretisationData(original);
@@ -157,35 +158,7 @@ public class DyGraphDiscretiser {
             applyBlockAttributes(data, intervals.get(i), outputInterval);
         }
         return data.discrete;
-    }
-    
-    /**
-     * Flatten a dynamic graph within an interval.  
-     * This method returns a static graph representing the flattened graph. 
-     *
-     * @param original the continuous dynamic graph.
-     * @param intervals the intervals.
-     * @return the discrete graph.
-     */
-    public static Graph flattenWithinInterval(DyGraph original, Interval interval) {
-        DiscretisationData data = new DiscretisationData(original);
-        Graph slicedGraph = new Graph();
-        DyNodeAttribute<Coordinates> oriNodePos = original.nodeAttribute(StdAttribute.nodePosition);
-    	NodeAttribute<Coordinates> nodePos = slicedGraph.newNodeAttribute(StdAttribute.nodePosition, new Coordinates(0.0, 0.0));
-    	for (Node node : data.original.nodes()) {
-            if (data.isPresentInInterval(node, interval)) {
-                Node newNode = slicedGraph.newNode(node.id());
-                nodePos.set(newNode, oriNodePos.get(node).valueAt(interval.rightBound()));
-            }
-        }
-        for (Edge edge : data.original.edges()) {
-            if (data.isPresentInInterval(edge, interval)) {
-                slicedGraph.newEdge(slicedGraph.getNode(edge.source().id()), slicedGraph.getNode(edge.target().id()));
-//                presentEdges++;
-            }
-        }
-        return slicedGraph;
-     }
+    }    
 
     /**
      * Applies the time step to the discrete graph.
@@ -328,7 +301,81 @@ public class DyGraphDiscretiser {
         		completeList.addAll(list);
         	Collections.sort(completeList, comparator);
         	return completeList;
-        }       
-        
+        }               
     }
+    
+    /**
+     * Provides the snapshot of the graph at the end of the supplied interval. 
+     *
+     * @param original the continuous dynamic graph.
+     * @param intervals the intervals.
+     * @return the discrete graph.
+     */
+	public static Graph displayWithinInterval(DyGraph drawnGraph, Interval newClosed) {
+		DyGraph returnGraph = new DyGraph();
+		
+//		DyNodeAttribute<Double> nodeWeight = returnGraph.nodeAttribute(StdAttribute.weight);
+//		DyEdgeAttribute<Double> edgeWeight = returnGraph.edgeAttribute(StdAttribute.weight);	
+//		
+		DyNodeAttribute<Boolean> nodePresence = drawnGraph.nodeAttribute(StdAttribute.dyPresence);
+		DyEdgeAttribute<Boolean> edgePresence = drawnGraph.edgeAttribute(StdAttribute.dyPresence);
+		
+		DyNodeAttribute<Coordinates> dyPosition = drawnGraph.nodeAttribute(StdAttribute.nodePosition);
+		
+		//DiscretisationData discdata = new DiscretisationData(drawnGraph);
+		for(Node n : drawnGraph.nodes())
+			if(nodePresence.get(n).valueAt(newClosed.rightBound()))
+				returnGraph.add(n);
+		for(Edge e : drawnGraph.edges())
+			if(edgePresence.get(e).valueAt(newClosed.rightBound()))
+				returnGraph.add(e);		
+		Graph temp = new StaticSumPresenceFlattener().flattenDyGraph(returnGraph);
+		
+		NodeAttribute<Coordinates> staticPosition = temp.nodeAttribute(StdAttribute.nodePosition);
+		
+		for(Node n : drawnGraph.nodes()) {
+			Evolution<Coordinates> gino = dyPosition.get(n);			
+			staticPosition.set(temp.getNode(n.id()), gino.valueAt(newClosed.rightBound()));
+		}
+		
+		return temp;
+	}
+	
+    /**
+     * Flatten a dynamic graph within an interval.  
+     * This method returns a static graph representing the flattened graph. 
+     *
+     * @param original the continuous dynamic graph.
+     * @param intervals the intervals.
+     * @return the discrete graph.
+     */
+	public static Graph flattenWithinInterval(DyGraph drawnGraph, Interval newClosed) {
+		DyGraph returnGraph = new DyGraph();
+		
+//		DyNodeAttribute<Double> nodeWeight = returnGraph.nodeAttribute(StdAttribute.weight);
+//		DyEdgeAttribute<Double> edgeWeight = returnGraph.edgeAttribute(StdAttribute.weight);	
+//		
+//		DyNodeAttribute<Boolean> nodePresence = drawnGraph.nodeAttribute(StdAttribute.dyPresence);
+//		DyEdgeAttribute<Boolean> edgePresence = drawnGraph.edgeAttribute(StdAttribute.dyPresence);
+		
+		DyNodeAttribute<Coordinates> dyPosition = drawnGraph.nodeAttribute(StdAttribute.nodePosition);
+		
+		DiscretisationData discdata = new DiscretisationData(drawnGraph);
+		for(Node n : drawnGraph.nodes())
+			if(discdata.isPresentInInterval(n, newClosed))
+				returnGraph.add(n);
+		for(Edge e : drawnGraph.edges())
+			if(discdata.isPresentInInterval(e, newClosed))
+				returnGraph.add(e);		
+		Graph temp = new StaticSumPresenceFlattener().flattenDyGraph(returnGraph);
+		
+		NodeAttribute<Coordinates> staticPosition = temp.nodeAttribute(StdAttribute.nodePosition);
+		
+		for(Node n : drawnGraph.nodes()) {
+			Evolution<Coordinates> gino = dyPosition.get(n);
+			staticPosition.set(n, gino.valueAt(newClosed.rightBound()));
+		}
+		
+		return temp;
+	}
 }

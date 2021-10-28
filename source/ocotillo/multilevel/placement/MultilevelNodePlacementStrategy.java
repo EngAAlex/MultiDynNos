@@ -35,9 +35,9 @@ import ocotillo.multilevel.coarsening.GraphCoarsener;
 public abstract class MultilevelNodePlacementStrategy {
 
 	protected GraphCoarsener coarsener;
-	private Graph currentStaticGraph;
 	private DyGraph currentUpperLevelGraph;
 	protected double fuzzyness;
+	private boolean bendTransfer = false;
 	
 	protected final double FUZZYNESS_DEFAULT = 0.05d;
 	
@@ -55,12 +55,12 @@ public abstract class MultilevelNodePlacementStrategy {
 		return candidates;
 		};		
 
-	public MultilevelNodePlacementStrategy() {
+	public MultilevelNodePlacementStrategy(boolean bendTransferOption) {
 		fuzzyness = FUZZYNESS_DEFAULT;
+		bendTransfer = bendTransferOption;
 	}
 	
-
-	public MultilevelNodePlacementStrategy(double fuzzyness) {
+	public MultilevelNodePlacementStrategy(boolean bendTransferOption, double fuzzyness) {
 		this.fuzzyness = fuzzyness;
 	}
 	
@@ -97,7 +97,7 @@ public abstract class MultilevelNodePlacementStrategy {
 	public void transferCoordinatesFromStaticGraph(DyGraph coarsestLevel, Graph staticGraph) {
 		NodeAttribute<Coordinates> staticGraphCoordinates = staticGraph.nodeAttribute(StdAttribute.nodePosition);
 		DyNodeAttribute<Coordinates> coarsestLevelCoordinates = coarsestLevel.nodeAttribute(StdAttribute.nodePosition);
-		this.currentStaticGraph = staticGraph;
+
 		for(Node n : staticGraph.nodes()) {				
 			coarsestLevelCoordinates.set(coarsestLevel.getNode(n.id()), 
 					new Evolution<Coordinates>(staticGraphCoordinates.get(n)));
@@ -105,6 +105,25 @@ public abstract class MultilevelNodePlacementStrategy {
 	}
 
 	public void placeVertices(DyGraph finerLevel, DyGraph upperLevel) {
+		if(bendTransfer)
+			placeWithBendTransfer(finerLevel, upperLevel);
+		else
+			place(finerLevel, upperLevel);
+	}
+	
+	private void place(DyGraph finerLevel, DyGraph upperLevel) {
+		DyNodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);		
+		this.currentUpperLevelGraph = upperLevel;
+		for(Node n : upperLevel.nodes()) {				
+			for(String id : coarsener.getGroupMembers(n.id())) {
+				Node lowerLevelNode = finerLevel.getNode(id);
+				finerLevelNodeCoordinates.set(lowerLevelNode, new Evolution<Coordinates>(
+						computeNewCoordinates(lowerLevelNode, n, finerLevel, (Node node) -> getUpperLevelCoordinatesOfNode(node))));
+			}
+		}
+	}
+	
+	private void placeWithBendTransfer(DyGraph finerLevel, DyGraph upperLevel) {
 		
 		DyNodeAttribute<Coordinates> upperLevelNodeCoordinates = upperLevel.nodeAttribute(StdAttribute.nodePosition);
 		DyNodeAttribute<Coordinates> finerLevelNodeCoordinates = finerLevel.nodeAttribute(StdAttribute.nodePosition);		
@@ -169,12 +188,12 @@ public abstract class MultilevelNodePlacementStrategy {
 
 	public static class IdentityNodePlacement extends MultilevelNodePlacementStrategy {
 		
-		public IdentityNodePlacement() {
-			super();
+		public IdentityNodePlacement(boolean bendTransferOption) {
+			super(bendTransferOption);
 		}
 		
-		public IdentityNodePlacement(double fuzzyness) {
-			super(fuzzyness);
+		public IdentityNodePlacement(boolean bendTransferOption, double fuzzyness) {
+			super(bendTransferOption, fuzzyness);
 		}
 
 		@Override
