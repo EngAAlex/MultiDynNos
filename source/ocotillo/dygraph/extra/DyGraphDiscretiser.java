@@ -373,7 +373,7 @@ public class DyGraphDiscretiser {
 		
 		for(Node n : drawnGraph.nodes()) {
 			Evolution<Coordinates> gino = dyPosition.get(n);
-			staticPosition.set(n, gino.valueAt(newClosed.rightBound()));
+			staticPosition.set(temp.getNode(n.id()), gino.valueAt(newClosed.rightBound()));
 		}
 		
 		return temp;

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import ocotillo.DefaultRun.CMDLineOption;
 import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
@@ -236,11 +235,11 @@ public class DefaultRun {
 			case verbose:
 				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
 			case autoTau:
-				return new CMDLineOption("Dataset Tau", "--autoTau", "Use the time factor suggested in the dataset code (if available)");
+				return new CMDLineOption("Dataset Tau", "--manualTau", "Use the time factor suggested in the dataset code (if available)");
 			case bendTransfer:	
-				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "-bT", "Enables Bend Transfer (default Disabled).");
+				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "--bT", "Enables Bend Transfer (default Disabled).");
 			case vanillaTuning:	
-				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");				
+				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "--vT", "Sets layout tuning to vanilla MultiDynNoS.");				
 			default: return null;
 			}
 		}
@@ -264,7 +263,7 @@ public class DefaultRun {
 				return output;
 			case "verbose":
 				return verbose;
-			case "autoTau":
+			case "manualTau":
 				return autoTau;	
 			case "bT": return bendTransfer;
 			case "vT": return vanillaTuning;				
@@ -316,24 +315,24 @@ public class DefaultRun {
 			boolean customGraph = false;
 
 			Mode loadMode = Mode.plain;
-			
+			String experimentClass = null;
 			if(preloadedGraphs.containsKey(selectedGraph)) {
 				try {
 					switch(preloadedGraphs.get(selectedGraph)) {
 					case 0: 
-						loadMode = Mode.keepAppearedNode; data = new VanDeBunt().parse(loadMode); break;
+						loadMode = Mode.keepAppearedNode; experimentClass = "Bunt"; data = new VanDeBunt().parse(loadMode); break;
 					case 1: 
-						loadMode = Mode.keepAppearedNode; data = new NewcombFraternity().parse(loadMode); break;
+						loadMode = Mode.keepAppearedNode; experimentClass = "Newcomb"; data = new NewcombFraternity().parse(loadMode); break;
 					case 2: 
-						data = new InfoVisCitations().parse(loadMode); break;
-					case 3: loadMode = Mode.keepAppearedNode; data = new RugbyTweets().parse(loadMode); break;
-					case 4: loadMode = Mode.keepAppearedNode; data = new DialogSequences().parse(loadMode); break;
-					case 5: loadMode = Mode.keepAppearedNode; data = new CollegeMsg().parse(loadMode); break;
-					case 6: loadMode = Mode.keepAppearedNode; data = new RealityMining().parse(loadMode); break;
-					case 7: loadMode = Mode.keepAppearedNode; data = new BitcoinAlpha().parse(loadMode); break;
-					case 8: loadMode = Mode.keepAppearedNode; data = new BitcoinOTC().parse(loadMode); break;
-					case 9: loadMode = Mode.keepAppearedNode; data = new Mooc().parse(loadMode); break;
-					case 10: loadMode = Mode.keepAppearedNode; data = new RampInfectionMap().parse(loadMode); break;
+						experimentClass = "InfoVis"; data = new InfoVisCitations().parse(loadMode); break;
+					case 3: loadMode = Mode.keepAppearedNode; experimentClass = "Rugby";  data = new RugbyTweets().parse(loadMode); break;
+					case 4: loadMode = Mode.keepAppearedNode; experimentClass = "Pride";  data = new DialogSequences().parse(loadMode); break;
+					case 5: loadMode = Mode.keepAppearedNode; experimentClass = "College";  data = new CollegeMsg().parse(loadMode); break;
+					case 6: loadMode = Mode.keepAppearedNode; experimentClass = "RealMining";  data = new RealityMining().parse(loadMode); break;
+					case 7: loadMode = Mode.keepAppearedNode; experimentClass = "BitAlpha";  data = new BitcoinAlpha().parse(loadMode); break;
+					case 8: loadMode = Mode.keepAppearedNode; experimentClass = "BitOTC";  data = new BitcoinOTC().parse(loadMode); break;
+					case 9: loadMode = Mode.keepAppearedNode; experimentClass = "MOOC";   data = new Mooc().parse(loadMode); break;
+					case 10: loadMode = Mode.keepAppearedNode; experimentClass = "RampInfectionMap";  data = new RampInfectionMap().parse(loadMode); break;
 					default: break;
 					}
 				}catch (Exception e) {
@@ -352,31 +351,69 @@ public class DefaultRun {
 
 			AvailableMethods selectedMethod = AvailableMethods.parse(customGraph ? args[4] : args[2]);
 
-			switch(selectedMethod) {
-			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
-			case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
-			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
-			}
 
-			drawingAlgorithm.computeDrawing();
 			switch(selectedMode) {
-			case animate: drawingAlgorithm.animateGraph(); break;
+			case animate: 
+				switch(selectedMethod) {
+				case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
+				case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
+				default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
+				}
+				drawingAlgorithm.computeDrawing();
+				drawingAlgorithm.animateGraph(); break;
 			case plotSlices: 
 				if(customGraph) {
 					System.out.println("At the moment the plotSlices option only work with preloaded graphs.");
 					System.exit(1);
-				}					
-				((Experiment) Class.forName("ocotillo.Experiment$"+selectedGraph).getDeclaredConstructor().newInstance()).probeLayout();
+				}			
+
+				String welcomeMessage = "Plot Slices selected -- At the moment only works with MultiLevel Layout";
+
+
+				HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
+
+				for(int i = 1; i < args.length; i++) {
+					String[] split = args[i].split("--"); 
+					if(split.length == 1)
+						continue;
+					switch(MetricsCalculationOptions.parseMode(split[1])) {			
+					case autoTau: {
+						multiLevelOptions.add(MetricsCalculationOptions.autoTau); welcomeMessage += "\nSet ManualTau"; break;
+					}
+					case bendTransfer: {
+						multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); welcomeMessage += "\nBend Transfer Enabled"; break;
+					}
+					case vanillaTuning: {
+						multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); welcomeMessage += "\nVanilla Tuning Selected"; break;
+					}
+					case verbose: {
+						Logger.setLog(true);
+					}
+					default:
+						break;	
+					}
+				}
+
+				Logger.getInstance().log(welcomeMessage);;
+
+				((Experiment) Class.forName("ocotillo.Experiment$"+experimentClass).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions)).probeLayout();
 				break;
-			default: drawingAlgorithm.plotSpaceTimeCube(); break;			
+			default: 
+				switch(selectedMethod) {
+				case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
+				case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
+				default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
+				}
+				drawingAlgorithm.computeDrawing();
+				drawingAlgorithm.plotSpaceTimeCube(); break;			
 			}
 
-			drawingAlgorithm.saveOutput();
+			//drawingAlgorithm.saveOutput();
 
 			break;
 
 		}
-		
+
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
 			String outputFolder = System.getProperty("user.dir");
@@ -385,9 +422,9 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			
+
 			String experimentPrefix = "";
-			
+
 			//Boolean plotSliceSize = false;
 			//			Boolean dumpSlicesPicture = true;
 
@@ -400,12 +437,12 @@ public class DefaultRun {
 			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-						largerDatasets.add("RealMining");
-//						largerDatasets.add("BitOTC");
-//						largerDatasets.add("MOOC");
-//						largerDatasets.add("BitAlpha");  
-//						largerDatasets.add("College");
-//						largerDatasets.add("RampInfectionMap");
+			largerDatasets.add("RealMining");
+			//						largerDatasets.add("BitOTC");
+			//						largerDatasets.add("MOOC");
+			//						largerDatasets.add("BitAlpha");  
+			//						largerDatasets.add("College");
+			//						largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
@@ -415,7 +452,7 @@ public class DefaultRun {
 			discreteExperiment.add("InfoVis");					
 
 			HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
-			
+
 			for(int i = 1; i < args.length; i++) {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
 				case smaller: expNames.addAll(smallerDatasets); break;

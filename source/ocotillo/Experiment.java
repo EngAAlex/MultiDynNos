@@ -210,10 +210,10 @@ public abstract class Experiment {
 
 			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 4);
 
-			DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
+			/*DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
 			dyWindow.setAnimation(new Animation(contMultiDyn.getDrawnGraph().getComputedSuggestedInterval(loadMode), Duration.ofSeconds(30)));
 			dyWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-			dyWindow.showNewWindow();					
+			dyWindow.showNewWindow();*/					
 		}
 	}
 
@@ -232,8 +232,8 @@ public abstract class Experiment {
 				needle = snapTimes.size() - 1;
 			}    		
 			System.out.println("Start " + lastSnap + " end " + needle);
-			//Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-			Graph snipGraph = DyGraphDiscretiser.displayWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
+			//Graph snipGraph = DyGraphDiscretiser.displayWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
 			File f = new File(name+"_slices" + lastSnap + "-" + needle + ".gml");
 			System.out.println(f.getAbsolutePath());
 			GMLOutputWriter.writeOutput(f, snipGraph);
