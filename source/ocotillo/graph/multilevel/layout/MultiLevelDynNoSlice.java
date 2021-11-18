@@ -83,7 +83,7 @@ public class MultiLevelDynNoSlice {
 	public static final double MAX_ITERATIONS_DEFAULT = 75;	
 	public static final double MIN_ITERATIONS_DEFAULT = 20;	
 	
-	public static final double DEFAULT_TUNING_SLOPE = -0.7;
+	public static final double DEFAULT_TUNING_SLOPE = -0.07;
 	
 	public static final String LOG_OPTION = "LogProgressInConsole";
 	public static final String FLEXIBLE_TRAJECTORIES = "FLEXIBLE_TRAJECTORIES";

@@ -203,7 +203,7 @@ public class DefaultRun {
 		help,
 		verbose,
 		output,
-		autoTau, bendTransfer, vanillaTuning;
+		manualTau, bendTransfer, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -234,8 +234,8 @@ public class DefaultRun {
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
 				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
-			case autoTau:
-				return new CMDLineOption("Dataset Tau", "--manualTau", "Use the time factor suggested in the dataset code (if available)");
+			case manualTau:
+				return new CMDLineOption("Dataset Tau (MultiDynNoS only)", "--manualTau", "Use the time factor suggested in the dataset code (if available)");
 			case bendTransfer:	
 				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "--bT", "Enables Bend Transfer (default Disabled).");
 			case vanillaTuning:	
@@ -264,7 +264,7 @@ public class DefaultRun {
 			case "verbose":
 				return verbose;
 			case "manualTau":
-				return autoTau;	
+				return manualTau;	
 			case "bT": return bendTransfer;
 			case "vT": return vanillaTuning;				
 			default: return null;			
@@ -377,8 +377,8 @@ public class DefaultRun {
 					if(split.length == 1)
 						continue;
 					switch(MetricsCalculationOptions.parseMode(split[1])) {			
-					case autoTau: {
-						multiLevelOptions.add(MetricsCalculationOptions.autoTau); welcomeMessage += "\nSet ManualTau"; break;
+					case manualTau: {
+						multiLevelOptions.add(MetricsCalculationOptions.manualTau); welcomeMessage += "\nSet ManualTau"; break;
 					}
 					case bendTransfer: {
 						multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); welcomeMessage += "\nBend Transfer Enabled"; break;
@@ -424,10 +424,7 @@ public class DefaultRun {
 			Boolean verbose = false;
 
 			String experimentPrefix = "";
-
-			//Boolean plotSliceSize = false;
-			//			Boolean dumpSlicesPicture = true;
-
+			
 			HashSet<String> expNames = new HashSet<String>();
 			ArrayList<String> smallerDatasets = new ArrayList<String>();
 			smallerDatasets.add("Bunt");
@@ -437,12 +434,12 @@ public class DefaultRun {
 			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-			largerDatasets.add("RealMining");
-			//						largerDatasets.add("BitOTC");
-			//						largerDatasets.add("MOOC");
-			//						largerDatasets.add("BitAlpha");  
-			//						largerDatasets.add("College");
-			//						largerDatasets.add("RampInfectionMap");
+//			largerDatasets.add("RealMining");
+//			largerDatasets.add("BitOTC");
+			largerDatasets.add("MOOC");
+//			largerDatasets.add("BitAlpha");  
+//			largerDatasets.add("College");
+//			largerDatasets.add("RampInfectionMap");
 
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
@@ -473,14 +470,6 @@ public class DefaultRun {
 					executeSFDP = true; break;
 				}
 				case verbose: verbose = true; break;
-				//				case discrete: {
-				//					discreteExperiment.add("Bunt");
-				//					discreteExperiment.add("Newcomb");
-				//					discreteExperiment.add("InfoVis");
-				//					//                    	discreteExperiment.add("Rugby");
-				//					//                    	discreteExperiment.add("Pride");     
-				//					break;
-				//				}
 				case output: {
 					if(i+1 < args.length) {
 						i++;
@@ -499,8 +488,8 @@ public class DefaultRun {
 						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
 					break;
 				}
-				case autoTau: {
-					multiLevelOptions.add(MetricsCalculationOptions.autoTau); experimentPrefix += "autoTau_"; break;
+				case manualTau: {
+					multiLevelOptions.add(MetricsCalculationOptions.manualTau); experimentPrefix += "manualTau_"; break;
 				}
 				case bendTransfer: {
 					multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); experimentPrefix += "bendTransfer_"; break;
@@ -517,6 +506,7 @@ public class DefaultRun {
 			}						
 
 			Logger.setLog(verbose);
+			Logger.getInstance().log("Selected Options:" + experimentPrefix);
 
 			LocalDateTime ld = LocalDateTime.now();
 			String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);

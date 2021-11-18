@@ -39,6 +39,7 @@ import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
+import ocotillo.multilevel.logger.Logger;
 
 /**
  * Transforms a continuous dynamic graph into a discrete one.
@@ -366,7 +367,11 @@ public class DyGraphDiscretiser {
 				returnGraph.add(n);
 		for(Edge e : drawnGraph.edges())
 			if(discdata.isPresentInInterval(e, newClosed))
-				returnGraph.add(e);		
+				try {
+				returnGraph.add(e);
+				}catch(IllegalArgumentException lie) {
+					Logger.getInstance().log("Tried to add an edge whose nodes are not in the graph");
+				} 
 		Graph temp = new StaticSumPresenceFlattener().flattenDyGraph(returnGraph);
 		
 		NodeAttribute<Coordinates> staticPosition = temp.nodeAttribute(StdAttribute.nodePosition);

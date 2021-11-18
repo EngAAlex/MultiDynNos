@@ -180,7 +180,7 @@ public abstract class Experiment {
 		this.loadMode = loadMode;
 		this.dataset = this.parserInstance.parse(this.loadMode);
 		this.opts = options;
-		automaticTau = !options.contains(MetricsCalculationOptions.autoTau);
+		automaticTau = !options.contains(MetricsCalculationOptions.manualTau);
 	}
 
 	public void probeLayout() throws URISyntaxException {
@@ -208,12 +208,12 @@ public abstract class Experiment {
 			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, SfdpExecutor.AVAILABLE_STATIC_LAYOUTS.sfdp, ps, null, true);
 			contMultiDyn.runMultiLevelLayout();
 
-			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 4);
+			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 5);
 
-			/*DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
+			DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
 			dyWindow.setAnimation(new Animation(contMultiDyn.getDrawnGraph().getComputedSuggestedInterval(loadMode), Duration.ofSeconds(30)));
 			dyWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-			dyWindow.showNewWindow();*/					
+			dyWindow.showNewWindow();				
 		}
 	}
 
@@ -608,11 +608,11 @@ public abstract class Experiment {
 		List<String> lines = new ArrayList<>();
 		List<Double> snapTimes = readSnapTimes(discretise());
 		HashSet<String> methodologies = new HashSet<String>();
-		methodologies.add("wi_id");
-		methodologies.add("sm_sp");
+//		methodologies.add("wi_id");
+//		methodologies.add("sm_sp");
 		methodologies.add("iset_grip");		
 		HashSet<AVAILABLE_STATIC_LAYOUTS> singleLevelLayouts = new HashSet<AVAILABLE_STATIC_LAYOUTS>();
-		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
+//		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
 		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.sfdp);
 
 		System.out.println("\n# Starting Multi-Level Experiment #");
@@ -1175,11 +1175,11 @@ public abstract class Experiment {
 	public static class Pride extends Experiment {
 
 		public Pride() throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.plain, 5.0d);
 		}
 
 		public Pride(HashSet<MetricsCalculationOptions> opts) throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.plain, 5.0d, opts);
 		}		
 
 		@Override
@@ -1250,11 +1250,11 @@ public abstract class Experiment {
 	public static class College extends Experiment {
 
 		public College() throws Exception {
-			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d);
+			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.plain, 5.0d);
 		}
 
 		public College(HashSet<MetricsCalculationOptions> opts) throws Exception {
-			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
+			super("CollegeMsg", "data/CollegeMsg", CollegeMsg.class, Commons.Mode.plain, 5.0d, opts);
 		}
 
 		@Override

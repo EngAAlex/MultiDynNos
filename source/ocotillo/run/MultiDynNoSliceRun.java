@@ -22,6 +22,7 @@ import java.util.HashMap;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.modular.ModularPostProcessing;
+import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice.LIMIT_MINIMUM_TUNING;
 import ocotillo.multilevel.coarsening.IndependentSet;
@@ -54,6 +55,7 @@ public class MultiDynNoSliceRun extends Run {
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
 				.defaultLayoutParameters(vanillaTuning ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)
 				.addLayerPostProcessingDrawingOption(mdo)
+				.withSingleLevelLayout(AVAILABLE_STATIC_LAYOUTS.fdp)
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 		DyGraph result = multiDyn.runMultiLevelLayout();
