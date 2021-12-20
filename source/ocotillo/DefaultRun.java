@@ -133,8 +133,8 @@ public class DefaultRun {
 		vandebunt,
 		newcomb,
 		mooc,
-		bitalpha,
-		bitotc,
+		//bitalpha,
+		//bitotc,
 		reality,
 		college,
 		ramp;
@@ -200,10 +200,12 @@ public class DefaultRun {
 		single,
 		visone,		
 		sfdp,
+		manualTau, 
+		bendTransfer,		
 		help,
 		verbose,
-		output,
-		manualTau, bendTransfer, vanillaTuning;
+		output;
+		//, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -238,8 +240,8 @@ public class DefaultRun {
 				return new CMDLineOption("Dataset Tau (MultiDynNoS only)", "--manualTau", "Use the time factor suggested in the dataset code (if available)");
 			case bendTransfer:	
 				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "--bT", "Enables Bend Transfer (default Disabled).");
-			case vanillaTuning:	
-				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "--vT", "Sets layout tuning to vanilla MultiDynNoS.");				
+//			case vanillaTuning:	
+//				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "--vT", "Sets layout tuning to vanilla MultiDynNoS.");				
 			default: return null;
 			}
 		}
@@ -266,7 +268,7 @@ public class DefaultRun {
 			case "manualTau":
 				return manualTau;	
 			case "bT": return bendTransfer;
-			case "vT": return vanillaTuning;				
+			//case "vT": return vanillaTuning;				
 			default: return null;			
 			}			
 		}
@@ -366,9 +368,9 @@ public class DefaultRun {
 					System.out.println("At the moment the plotSlices option only work with preloaded graphs.");
 					System.exit(1);
 				}			
-
+				
 				String welcomeMessage = "Plot Slices selected -- At the moment only works with MultiLevel Layout";
-
+				String path = ".";
 
 				HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
 
@@ -383,20 +385,27 @@ public class DefaultRun {
 					case bendTransfer: {
 						multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); welcomeMessage += "\nBend Transfer Enabled"; break;
 					}
-					case vanillaTuning: {
-						multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); welcomeMessage += "\nVanilla Tuning Selected"; break;
-					}
+//					case vanillaTuning: {
+//						multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); welcomeMessage += "\nVanilla Tuning Selected"; break;
+//					}
 					case verbose: {
 						Logger.setLog(true);
 					}
+					case output: {
+						if(i+1 < args.length) {
+							i++;
+							path = args[i];
+						}
+						break;
+					} 
 					default:
 						break;	
 					}
 				}
 
-				Logger.getInstance().log(welcomeMessage);;
+				Logger.getInstance().log(welcomeMessage);
 
-				((Experiment) Class.forName("ocotillo.Experiment$"+experimentClass).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions)).probeLayout();
+				((Experiment) Class.forName("ocotillo.Experiment$"+experimentClass).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions)).probeLayout(path);
 				break;
 			default: 
 				switch(selectedMethod) {
@@ -424,6 +433,7 @@ public class DefaultRun {
 			Boolean verbose = false;
 
 			String experimentPrefix = "";
+			String welcomeMessage = "";
 			
 			HashSet<String> expNames = new HashSet<String>();
 			ArrayList<String> smallerDatasets = new ArrayList<String>();
@@ -434,13 +444,14 @@ public class DefaultRun {
 			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
-//			largerDatasets.add("RealMining");
-//			largerDatasets.add("BitOTC");
+			largerDatasets.add("RealMining");
 			largerDatasets.add("MOOC");
-//			largerDatasets.add("BitAlpha");  
-//			largerDatasets.add("College");
-//			largerDatasets.add("RampInfectionMap");
+			largerDatasets.add("College");
+			largerDatasets.add("RampInfectionMap");
 
+//			largerDatasets.add("BitOTC");			
+//			largerDatasets.add("BitAlpha");  
+			
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
 			ArrayList<String> discreteExperiment = new ArrayList<String>();
@@ -489,24 +500,20 @@ public class DefaultRun {
 					break;
 				}
 				case manualTau: {
-					multiLevelOptions.add(MetricsCalculationOptions.manualTau); experimentPrefix += "manualTau_"; break;
+					multiLevelOptions.add(MetricsCalculationOptions.manualTau); experimentPrefix += "manualTau_"; welcomeMessage += "\nSet ManualTau"; break;
 				}
 				case bendTransfer: {
-					multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); experimentPrefix += "bendTransfer_"; break;
+					multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); experimentPrefix += "bendTransfer_"; welcomeMessage += "\nBend Transfer Enabled"; break;
 				}
-				case vanillaTuning: {
-					multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); experimentPrefix += "multiVanillaTuning_"; break;
-				}				
+//				case vanillaTuning: {
+//					multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); experimentPrefix += "multiVanillaTuning_"; break;
+//				}				
 				default: break;
-				//                	else if(args[i].equals("--dump"))
-				//						dumpSlicesPicture = true;
-
-
 				}               
 			}						
 
 			Logger.setLog(verbose);
-			Logger.getInstance().log("Selected Options:" + experimentPrefix);
+			Logger.getInstance().log("Selected Options:" + welcomeMessage);
 
 			LocalDateTime ld = LocalDateTime.now();
 			String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
@@ -552,10 +559,6 @@ public class DefaultRun {
 				}               	
 
 			}
-
-			//			for (String line : lines) {
-			//				System.out.println(line);
-			//			}
 
 			if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
 				outputFolder += File.separator; 
@@ -609,52 +612,4 @@ public class DefaultRun {
 		MetricsCalculationOptions.printHelp();		
 	}
 
-	/*public static void discretisationTest() {
-		DyDataSet dataset = DyGraphSamples.discretisationExample();
-
-		DyQuickView initialView = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		initialView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		initialView.showNewWindow();
-
-		List<Double> snapshotTimes = new ArrayList<>();
-		snapshotTimes.add(25.0);
-		snapshotTimes.add(50.0);
-		snapshotTimes.add(75.0);
-		snapshotTimes.add(100.0);
-		DyGraph discreteGraph = DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes);
-
-		DyModularFdl discreteAlgorithm = new DyModularFdlBuilder(discreteGraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPreMovmement(new DyModularPreMovement.ForbidTimeShitfing())
-				.build();
-
-		discreteAlgorithm.iterate(100);
-
-		DyQuickView discreteView = new DyQuickView(discreteGraph, dataset.suggestedInterval.leftBound());
-		discreteView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		discreteView.showNewWindow();
-
-		DyModularFdl algorithm = new DyModularFdlBuilder(dataset.dygraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPostProcessing(new DyModularPostProcessing.FlexibleTimeTrajectories(7, 8))
-				.build();
-
-		algorithm.iterate(100);
-
-		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		view.showNewWindow();
-	}*/
 }

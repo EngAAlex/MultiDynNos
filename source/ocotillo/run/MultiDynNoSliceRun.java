@@ -41,21 +41,19 @@ public class MultiDynNoSliceRun extends Run {
 
 	@Override
 	protected DyGraph run() {
-
-		Logger.getInstance().log("Applying tau " + tau);		
 		
-		MultiLevelDrawingOption<ModularPostProcessing> mdo = vanillaTuning ?  
-										new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2, new MultiLevelCoolingStrategy.LinearCoolingStrategy(1)) :
-										new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL); 
+//		MultiLevelDrawingOption<ModularPostProcessing> mdo = vanillaTuning ?  
+//										new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2, new MultiLevelCoolingStrategy.LinearCoolingStrategy(1, 0)) :
+//										new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL); 
 		
 		MultiLevelDynNoSlice multiDyn = 
 				new MultiLevelDynNoSlice(dygraph, tau, Run.defaultDelta)
 				.setCoarsener(new IndependentSet()) //SolarMerger
 				.setPlacementStrategy(new WeightedBarycenterPlacementStrategy(bendTransfer))
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultLayoutParameters(vanillaTuning ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)
-				.addLayerPostProcessingDrawingOption(mdo)
-				.withSingleLevelLayout(AVAILABLE_STATIC_LAYOUTS.fdp)
+				.defaultLayoutParameters(LIMIT_MINIMUM_TUNING.LIMITED)
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL))
+				.withSingleLevelLayout(AVAILABLE_STATIC_LAYOUTS.sfdp)
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, true).build();
 
 		DyGraph result = multiDyn.runMultiLevelLayout();
@@ -77,7 +75,7 @@ public class MultiDynNoSliceRun extends Run {
 
 	@Override
 	protected String getDescription() {
-		return "MultiDynNoSlice";
+		return "MultiDynNoS";
 	}
 
 }

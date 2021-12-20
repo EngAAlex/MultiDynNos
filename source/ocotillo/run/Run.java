@@ -60,16 +60,13 @@ public abstract class Run {
 		
 		double delta = defaultDelta;
 		double tau = defaultTau;
-		//Interval suggestedInterval;
 		String output = defaultOutput;
 		boolean autoTau = true;
 		boolean cliTau = false;
 		boolean verbose = false;
-		//boolean customGraph = false;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
-			//customGraph = true;
 			File nodeDataSetFile = new File(argv[2]);
 			if (!nodeDataSetFile.exists()) {
 				System.err.println("The node data set file \"" + argv[2] + "\" does not exist. \n");
@@ -88,17 +85,14 @@ public abstract class Run {
 
 			dygraph = createDynamicGraph(NodeAppearance.parseDataSet(nodeDataSetLines), EdgeAppearance.parseDataSet(edgeDataSetLines));
 
-			//suggestedInterval = //Interval.newClosed(0, 30);
-			//staticTiming = suggestedInterval.leftBound();
 			graphName = "Custom Graph";
 			System.out.println("Custom Graph Loading Done");
 		}else{
 			dygraph = requestedDataSet.dygraph;
-//			tau = requestedDataSet.getSuggestedTimeFactor(false);
-//			suggestedInterval = requestedDataSet.getSuggestedInterval(false);
-//			staticTiming = suggestedInterval.leftBound();	
 			graphName = argv[1];
 		}		
+		
+		String welcomeMessage = "";
 		
 		for(int i=0; i<argv.length; i++) {
 			try {
@@ -107,10 +101,10 @@ public abstract class Run {
 					try {				
 						double possibleDelta = Double.parseDouble(argv[i+1]);
 						delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
-						System.out.println("Set delta from CLI " + delta);
+						welcomeMessage += "Set delta " + delta + " from CLI\n" ;
 					} catch (Exception e) {
-						//					System.err.println("Cannot parse delta correctly. \n");
-						//					showHelp();
+						System.err.println("Cannot parse delta correctly. Reverting to default. \n");
+						//showHelp();
 					} 				
 					break;
 				}
@@ -119,7 +113,7 @@ public abstract class Run {
 						double possibleTau = Double.parseDouble(argv[i+1]);
 						tau = possibleTau >= 0 ? possibleTau : defaultTau;
 						cliTau = true;
-						System.out.println("Set tau from CLI");
+						welcomeMessage += "Set tau " + tau + " from CLI\n";
 					} catch (Exception e) {
 						System.err.println("Cannot parse CLI tau correctly - switching to computed Tau. \n");
 						cliTau = false;
@@ -131,17 +125,17 @@ public abstract class Run {
 					output = argv[i+1]; break;
 				} 
 				case autoTau: {
-					autoTau = false; break;
+					autoTau = false; welcomeMessage += "ManualTau selected\n"; break;
 				}
 				case verbose: {
 					verbose = true; break;
 				}
 				case bendTransfer: {
-					bendTransfer = true; break;
+					bendTransfer = true; welcomeMessage += "Bend Transfer Active\n"; break;
 				}
-				case vanillaTuning: {
-					vanillaTuning = true; break;
-				}
+//				case vanillaTuning: {
+//					vanillaTuning = true; System.out.println("Vanilla Tuning Active"); break;
+//				}
 				//			case o: {
 				//				output = argv[i+1];
 				//			}
@@ -152,17 +146,17 @@ public abstract class Run {
 			
 		if(cliTau) {
 			this.tau = tau;
-			this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, null);
+			this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, null);			
 		}else
 			if(!autoTau) {
 				this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, loadMode);
 				this.tau = requestedDataSet.getSuggestedTimeFactor(false, loadMode);
+				welcomeMessage += "Set ManualTau from dataset: " + this.tau + "\n";
 			} else {
-				double computedTau = requestedDataSet.getSuggestedTimeFactor(true, loadMode);
-				System.out.println("Auto Computed Tau\tSuggestedTau");			
-				System.out.println(computedTau + "\t" + requestedDataSet.getSuggestedTimeFactor(false, loadMode));	
-				this.tau = computedTau;
+				double manualTau = requestedDataSet.getSuggestedTimeFactor(true, loadMode);		
+				this.tau = manualTau;
 				suggestedInterval = requestedDataSet.getSuggestedInterval(true, loadMode);
+				welcomeMessage += "Computed AutoTau: " + manualTau + "\n";
 			}
 				
 		this.delta = delta;
@@ -171,6 +165,7 @@ public abstract class Run {
 		
 		Logger.setLog(verbose);
 		
+		Logger.getInstance().log(welcomeMessage);
 		Logger.getInstance().log(getDescription() + " layout selected");
 
 		completeSetup();
@@ -205,7 +200,7 @@ public abstract class Run {
 		dyWindow.showNewWindow();
 	}
 
-	public void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+	public static void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
 		System.out.println("Visualizing space-time cube...");				
 
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
@@ -395,7 +390,8 @@ public abstract class Run {
 		text,
 		autoTau,
 		tau, 
-		verbose, bendTransfer, vanillaTuning;
+		verbose, bendTransfer;
+		//, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -411,18 +407,18 @@ public abstract class Run {
 			switch(option) {
 			case delta: return new CMDLineOption("Delta", "-d", "Specifies a user defined delta value.");
 			case tau: 
-				return new CMDLineOption("Manual Tau", "-t", "Specifies a user defined tau value on the command line. Overrides the Semi-Automatic Tau option");	
+				return new CMDLineOption("Manual Tau", "-t", "Specifies a user defined tau value on the command line.");	
 			case text: 
 				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    	
 			case autoTau:
-				return new CMDLineOption("Semi-Automatic Tau", "-T", "If included in the dataset code, that specific TAU will be used."
+				return new CMDLineOption("ManualTau", "-T", "If included in the dataset code, that specific TAU will be used."
 										+ " If absent, tau will be calculated automatically."); 
 			case verbose:	
 					return new CMDLineOption("Verbose", "-v", "Prints extra information about the drawing process on the console.");
 			case bendTransfer:	
 				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "-bT", "Enables Bend Transfer (default Disabled).");
-			case vanillaTuning:	
-				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");
+//			case vanillaTuning:	
+//				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");
 				//			case nodes: 
 				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
 				//			case edges: 
@@ -435,7 +431,7 @@ public abstract class Run {
 			switch(arg) {
 			case "d": return delta;
 			case "bT": return bendTransfer;
-			case "vT": return vanillaTuning;
+			//case "vT": return vanillaTuning;
 			case "t": return tau;
 			//			case "-n:": return nodes;
 			//			case "-e:": return edges;

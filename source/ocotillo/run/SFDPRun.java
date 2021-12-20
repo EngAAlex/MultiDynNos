@@ -22,6 +22,7 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
 
@@ -47,7 +48,7 @@ public class SFDPRun extends Run {
 		Graph flattened = dyg.flattenDyGraph(dygraph);
 		SfdpBuilder sfdp = new SfdpBuilder();
 		SfdpExecutor sfdpInstance = sfdp.build();
-		System.out.println("Flattened graph has " + flattened.nodeCount() + " nodes and " + flattened.edgeCount() + " edges");
+		Logger.getInstance().log("Flattened graph has " + flattened.nodeCount() + " nodes and " + flattened.edgeCount() + " edges");
 
 		sfdpInstance.execute(flattened);
 

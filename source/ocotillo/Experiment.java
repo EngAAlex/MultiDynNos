@@ -183,7 +183,7 @@ public abstract class Experiment {
 		automaticTau = !options.contains(MetricsCalculationOptions.manualTau);
 	}
 
-	public void probeLayout() throws URISyntaxException {
+	public void probeLayout(String path) throws URISyntaxException {
 		HashSet<String> methodologies = new HashSet<String>();
 		//			methodologies.add("wi_id");
 		methodologies.add("iset_grip");
@@ -208,17 +208,13 @@ public abstract class Experiment {
 			MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, SfdpExecutor.AVAILABLE_STATIC_LAYOUTS.sfdp, ps, null, true);
 			contMultiDyn.runMultiLevelLayout();
 
-			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 5);
-
-			DyQuickView dyWindow = new DyQuickView(contMultiDyn.getDrawnGraph(), contMultiDyn.tau, name + " animation");
-			dyWindow.setAnimation(new Animation(contMultiDyn.getDrawnGraph().getComputedSuggestedInterval(loadMode), Duration.ofSeconds(30)));
-			dyWindow.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-			dyWindow.showNewWindow();				
+			dumpGraphSlices(contMultiDyn.getDrawnGraph(), 5, path);
+		
 		}
 	}
 
 
-	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps) {
+	protected void dumpGraphSlices(DyGraph drawnGraph, int snaps, String path) {
 		DyGraph discretizedGraph = discretise();
 		List<Double> snapTimes = readSnapTimes(discretizedGraph);
 		System.out.println("Dumping Slices");
@@ -234,8 +230,8 @@ public abstract class Experiment {
 			System.out.println("Start " + lastSnap + " end " + needle);
 			Graph snipGraph = DyGraphDiscretiser.flattenWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
 			//Graph snipGraph = DyGraphDiscretiser.displayWithinInterval(drawnGraph, Interval.newClosed(snapTimes.get(lastSnap), snapTimes.get(needle)));
-			File f = new File(name+"_slices" + lastSnap + "-" + needle + ".gml");
-			System.out.println(f.getAbsolutePath());
+			File f = new File(path + File.pathSeparatorChar + name+"_slices" + lastSnap + "-" + needle + ".gml");
+
 			GMLOutputWriter.writeOutput(f, snipGraph);
 			lastSnap = needle;
 			needle += step;
@@ -348,11 +344,12 @@ public abstract class Experiment {
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)
+				.defaultLayoutParameters(LIMIT_MINIMUM_TUNING.LIMITED)
 				.withSingleLevelLayout(staticLayout)
 				.addLayerPreMovementDrawingOption(new MultiLevelDrawingOption<DyModularPreMovement>(new DyModularPreMovement.ForbidTimeShitfing()))
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose);//.build();
 
+//		.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)
 
 		if (postProcessing != null) 
 			multiDyn.addLayerPostProcessingDrawingOption(
@@ -364,9 +361,9 @@ public abstract class Experiment {
 
 	public MultiLevelDynNoSlice getMultiLevelContinuousLayoutAlgorithm(DyGraph dyGraph, GraphCoarsener gc, AVAILABLE_STATIC_LAYOUTS staticLayout, MultilevelNodePlacementStrategy ps, ModularPostProcessing postProcessing, boolean verbose) {
 
-		MultiLevelDrawingOption<ModularPostProcessing> mdo = opts.contains(MetricsCalculationOptions.vanillaTuning) ?  
-				new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2, new MultiLevelCoolingStrategy.LinearCoolingStrategy(1)) :
-					new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL); 
+//		MultiLevelDrawingOption<ModularPostProcessing> mdo = opts.contains(MetricsCalculationOptions.vanillaTuning) ?  
+//				new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(2, new MultiLevelCoolingStrategy.LinearCoolingStrategy(1)) :
+//					new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL); 
 
 
 		MultiLevelDynNoSlice multiDyn = 
@@ -374,11 +371,12 @@ public abstract class Experiment {
 				.setCoarsener(gc) 
 				.setPlacementStrategy(ps)
 				.setFlattener(new DyGraphFlattener.StaticSumPresenceFlattener())
-				.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)				
-				.addLayerPostProcessingDrawingOption(mdo)
+				.defaultLayoutParameters(LIMIT_MINIMUM_TUNING.LIMITED)				
+				.addLayerPostProcessingDrawingOption(new MultiLevelDrawingOption.FlexibleTimeTrajectoriesPostProcessing(0, MultiLevelDynNoSlice.TRAJECTORY_OPTIMIZATION_INTERVAL))
 				.addOption(MultiLevelDynNoSlice.LOG_OPTION, verbose)
 				.withSingleLevelLayout(staticLayout);
 
+//		.defaultLayoutParameters(opts.contains(MetricsCalculationOptions.vanillaTuning) ? LIMIT_MINIMUM_TUNING.NO_LIMIT : LIMIT_MINIMUM_TUNING.LIMITED)				
 
 		if (postProcessing != null) 
 			multiDyn.addLayerPostProcessingDrawingOption(
@@ -421,41 +419,7 @@ public abstract class Experiment {
 
 		return lines;
 	}
-
-	//	public List<String> provideSnapshotSize(){
-	//		List<String> lines = new ArrayList<>();
-	//		DyGraph discGraph = discretise();  
-	//		return lines;
-	//	}
-
-	//		public void probeLayout() throws URISyntaxException {
-	//			HashSet<String> methodologies = new HashSet<String>();
-	////			methodologies.add("wi_id");
-	//			methodologies.add("iset_grip");
-	////			methodologies.add("sm_sp");
-	//			for(String s : methodologies) {
-	//				GraphCoarsener gc;
-	//				MultilevelNodePlacementStrategy ps;
-	//				if(s.equals("wi_id")) {
-	//					System.out.println("Setting Walshaw IndependentSet and Identity Placement");
-	//					gc = new IndependentSet.WalshawIndependentSet();
-	//					ps = new MultilevelNodePlacementStrategy.IdentityNodePlacement();
-	//				}else if(s.equals("iset_grip")) {
-	//					System.out.println("Setting IndependentSet and GRIP Placement");        			
-	//					gc = new IndependentSet();
-	//					ps = new WeightedBarycenterPlacementStrategy();
-	//				}else{
-	//					System.out.println("Setting Solar Merger and Placer");        			        			
-	//					gc = new SolarMerger();
-	//					ps = new WeightedBarycenterPlacementStrategy.SolarMergerPlacementStrategy();
-	//				}
-	//				System.out.println("\t\tExecuting Continuous Multi-Level Algorithm");            
-	//				MultiLevelDynNoSlice contMultiDyn = getMultiLevelContinuousLayoutAlgorithm(getContinuousCopy(), gc, SfdpExecutor.AVAILABLE_STATIC_LAYOUTS.fdp, ps, null, true);
-	//				contMultiDyn.runMultiLevelLayout();
-	//				dumpGraphSlices(contMultiDyn.getDrawnGraph(), 3);
-	//			}
-	//		}
-
+	
 	public List<String> computeDynNoSliceMetrics(boolean discrete) {
 		List<String> lines = new ArrayList<>();
 
@@ -478,6 +442,8 @@ public abstract class Experiment {
 				ExecutorService exec = Executors.newSingleThreadExecutor();
 				ModularStatistics discStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
 				double discTime = computeRunningTime(discStats);
+				System.out.println("\t\tDone in " + (int)discTime + "s, computing metrics.");
+
 				double discreteScaling = computeIdealScaling(discGraph, snapTimes);
 				applyIdealScaling(discSyncro, discreteScaling);
 				DyGraph contDiscrete = getContinuousCopy();
@@ -506,15 +472,17 @@ public abstract class Experiment {
 			});
 			try {
 				ExecutorService exec = Executors.newSingleThreadExecutor();
-				ModularStatistics contStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
+				ModularStatistics contStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);				
 				double contTime = computeRunningTime(contStats);       
+				System.out.println("\t\tDone in " + (int)contTime + "s, computing metrics.");
+				
+				//Run.animateGraphOnWindow(contGraph, dataset.getSuggestedInterval(false, null).leftBound(), dataset.getSuggestedInterval(false, null), name + " DynNoSlice");
 
 				double continuousScaling = computeIdealScaling(contGraph, snapTimes);
+
 				applyIdealScaling(contSyncro, continuousScaling);
 
 				Logger.getInstance().log("Applied scaling " + continuousScaling);
-
-				//			MultiLevelCustomRun.animateGraphOnWindow(contGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " DynNoSlice");
 
 				DyGraph discContinuous = discretise();
 				copyNodeLayoutFromTo(contGraph, discContinuous);
@@ -553,17 +521,10 @@ public abstract class Experiment {
 			long epochStart = System.currentTimeMillis();
 			sfdpInstance.execute(flattened);
 
-			//		GMLOutputWriter.writeOutput(new File(name+"-sfdp.gml"), flattened);
-			//		if(true)
-			//			return lines;
-
 			long epochEnd = System.currentTimeMillis();
 
 			DyGraph sfdpCont = getContinuousCopy();
 			copyNodeLayoutFromTo(flattened, sfdpCont);
-
-			//		MultiLevelCustomRun.showGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), name + " SFDP");
-			//		MultiLevelCustomRun.animateGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " SFDP");
 
 			double sfdpScaling = computeIdealScaling(sfdpCont, snapTimes);
 
@@ -571,25 +532,14 @@ public abstract class Experiment {
 
 			Logger.getInstance().log("Applied " + sfdpScaling);
 
-			//		Run.animateGraphOnWindow(sfdpCont, dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name);
-
 			DyGraph sfdpDisc = discretise();
 			copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
-
-			//		DyGraph sfdpContDisc = getContinuousCopy();
-			//		copyNodeLayoutFromTo(sfdpCont, sfdpContDisc);
 
 			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(sfdpCont, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
 							sfdpDisc, dataset.getSuggestedTimeFactor(automaticTau, loadMode)).build());
 
-			//String lineD = name + "," + "sfdp" + "," + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + "," + 1 / sfdpScaling + ","
-			//		+ computeOtherMetrics(sfdpCont, sfdpContDisc, snapTimes, null);
-
-			//		System.out.println(lineD);
-
 			lines.add(line);
-			//		lines.add(lineD);
 
 		}catch(URISyntaxException uri) {
 			System.err.println("Can't load graph");
@@ -608,17 +558,19 @@ public abstract class Experiment {
 		List<String> lines = new ArrayList<>();
 		List<Double> snapTimes = readSnapTimes(discretise());
 		HashSet<String> methodologies = new HashSet<String>();
-//		methodologies.add("wi_id");
-//		methodologies.add("sm_sp");
+
+		methodologies.add("wi_id");
+		methodologies.add("sm_sp");
 		methodologies.add("iset_grip");		
+		
 		HashSet<AVAILABLE_STATIC_LAYOUTS> singleLevelLayouts = new HashSet<AVAILABLE_STATIC_LAYOUTS>();
-//		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
+		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.fdp);
 		singleLevelLayouts.add(AVAILABLE_STATIC_LAYOUTS.sfdp);
 
 		System.out.println("\n# Starting Multi-Level Experiment #");
 
 		for(AVAILABLE_STATIC_LAYOUTS singleLevel : singleLevelLayouts) {
-			System.out.println("Using Single Level Layout: " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel));
+			Logger.getInstance().log("Using Single Level Layout: " + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel));
 			for(String s : methodologies) {
 				GraphCoarsener gc;
 				MultilevelNodePlacementStrategy ps;
@@ -649,9 +601,9 @@ public abstract class Experiment {
 					try {
 						ExecutorService exec = Executors.newSingleThreadExecutor();
 						ModularStatistics multiDiscStats = exec.invokeAny(callables, TIMEOUT, TimeUnit.SECONDS);
-						System.out.println("\tDone! Computing metrics...");
 						SpaceTimeCubeSynchroniser discMultiDynSyncro = discMultiDyn.getSyncro();
 						double multiDiscTime = multiDiscStats.getTotalRunningTime().toMillis()/1000.0d;      
+						System.out.println("\t\t\tDone in " + (int)multiDiscTime + "s, computing metrics.");
 
 						double multiDiscreteScaling = computeIdealScaling(discMultiDyn.getDrawnGraph(), snapTimes);
 						applyIdealScaling(discMultiDynSyncro, multiDiscreteScaling);
@@ -666,7 +618,7 @@ public abstract class Experiment {
 								+ 1 / multiDiscreteScaling + STAT_SEPARATOR
 								+ computeOtherMetrics(discMultiDyn.getDrawnGraph(), snapTimes, discMultiDynSyncro) + STAT_SEPARATOR + extraLines;
 
-						System.out.println(line);
+						//System.out.println(line);
 
 						lines.add(line);
 					}catch (InterruptedException | ExecutionException e) {
@@ -686,7 +638,6 @@ public abstract class Experiment {
 						callables.add(new Callable<ModularStatistics>() {
 							public ModularStatistics call() throws Exception {
 								contMultiDyn.runMultiLevelLayout();
-								//contMultiDyn.runCoarsening();
 								return contMultiDyn.getComputationStatistics();
 							}
 						});
@@ -696,29 +647,23 @@ public abstract class Experiment {
 
 						double multiContTime = multiContStats.getTotalRunningTime().toMillis()/1000.0d;
 
-						Logger.getInstance().log("total running time " + multiContTime);
+						System.out.println("\t\t\tDone in " + (int)multiContTime + "s, computing metrics.");
 
 						SpaceTimeCubeSynchroniser contMultiDynSyncro = contMultiDyn.getSyncro();	
 
 						double multiContinuousScaling = computeIdealScaling(contMultiDyn.getDrawnGraph(), snapTimes);
-						//double multiContinuousScaling = 1/0.350493899481392; //RAMP
 						applyIdealScaling(contMultiDynSyncro, multiContinuousScaling);
 
 						Logger.getInstance().log("Applied scaling " + 1/multiContinuousScaling);
-
-						//				MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " MultiDynNoSlice");				
 
 						DyGraph multiDiscContinuous = discretise();
 						copyNodeLayoutFromTo(contMultiDyn.getDrawnGraph(), multiDiscContinuous);	           
 
 						String extraLines = stringifyMultiLevelMetrics(contMultiDyn.getComputationStatistics().getMetrics()) + STAT_SEPARATOR + dataset.eventsProcessed;
-						Logger.getInstance().log("\tDone! Computing metrics...");
 						String line = name + ";" + "multic-" + AVAILABLE_STATIC_LAYOUTS.toString(singleLevel) + "_" + s + ";" + multiContTime + STAT_SEPARATOR 
 								+ dataset.getSuggestedTimeFactor(false, null) + STAT_SEPARATOR + contMultiDyn.tau + STAT_SEPARATOR								
 								+ 1 / multiContinuousScaling + STAT_SEPARATOR
 								+ computeOtherMetrics(contMultiDyn.getDrawnGraph(), snapTimes, contMultiDynSyncro) + STAT_SEPARATOR + extraLines;
-
-						System.out.println(line);
 
 						lines.add(line); 
 					}catch (InterruptedException | ExecutionException e) {
@@ -728,8 +673,6 @@ public abstract class Experiment {
 					}catch (URISyntaxException uri) {
 						System.out.println("Can't load graph");
 					}
-					//			MultiLevelCustomRun.showGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), name + " Multi-C");
-					//			MultiLevelCustomRun.animateGraphOnWindow(contMultiDyn.getDrawnGraph(), dataset.getSuggestedInterval(automaticTau).leftBound(), dataset.getSuggestedInterval(automaticTau), name + " Multi-C");
 				}
 			}
 		}
@@ -779,14 +722,6 @@ public abstract class Experiment {
 	 */
 	public String computeOtherMetrics(DyGraph graph, List<Double> snapTimes, SpaceTimeCubeSynchroniser synchroniser) {
 
-		//        DyQuickView view = new DyQuickView(discGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), "Disc Graph");
-		//        view.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
-		//        view.showNewWindow();
-		//
-		//        DyQuickView view2 = new DyQuickView(contGraph, dataset.getSuggestedInterval(automaticTau).leftBound(), "Cont Graph");
-		//        view2.setAnimation(new Animation(dataset.getSuggestedInterval(automaticTau), Duration.ofSeconds(30)));
-		//        view2.showNewWindow();
-
 		int slicesForOff = snapTimes.size() + (snapTimes.size() - 1) * 10;
 		Interval interval = Interval.newClosed(snapTimes.get(0), snapTimes.get(snapTimes.size() - 1));
 
@@ -797,12 +732,7 @@ public abstract class Experiment {
 		StcGraphMetric<Double> nodeMovement = new StcGraphMetric.AverageNodeMovement2D();
 		StcGraphMetric<Integer> crowding = new StcGraphMetric.Crowding(dataset.getSuggestedInterval(automaticTau, loadMode), 600);
 
-		//				return /*stressOn.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR + /*stressOff.computeMetric(discGraph)*/ -1 + STAT_SEPARATOR
-		//				+ /*stressOn.computeMetric(contGraph)*/ -1 + STAT_SEPARATOR + stressOff.computeMetric(contGraph) + STAT_SEPARATOR
-		//				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
-
-		return /*stressOn.computeMetric(discGraph)+ STAT_SEPARATOR + stressOff.computeMetric(discGraph) + STAT_SEPARATOR + */				 
-				stressOn.computeMetric(graph) + STAT_SEPARATOR + stressOff.computeMetric(graph) + STAT_SEPARATOR
+		return stressOn.computeMetric(graph) + STAT_SEPARATOR + stressOff.computeMetric(graph) + STAT_SEPARATOR
 				+ nodeMovement.computeMetric(synchroniser) + STAT_SEPARATOR + crowding.computeMetric(synchroniser);
 
 	}
@@ -827,7 +757,6 @@ public abstract class Experiment {
 				bestScaling = scaling;
 			}
 		}
-		//System.out.println("\tBest scaling: " + bestScaling);
 		return bestScaling;
 	}
 
@@ -883,46 +812,7 @@ public abstract class Experiment {
 		return discreteGraph;
 	}
 
-	/**
-	 * Exports the graphs in a format that can be processed by visone.
-	 *
-	 * @param directory the visone directory.
-	 * @param discreteGraph the original discrete graph.
-	 */
-	//	public void exportVisone(String directory, DyGraph discreteGraph) throws URISyntaxException{
-	//		NodeMap map = new NodeMap(discreteGraph);
-	//
-	//		int sliceNumber = 0;
-	//		for (Double time : readSnapTimes(discreteGraph)) {
-	//			List<String> lines = new ArrayList<>();
-	//
-	//			Graph snapshot = discreteGraph.snapshotAt(time);
-	//			for (String a : map) {
-	//				String line = "";
-	//				Node aNode = snapshot.hasNode(a) ? snapshot.getNode(a) : null;
-	//				for (String b : map) {
-	//					Node bNode = snapshot.hasNode(b) ? snapshot.getNode(b) : null;
-	//					if (aNode == null || bNode == null || aNode == bNode
-	//							|| snapshot.betweenEdge(aNode, bNode) == null) {
-	//						line += " 0";
-	//					} else {
-	//						line += " 1";
-	//					}
-	//				}
-	//				lines.add(line);
-	//			}
-	//
-	//			File dir = new File(Experiment.class.getResource(directory + "visoneIn/").toURI());
-	//			try {
-	//				dir.mkdir();
-	//			} catch (SecurityException se) {
-	//				throw new IllegalStateException("Cannot create the directory.");
-	//			}
-	//			File file = new File(directory + "visoneIn/" + name + String.format("%03d", sliceNumber) + ".csv");
-	//			ParserTools.writeFileLines(lines, file);
-	//			sliceNumber++;
-	//		}
-	//	}
+
 
 	/**
 	 * Imports the layout computed by visone and applies it to the given graph.
@@ -1175,11 +1065,11 @@ public abstract class Experiment {
 	public static class Pride extends Experiment {
 
 		public Pride() throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.plain, 5.0d);
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
 		public Pride(HashSet<MetricsCalculationOptions> opts) throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.plain, 5.0d, opts);
+			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
@@ -1272,58 +1162,58 @@ public abstract class Experiment {
 	}
 
 	/**
-	 * Experiment with the BitcoinAlpha dataset.
-	 */
-	public static class BitAlpha extends Experiment {
-
-		public BitAlpha() throws Exception {
-			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
-		}
-
-		public BitAlpha(HashSet<MetricsCalculationOptions> opts) throws Exception {
-			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
-		}		
-
-		@Override
-		public DyGraph discretise() {
-			List<Double> snapshotTimes = new ArrayList<>();
-			int slices = 20;
-			double gap = dataset.getSuggestedInterval(automaticTau, loadMode).width() / slices;
-			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.getSuggestedInterval(automaticTau, loadMode).leftBound() + gap * (i + 0.5);
-				snapshotTimes.add(snapTime);
-			}
-			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
-		}
-
-	}
-
-	/**
-	 * Experiment with the BitcoinOTC dataset.
-	 */
-	public static class BitOTC extends Experiment {
-
-		public BitOTC() throws Exception {
-			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
-		}
-
-		public BitOTC(HashSet<MetricsCalculationOptions> opts) throws Exception {
-			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
-		}
-
-		@Override
-		public DyGraph discretise() {
-			List<Double> snapshotTimes = new ArrayList<>();
-			int slices = 20;
-			double gap = dataset.getSuggestedInterval(automaticTau, loadMode).width() / slices;
-			for (int i = 0; i < slices; i++) {
-				double snapTime = dataset.getSuggestedInterval(automaticTau, loadMode).leftBound() + gap * (i + 0.5);
-				snapshotTimes.add(snapTime);
-			}
-			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
-		}
-
-	}
+//	 * Experiment with the BitcoinAlpha dataset.
+//	 */
+//	public static class BitAlpha extends Experiment {
+//
+//		public BitAlpha() throws Exception {
+//			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d);
+//		}
+//
+//		public BitAlpha(HashSet<MetricsCalculationOptions> opts) throws Exception {
+//			super("BitcoinAlpha", "data/BitcoinAlpha", BitcoinAlpha.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
+//		}		
+//
+//		@Override
+//		public DyGraph discretise() {
+//			List<Double> snapshotTimes = new ArrayList<>();
+//			int slices = 20;
+//			double gap = dataset.getSuggestedInterval(automaticTau, loadMode).width() / slices;
+//			for (int i = 0; i < slices; i++) {
+//				double snapTime = dataset.getSuggestedInterval(automaticTau, loadMode).leftBound() + gap * (i + 0.5);
+//				snapshotTimes.add(snapTime);
+//			}
+//			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
+//		}
+//
+//	}
+//
+//	/**
+//	 * Experiment with the BitcoinOTC dataset.
+//	 */
+//	public static class BitOTC extends Experiment {
+//
+//		public BitOTC() throws Exception {
+//			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d);
+//		}
+//
+//		public BitOTC(HashSet<MetricsCalculationOptions> opts) throws Exception {
+//			super("BitcoinOTC", "data/BitcoinOTC", BitcoinOTC.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
+//		}
+//
+//		@Override
+//		public DyGraph discretise() {
+//			List<Double> snapshotTimes = new ArrayList<>();
+//			int slices = 20;
+//			double gap = dataset.getSuggestedInterval(automaticTau, loadMode).width() / slices;
+//			for (int i = 0; i < slices; i++) {
+//				double snapTime = dataset.getSuggestedInterval(automaticTau, loadMode).leftBound() + gap * (i + 0.5);
+//				snapshotTimes.add(snapTime);
+//			}
+//			return DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes, gap * 0.49);
+//		}
+//
+//	}
 
 	/**
 	 * Experiment with the Reality Mining dataset.

@@ -30,123 +30,126 @@ import ocotillo.graph.layout.fdl.modular.*;
  */
 public abstract class DyModularPostProcessing extends ModularPostProcessing {
 
-    protected DyModularFdl dyModularFdl;
+	protected DyModularFdl dyModularFdl;
 
-    /**
-     * Attaches the modular element to a DyModularFdl instance. Should be only
-     * called by DyModularFdlBuilder.
-     *
-     * @param dyModularFdl the DyModularFdl instance.
-     */
-    protected void attachTo(DyModularFdl dyModularFdl) {
-        assert (this.dyModularFdl == null) : "The ModularFdl element was already attached to a ModularFdl instance.";
-        assert (dyModularFdl != null) : "Attaching the ModularFdl element to a null ModularFdl instance.";
-        this.dyModularFdl = dyModularFdl;
-    }
+	/**
+	 * Attaches the modular element to a DyModularFdl instance. Should be only
+	 * called by DyModularFdlBuilder.
+	 *
+	 * @param dyModularFdl the DyModularFdl instance.
+	 */
+	protected void attachTo(DyModularFdl dyModularFdl) {
+		assert (this.dyModularFdl == null) : "The ModularFdl element was already attached to a ModularFdl instance.";
+		assert (dyModularFdl != null) : "Attaching the ModularFdl element to a null ModularFdl instance.";
+		this.dyModularFdl = dyModularFdl;
+	}
 
-    /**
-     * Returns the space-time cube synchroniser that acts on the mirror graph.
-     *
-     * @return the synchroniser.
-     */
-    protected SpaceTimeCubeSynchroniser stcSynchronizer() {
-        assert (dyModularFdl != null) : "The ModularFdl element has not been attached yet.";
-        return dyModularFdl.synchronizer;
-    }
+	/**
+	 * Returns the space-time cube synchroniser that acts on the mirror graph.
+	 *
+	 * @return the synchroniser.
+	 */
+	protected SpaceTimeCubeSynchroniser stcSynchronizer() {
+		assert (dyModularFdl != null) : "The ModularFdl element has not been attached yet.";
+		return dyModularFdl.synchronizer;
+	}
 
-    /**
-     * Expands or contracts the dynamic time edges in the dynamic graph.
-     */
-    public static class FlexibleTimeTrajectories extends DyModularPostProcessing {
+	/**
+	 * Expands or contracts the dynamic time edges in the dynamic graph.
+	 */
+	public static class FlexibleTimeTrajectories extends DyModularPostProcessing {
 
-        protected final double contractDistance;
-        protected final double expandDistance;
-        protected GeomE geometry;
-        public int refreshInterval = 1;
-        public double shutDownTemperature = 0.2;
-        private int refreshCounter = 0;
+		protected final double contractDistance;
+		protected final double expandDistance;
+		protected GeomE geometry;
+		public int refreshInterval = 1;
+		public double shutDownTemperature = 0.2;
+		private int refreshCounter = 0;
 
-        /**
-         * Constructs a flexible edges post processing.
-         *
-         * @param contractDistance the distance at which a flexible chain is
-         * contracted.
-         * @param expandDistance the distance at which a flexible segment is
-         * expanded.
-         */
-        public FlexibleTimeTrajectories(double contractDistance, double expandDistance) {
-            this.contractDistance = contractDistance;
-            this.expandDistance = expandDistance;
-        }
+		/**
+		 * Constructs a flexible edges post processing.
+		 *
+		 * @param contractDistance the distance at which a flexible chain is
+		 * contracted.
+		 * @param expandDistance the distance at which a flexible segment is
+		 * expanded.
+		 */
+		public FlexibleTimeTrajectories(double contractDistance, double expandDistance) {
+			this.contractDistance = contractDistance;
+			this.expandDistance = expandDistance;
+		}
 
-        /**
-         * Constructs a flexible edges post processing.
-         *
-         * @param contractDistance the distance at which a flexible chain is
-         * contracted.
-         * @param expandDistance the distance at which a flexible segment is
-         * expanded.
-         * @param geometry the geometry to use.
-         */
-        public FlexibleTimeTrajectories(double contractDistance, double expandDistance, GeomE geometry) {
-            this.contractDistance = contractDistance;
-            this.expandDistance = expandDistance;
-            this.geometry = geometry;
-        }
+		/**
+		 * Constructs a flexible edges post processing.
+		 *
+		 * @param contractDistance the distance at which a flexible chain is
+		 * contracted.
+		 * @param expandDistance the distance at which a flexible segment is
+		 * expanded.
+		 * @param geometry the geometry to use.
+		 */
+		public FlexibleTimeTrajectories(double contractDistance, double expandDistance, GeomE geometry) {
+			this.contractDistance = contractDistance;
+			this.expandDistance = expandDistance;
+			this.geometry = geometry;
+		}
 
-        @Override
-        protected void execute() {
-            if (geometry == null) {
-                geometry = dyModularFdl.geometry;
-            }
-            if (refreshCounter % refreshInterval == 0 && temperature() > shutDownTemperature) {
-                expandFlexibleEdges();
-                contractFlexibleEdges();
-            }
-            refreshCounter++; //CAUTION WITH SINGLE DYNNOSLICE!
-        }
+		@Override
+		protected void execute() {
 
-        /**
-         * Expands the flexible segments whose length exceed the expand
-         * distance.
-         */
-        private void expandFlexibleEdges() {
-            for (Edge flexibleEdge : stcSynchronizer().mirrorGraph().edges()) {
-                MirrorEdge mirrorEdge = synchronizer().getMirrorEdge(flexibleEdge);
-                for (Edge segment : new ArrayList<>(mirrorEdge.segments())) {
-                    Coordinates sourcePos = mirrorPositions().get(segment.source());
-                    Coordinates targetPos = mirrorPositions().get(segment.target());
-                    if (geometry.magnitude(targetPos.minus(sourcePos)) > expandDistance
-                            && Math.abs(targetPos.z() - sourcePos.z()) > expandDistance / 2) {
-                        synchronizer().addMirrorBend(mirrorEdge, segment);
-                    }
-                }
-            }
-        }
+			if (geometry == null) {
+				geometry = dyModularFdl.geometry;
+			}
+			if(temperature() > shutDownTemperature) {
+				if (refreshCounter % refreshInterval == 0 ) {
+					expandFlexibleEdges();
+					contractFlexibleEdges();
+				}
+				refreshCounter++; 
+			}
+		}
 
-        /**
-         * Contracts the flexible chains n1,e1,n2,e2,n3 where n1 and n3 are
-         * closer than the contract distance.
-         */
-        private void contractFlexibleEdges() {
-            for (Edge flexibleEdge : stcSynchronizer().mirrorGraph().edges()) {
-                MirrorEdge mirrorEdge = synchronizer().getMirrorEdge(flexibleEdge);
-                for (Node bend : new ArrayList<>(mirrorEdge.bends())) {
-                    Node n1 = mirrorGraph().inEdges(bend).iterator().next().source();
-                    Node n3 = mirrorGraph().outEdges(bend).iterator().next().target();
-                    Coordinates n1Pos = mirrorPositions().get(n1);
-                    Coordinates n2Pos = mirrorPositions().get(bend);
-                    Coordinates n3Pos = mirrorPositions().get(n3);
-                    double distance12 = geometry.magnitude(n1Pos.minus(n2Pos));
-                    double distance23 = geometry.magnitude(n2Pos.minus(n3Pos));
-                    double distance13 = geometry.magnitude(n1Pos.minus(n3Pos));
-                    if (distance13 < contractDistance
-                            || distance12 < contractDistance / 5
-                            || distance23 < contractDistance / 5) {
-                        synchronizer().removeMirrorBend(mirrorEdge, bend);
-                    }
-                }
-            }
-        }
-    }
+		/**
+		 * Expands the flexible segments whose length exceed the expand
+		 * distance.
+		 */
+		private void expandFlexibleEdges() {
+			for (Edge flexibleEdge : stcSynchronizer().mirrorGraph().edges()) {
+				MirrorEdge mirrorEdge = synchronizer().getMirrorEdge(flexibleEdge);
+				for (Edge segment : new ArrayList<>(mirrorEdge.segments())) {
+					Coordinates sourcePos = mirrorPositions().get(segment.source());
+					Coordinates targetPos = mirrorPositions().get(segment.target());
+					if (geometry.magnitude(targetPos.minus(sourcePos)) > expandDistance
+							&& Math.abs(targetPos.z() - sourcePos.z()) > expandDistance / 2) {
+						synchronizer().addMirrorBend(mirrorEdge, segment);
+					}
+				}
+			}
+		}
+
+		/**
+		 * Contracts the flexible chains n1,e1,n2,e2,n3 where n1 and n3 are
+		 * closer than the contract distance.
+		 */
+		private void contractFlexibleEdges() {
+			for (Edge flexibleEdge : stcSynchronizer().mirrorGraph().edges()) {
+				MirrorEdge mirrorEdge = synchronizer().getMirrorEdge(flexibleEdge);
+				for (Node bend : new ArrayList<>(mirrorEdge.bends())) {
+					Node n1 = mirrorGraph().inEdges(bend).iterator().next().source();
+					Node n3 = mirrorGraph().outEdges(bend).iterator().next().target();
+					Coordinates n1Pos = mirrorPositions().get(n1);
+					Coordinates n2Pos = mirrorPositions().get(bend);
+					Coordinates n3Pos = mirrorPositions().get(n3);
+					double distance12 = geometry.magnitude(n1Pos.minus(n2Pos));
+					double distance23 = geometry.magnitude(n2Pos.minus(n3Pos));
+					double distance13 = geometry.magnitude(n1Pos.minus(n3Pos));
+					if (distance13 < contractDistance
+							|| distance12 < contractDistance / 5
+							|| distance23 < contractDistance / 5) {
+						synchronizer().removeMirrorBend(mirrorEdge, bend);
+					}
+				}
+			}
+		}
+	}
 }

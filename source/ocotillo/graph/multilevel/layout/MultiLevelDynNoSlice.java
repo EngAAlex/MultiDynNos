@@ -149,7 +149,7 @@ public class MultiLevelDynNoSlice {
 		.addLayoutParameter(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(DEFAULT_TUNING_SLOPE), limit.getSelectedMinimum(INITIAL_MAX_MOVEMENT)))
 		.addLayoutParameter(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new MultiLevelCoolingStrategy.IdentityCoolingStrategy()))
 		.addLayoutParameter(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new MultiLevelCoolingStrategy.IdentityCoolingStrategy()))
-		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(DEFAULT_TUNING_SLOPE), limit.getSelectedMinimum(MAX_ITERATIONS))); //12
+		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(DEFAULT_TUNING_SLOPE), limit.getSelectedMinimum(MAX_ITERATIONS)));
 		return this;
 	}
 	

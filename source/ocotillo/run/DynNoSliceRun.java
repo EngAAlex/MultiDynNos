@@ -22,6 +22,7 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeTrajectories;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
 
@@ -55,6 +56,8 @@ public class DynNoSliceRun extends Run{
                 .withPostProcessing(new FlexibleTimeTrajectories(delta * 1.5, delta * 2.0, Geom.e3D))
                 .build();
 
+        	Logger.getInstance().log("Starting layout");
+        
         	algorithm.iterate(defaultNumberOfIterations);
         	
         	return dygraph;

@@ -509,8 +509,8 @@ public class DyGraph extends GraphWithAttributes<DyGraph, DyGraphAttribute<?>, D
 						nodeTimeSpanLow = Math.min(nodeTimeSpanLow, left);
 						nodeTimeSpanMax = Math.max(nodeTimeSpanMax, right);
 						nodeTotalDuration += (right - left);
-					}else
-						System.out.println("Node - InfiniteValue detected");
+					}//else
+						//System.out.println("Node - InfiniteValue detected");
 				}
 			}
 			if(!loadMode.equals(Mode.keepAppearedNode)) {
@@ -535,8 +535,8 @@ public class DyGraph extends GraphWithAttributes<DyGraph, DyGraphAttribute<?>, D
 						edgeTimeSpanLow = Math.min(edgeTimeSpanMax, left);
 						edgeTimeSpanMax = Math.max(edgeTimeSpanLow, right);
 						edgeTotalDuration += (right - left);
-					}else
-						System.out.println("Edge - InfiniteValue detected");					
+					}//else
+						//System.out.println("Edge - InfiniteValue detected");					
 				}
 			}
 			edgeTimeSpan = edgeTimeSpanMax - edgeTimeSpanLow;
