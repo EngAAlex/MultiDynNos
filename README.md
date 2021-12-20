@@ -14,7 +14,7 @@ The following links apply for the previously published short paper version of th
 #### Requirements
 
 - **Build**: To build MultiDynNoS, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks for a Windows Subsystem for Linux (WSL) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
 
 #### Build
 
@@ -66,8 +66,6 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
 | Rugby-Tweets | ```rugby``` | Is a network derived from over 3,000 tweets involving teams in the "Guinness Pro12" rugby competition. | [*](https://ieeexplore.ieee.org/abstract/document/8580419/)
 | *Larger Graphs* | ------ | ------ | ------ | 
 | MOOC | ```mooc``` | This dataset represents the actions taken by users on a popular massive open online class platform. | [*](https://dl.acm.org/doi/abs/10.1145/3292500.3330895?casa_token=nUM3JyeDa24AAAAA:eSXXwXuBdb0Nz2hU-prOM53jKea12sxcLEuz3WRpWTeZ-PZN5dZMdfWZjerfObhnBaJt9CgLcpUd)
-| Bitcoin Alpha | ```bitalpha``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin Alpha. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
-| Bitcoin OTC | ```bitotc``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin OTC. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
 | College Message | ```college``` | SThis dataset is comprised of private messages sent on an online social network at the University of California, Irvine. | [*](https://asistdl.onlinelibrary.wiley.com/doi/abs/10.1002/asi.21015?casa_token=hJRB2bR4UvEAAAAA:Twq4CupkDrrejnj9KnOOXssiA_8Agx_sqAjc_oh-qeYDTp1jp1f6XAbNnFp69M_OuOnz50dSEwJprFg)
 | Reality Mining | ```reality``` | This data comes from The Reality Mining study. | [*](https://link.springer.com/content/pdf/10.1007/s00779-005-0046-3.pdf)
 | Ramp Infection Map | ```ramp``` | Contact-tracing Network. | [*](https://github.com/ScottishCovidResponse/Contact-Tracing-Model)
@@ -134,7 +132,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics [Metrics Option
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
 | ManualTau | ```--manualTau``` | Run the experiments with the ManualTau found in the dataset class (if available) |
-| Bend Transfer | ```-bT``` | Enables MultiDynNoSlice bend transfer extension (MultiDynNoS only) |
+| Bend Transfer | ```--bT``` | Enables MultiDynNoSlice bend transfer extension (MultiDynNoS only) |
 | Verbose | ```--verbose``` | Extra output on console during computation (MultiDynNoS only) |
 | Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. (MultiDynNoS only) |
 
