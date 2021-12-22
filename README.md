@@ -53,7 +53,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
 | Animate | ```animate``` | Provides a 30 seconds animation of the resulting layout. |
 | Cube | ```showcube``` | Shows the trajectories of the nodes in a space time cube. |
 | Metrics | ```metrics``` | Boots the system in compute metric mode. |
-| Plot Slices | ```plotslices``` | Selects the Plot Slices mode. |
+| Plot Slices | ```dump``` | Selects the Plot Slices mode. |
 | Help | ```help``` | Shows a complete but compact definition of the system usage.
 
 | Graph | Command Line option | Description | Reference |
@@ -84,7 +84,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
 | ------ | ------ | ------ |
 | Delta | ```-d <value>``` | Run the layout with a custom delta. |
 | CLI Tau | ```-t <value>``` | Run the layout with a custom tau. |
-| ManualTau | ```-T``` | Run the layout with the ManualTau found in the dataset class (if available) |
+| ManualTau | ```-T``` | Run the layout with the ManualTau found in the dataset class (if available). If not specified, defaults to automatically computed Tau. |
 | Bend Transfer | ```-bT``` | Enables MultiDynNoSlice bend transfer extension |
 | Text Out | ```-o /path/to/graph``` | If specified, the output graph will be converted to text file and saved where specified.
 
@@ -131,7 +131,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics [Metrics Option
 | Single | ```--single``` | Executes the experiment using DynNoSlice |
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
-| ManualTau | ```--manualTau``` | Run the experiments with the ManualTau found in the dataset class (if available) |
+| ManualTau | ```--manualTau``` | Run the experiments with the ManualTau found in the dataset class (if available). Defaults to automatically computed Tau. |
 | Bend Transfer | ```--bT``` | Enables MultiDynNoSlice bend transfer extension (MultiDynNoS only) |
 | Verbose | ```--verbose``` | Extra output on console during computation (MultiDynNoS only) |
 | Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. (MultiDynNoS only) |
@@ -145,12 +145,12 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smal
 At least one graph category and one layout method must be selected for the experiment to run, except for options marked by an asterisk (*): in that case, only the graph category is needed and layout options will be ignored.
 
 
-#### Plot Slices Mode:
+#### Plot Slices Mode (experimental):
 
 When used, it will create a specified number of GML files that correspond to the evolution of the network over time. For example, if 5 slices are requested, the same number of GML files will be created, each representing the layout of the network at 1/5 intervals. Only the nodes and edges that are currently present in the selected interval will be included. Please note that this only works with MultiDynNoS and with the preloaded graphs.
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar plotslices [Metrics Options]
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar dump [Metrics Options]
 ```
 
 The same options of the metrics mode apply in this case as well.

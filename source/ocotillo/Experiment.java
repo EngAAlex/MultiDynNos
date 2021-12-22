@@ -482,8 +482,6 @@ public abstract class Experiment {
 
 				applyIdealScaling(contSyncro, continuousScaling);
 
-				Logger.getInstance().log("Applied scaling " + continuousScaling);
-
 				DyGraph discContinuous = discretise();
 				copyNodeLayoutFromTo(contGraph, discContinuous);
 

@@ -46,6 +46,11 @@ public class DynNoSliceRun extends Run{
 	
 	@Override
 	protected DyGraph run() {
+		
+		System.out.println("Running DynNoSlice");
+		
+		long initEpoch = System.currentTimeMillis();
+		
         DyModularFdl algorithm = new DyModularFdl.DyModularFdlBuilder(dygraph, tau)
                 .withForce(new DyModularForce.TimeStraightning(delta))
                 .withForce(new DyModularForce.Gravity())
@@ -59,6 +64,10 @@ public class DynNoSliceRun extends Run{
         	Logger.getInstance().log("Starting layout");
         
         	algorithm.iterate(defaultNumberOfIterations);
+        	
+        	long endEpoch = System.currentTimeMillis();
+        	
+        	System.out.println("Elapsed: " + (int)(endEpoch - initEpoch)/1000 + "s");
         	
         	return dygraph;
         }

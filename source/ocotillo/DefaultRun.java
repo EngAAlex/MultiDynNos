@@ -278,7 +278,7 @@ public class DefaultRun {
 		System.setProperty("awt.useSystemAAFontSettings", "lcd");
 		System.setProperty("swing.aatext", "true");
 
-		System.out.println("MultiDynNoSlice Demo");
+		System.out.println("MultiDynNoS Demo");
 
 		if (args.length == 0) {
 			showHelp();
