@@ -289,7 +289,7 @@ public class RampInfectionMap extends PreloadedGraphParser {
 		}
 
 		tau = infectionDuration/endTime;
-		System.out.println ("Start, end, tau: " + startTime + " " + endTime + " " + tau);
+		//System.out.println ("Start, end, tau: " + startTime + " " + endTime + " " + tau);
 		System.out.println ("Parsed " + numEvents + " events");
 		Commons.scatterNodes(graph, 100);
 		Commons.mergeAndColor(graph, startTime, endTime, mode, new Color(141, 211, 199), Color.BLACK, halfDuration);

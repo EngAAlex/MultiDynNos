@@ -83,8 +83,8 @@ public class GraphRenderer2D extends GraphRenderer {
     public void draw(Graphics2D graphics) {
         drawGraphics(graphics, graph);
         drawHeatMap(graphics);
+        drawEdges(graphics);        
         drawNodes(graphics);
-        drawEdges(graphics);
     }
 
     /**
@@ -131,6 +131,10 @@ public class GraphRenderer2D extends GraphRenderer {
      */
     private void drawNodeLabel(Graphics2D graphics2D, Node node) {
         String label = nodeLabels.get(node);
+        
+        if(label == null || label.equals(""))
+        	label = node.id();
+        
         Color color = nodeLabelColors.get(node);
         double dimension = nodeLabelScaling.get(node);
         Coordinates position = nodePositions.get(node);

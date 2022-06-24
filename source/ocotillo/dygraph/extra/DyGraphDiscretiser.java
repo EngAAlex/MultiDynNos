@@ -15,10 +15,15 @@
  */
 package ocotillo.dygraph.extra;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+
 import ocotillo.dygraph.DyEdgeAttribute;
 import ocotillo.dygraph.DyGraph;
 import ocotillo.dygraph.DyNodeAttribute;
@@ -29,14 +34,57 @@ import ocotillo.dygraph.Interpolation;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Interval;
 import ocotillo.graph.Edge;
+import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
+import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
+import ocotillo.multilevel.logger.Logger;
 
 /**
  * Transforms a continuous dynamic graph into a discrete one.
  */
 public class DyGraphDiscretiser {
+	
+//	private static final double FIXED_DURATION = 1.0 / Duration.ofDays(7).getSeconds();
 
+//	public static List<Double> getEqualDiscretizationWithFixedDuration(DyGraph original, int timeslices) {
+//		DiscretisationData discretizedData = new DiscretisationData(original);
+//		List<Interval> sortedIntervals = discretizedData.sortedEdgeIntervalList(new Interval.CompareIntervalsByLeftBound());
+//		float sliceSize = sortedIntervals.size()/(float)timeslices;		
+//		int errorCycle = Math.round(1/Math.abs(sliceSize - Math.round(sliceSize)));
+//		int eventsPerSlice = Math.round(sliceSize);
+//		
+//		List<Double> snapTimes = new ArrayList<Double>();		
+//		int currentSliceSize = 0;
+//		int index = -1;
+//		double currentMaxSnap = sortedIntervals.get(0).leftBound();
+//		//int currentlyVisibleEdges = 0;
+//		snapTimes.add(sortedIntervals.get(0).leftBound());
+//		for(Interval t : sortedIntervals) {
+//			index++;
+//			if(currentSliceSize == 0) {
+//				//snapTimes.add(t.leftBound());
+//				if(index > 0)
+//					snapTimes.add(t.leftBound() + FIXED_DURATION);
+//				currentMaxSnap = t.leftBound() + FIXED_DURATION; //t.rightBound();
+//				currentSliceSize++;
+//				continue;
+//			}
+//			currentMaxSnap = Math.max(currentMaxSnap, t.leftBound());//t.rightBound());
+//			if(currentSliceSize < eventsPerSlice) {				
+//				if(++currentSliceSize == eventsPerSlice) {
+//					if(index%errorCycle != 0)						
+//						currentSliceSize = 0;				}				
+//			}else
+//				currentSliceSize = 0;
+//				
+//		}
+//		Collections.sort(snapTimes);
+//		return snapTimes;		
+//        //return discretiseWithSnapTimes(original, snapTimes);	
+//	}
+	
     /**
      * Discretise a continuous dynamic graph by providing the snapshot times.
      * For each snapshot time, a new time step is created by flattening the
@@ -107,11 +155,11 @@ public class DyGraphDiscretiser {
                     ? (intervals.get(i).rightBound() + intervals.get(i + 1).leftBound()) / 2.0
                     : intervals.get(i).rightBound() + (intervals.get(i).rightBound() - intervals.get(i).leftBound()) * 0.2;
             Interval outputInterval = Interval.newRightClosed(leftBound, rightBound);
-
+//            System.out.print(i + ";");
             applyBlockAttributes(data, intervals.get(i), outputInterval);
         }
         return data.discrete;
-    }
+    }    
 
     /**
      * Applies the time step to the discrete graph.
@@ -122,9 +170,13 @@ public class DyGraphDiscretiser {
      * graph.
      */
     private static void applyBlockAttributes(DiscretisationData data, Interval inputInterval, Interval outputInterval) {
-        for (Node node : data.original.nodes()) {
+//        int presentNodes = 0;
+//        int presentEdges = 0;
+
+    	for (Node node : data.original.nodes()) {
             if (data.isPresentInInterval(node, inputInterval)) {
                 data.discreteNodePresence.get(node).insert(new FunctionConst<>(outputInterval, true));
+//                presentNodes++;
             }
             data.discreteNodePositions.get(node).insert(new FunctionRect.Coordinates(outputInterval,
                     data.originalNodePositions.get(node).valueAt(outputInterval.leftBound()),
@@ -137,9 +189,21 @@ public class DyGraphDiscretiser {
         }
         for (Edge edge : data.original.edges()) {
             if (data.isPresentInInterval(edge, inputInterval)) {
-                data.discreteEdgePresence.get(edge).insert(new FunctionConst<>(outputInterval, true));
+            	data.discreteEdgePresence.get(edge).insert(new FunctionConst<>(outputInterval, true));
+//                presentEdges++;
             }
         }
+        //System.out.println(presentNodes + ";" + presentEdges);
+    }
+    
+    private void updateVisibleEdgesList(List<Interval> visibleEdges, double snapTime) {
+    	visibleEdges.removeIf(new Predicate<Interval>() {
+			@Override
+			public boolean test(Interval t) {
+				return t.rightBound() < snapTime;
+			}
+		});
+    		
     }
 
     /**
@@ -231,5 +295,92 @@ public class DyGraphDiscretiser {
             }
             return false;
         }
+        
+        protected List<Interval> sortedEdgeIntervalList(Comparator<Interval> comparator){      
+        	List<Interval> completeList = new ArrayList<Interval>();
+        	for(List<Interval> list : simplifiedEdgePresence.values())
+        		completeList.addAll(list);
+        	Collections.sort(completeList, comparator);
+        	return completeList;
+        }               
     }
+    
+    /**
+     * Provides the snapshot of the graph at the end of the supplied interval. 
+     *
+     * @param original the continuous dynamic graph.
+     * @param intervals the intervals.
+     * @return the discrete graph.
+     */
+	public static Graph displayWithinInterval(DyGraph drawnGraph, Interval newClosed) {
+		DyGraph returnGraph = new DyGraph();
+		
+//		DyNodeAttribute<Double> nodeWeight = returnGraph.nodeAttribute(StdAttribute.weight);
+//		DyEdgeAttribute<Double> edgeWeight = returnGraph.edgeAttribute(StdAttribute.weight);	
+//		
+		DyNodeAttribute<Boolean> nodePresence = drawnGraph.nodeAttribute(StdAttribute.dyPresence);
+		DyEdgeAttribute<Boolean> edgePresence = drawnGraph.edgeAttribute(StdAttribute.dyPresence);
+		
+		DyNodeAttribute<Coordinates> dyPosition = drawnGraph.nodeAttribute(StdAttribute.nodePosition);
+		
+		//DiscretisationData discdata = new DiscretisationData(drawnGraph);
+		for(Node n : drawnGraph.nodes())
+			if(nodePresence.get(n).valueAt(newClosed.rightBound()))
+				returnGraph.add(n);
+		for(Edge e : drawnGraph.edges())
+			if(edgePresence.get(e).valueAt(newClosed.rightBound()))
+				returnGraph.add(e);		
+		Graph temp = new StaticSumPresenceFlattener().flattenDyGraph(returnGraph);
+		
+		NodeAttribute<Coordinates> staticPosition = temp.nodeAttribute(StdAttribute.nodePosition);
+		
+		for(Node n : drawnGraph.nodes()) {
+			Evolution<Coordinates> gino = dyPosition.get(n);			
+			staticPosition.set(temp.getNode(n.id()), gino.valueAt(newClosed.rightBound()));
+		}
+		
+		return temp;
+	}
+	
+    /**
+     * Flatten a dynamic graph within an interval.  
+     * This method returns a static graph representing the flattened graph. 
+     *
+     * @param original the continuous dynamic graph.
+     * @param intervals the intervals.
+     * @return the discrete graph.
+     */
+	public static Graph flattenWithinInterval(DyGraph drawnGraph, Interval newClosed) {
+		DyGraph returnGraph = new DyGraph();
+		
+//		DyNodeAttribute<Double> nodeWeight = returnGraph.nodeAttribute(StdAttribute.weight);
+//		DyEdgeAttribute<Double> edgeWeight = returnGraph.edgeAttribute(StdAttribute.weight);	
+//		
+//		DyNodeAttribute<Boolean> nodePresence = drawnGraph.nodeAttribute(StdAttribute.dyPresence);
+//		DyEdgeAttribute<Boolean> edgePresence = drawnGraph.edgeAttribute(StdAttribute.dyPresence);
+		
+		DyNodeAttribute<Coordinates> dyPosition = drawnGraph.nodeAttribute(StdAttribute.nodePosition);
+		
+		DiscretisationData discdata = new DiscretisationData(drawnGraph);
+		for(Node n : drawnGraph.nodes())
+			if(discdata.isPresentInInterval(n, newClosed))
+				returnGraph.add(n);
+		for(Edge e : drawnGraph.edges())
+			if(discdata.isPresentInInterval(e, newClosed))
+				try {
+				returnGraph.add(e);
+				}catch(IllegalArgumentException lie) {
+					Logger.getInstance().log("Tried to add an edge whose nodes are not in the graph");
+				} 
+		Graph temp = new StaticSumPresenceFlattener().flattenDyGraph(returnGraph);
+		
+		NodeAttribute<Coordinates> staticPosition = temp.nodeAttribute(StdAttribute.nodePosition);
+		
+		for(Node n : drawnGraph.nodes()) {
+			Evolution<Coordinates> gino = dyPosition.get(n);
+			staticPosition.set(temp.getNode(n.id()), gino.valueAt(newClosed.rightBound()));
+		}
+		
+		return temp;
+	}
 }

@@ -17,6 +17,7 @@ package ocotillo.geometry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * The coordinates of a point in a vectorial space.
@@ -39,6 +40,18 @@ public class Coordinates {
             coordinates.add(coordinate);
         }
     }
+    
+    /**
+     * Constructs a coordinates by passing an array of values.
+     *
+     * @param x the first coordinate.
+     * @param others the other coordinates.
+     */
+    public Coordinates(double[] values) {
+        coordinates = new ArrayList<>(Math.max(values.length + 1, defaultInitialCapacity));
+        for(double d : values)
+        	coordinates.add(d);
+    }    
 
     /**
      * Constructs coordinates of arbitrary dimension.

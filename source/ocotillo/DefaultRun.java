@@ -18,7 +18,6 @@
 package ocotillo;
 
 import java.io.File;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -26,26 +25,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
-import ocotillo.dygraph.DyGraph;
-import ocotillo.dygraph.extra.DyGraphDiscretiser;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
-import ocotillo.dygraph.layout.fdl.modular.DyModularFdl.DyModularFdlBuilder;
-import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
-import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
-import ocotillo.dygraph.rendering.Animation;
-import ocotillo.geometry.Geom;
-import ocotillo.graph.layout.fdl.modular.ModularConstraint;
-import ocotillo.gui.quickview.DyQuickView;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
 import ocotillo.run.Run;
 import ocotillo.run.Run.AvailableDrawingOption;
 import ocotillo.run.SFDPRun;
-import ocotillo.samples.DyGraphSamples;
 import ocotillo.samples.parsers.BitcoinAlpha;
 import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
+import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.Commons.DyDataSet;
 import ocotillo.samples.parsers.Commons.Mode;
 import ocotillo.samples.parsers.DialogSequences;
@@ -64,6 +53,8 @@ import ocotillo.serialization.ParserTools;
 public class DefaultRun {
 
 	protected static HashMap<String, Integer> preloadedGraphs;
+
+	public static final Commons.Mode DEFAULT_GRAPHLOADING_MODE = Mode.plain;
 
 	public static class CMDLineOption{
 
@@ -88,6 +79,7 @@ public class DefaultRun {
 		animate,
 		showcube,
 		computeMetrics,
+		plotSlices,
 		help;
 
 		public static void printHelp() {
@@ -109,6 +101,8 @@ public class DefaultRun {
 				return new CMDLineOption("Cube", "showcube", "Shows the trajectories of the nodes in a space time cube.");    			
 			case computeMetrics: 
 				return new CMDLineOption("Metrics", "metrics", "Computes the experiment metrics reported in the paper. Add \"--help\" argument for help on experiment settings.");
+			case plotSlices: 
+				return new CMDLineOption("PlotSlices", "dump", "Dumps 4 GMLs showing different slices of animation.");						
 			default: return null;
 			}
 		}
@@ -123,6 +117,8 @@ public class DefaultRun {
 				return AvailableMode.showcube;    			
 			case "metrics": 
 				return AvailableMode.computeMetrics;
+			case "dump": 
+				return AvailableMode.plotSlices;		
 			default: return null;			}
 
 		}
@@ -137,8 +133,8 @@ public class DefaultRun {
 		vandebunt,
 		newcomb,
 		mooc,
-		bitalpha,
-		bitotc,
+		//bitalpha,
+		//bitotc,
 		reality,
 		college,
 		ramp;
@@ -197,16 +193,19 @@ public class DefaultRun {
 		}
 	}
 
-	private enum MetricsCalculationOptions{
+	public static enum MetricsCalculationOptions{
 		smaller,
 		larger,
 		multi,
 		single,
 		visone,		
 		sfdp,
+		manualTau, 
+		bendTransfer,		
 		help,
 		verbose,
 		output;
+		//, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -237,6 +236,12 @@ public class DefaultRun {
 				return new CMDLineOption("Output", "--out", "The path where to save the statistics file");		
 			case verbose:
 				return new CMDLineOption("Verbose", "--verbose", "Extra output on console during computation");	
+			case manualTau:
+				return new CMDLineOption("Dataset Tau (MultiDynNoS only)", "--manualTau", "Use the time factor suggested in the dataset code (if available)");
+			case bendTransfer:	
+				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "--bT", "Enables Bend Transfer (default Disabled).");
+//			case vanillaTuning:	
+//				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "--vT", "Sets layout tuning to vanilla MultiDynNoS.");				
 			default: return null;
 			}
 		}
@@ -245,21 +250,25 @@ public class DefaultRun {
 
 			switch(s) {
 			case "smaller": 
-				return MetricsCalculationOptions.smaller;
+				return smaller;
 			case "larger": 
-				return MetricsCalculationOptions.larger;
+				return larger;
 			case "visone": 
-				return MetricsCalculationOptions.visone;  				
+				return visone;  				
 			case "multi": 
-				return MetricsCalculationOptions.multi;    			
+				return multi;    			
 			case "single": 
-				return MetricsCalculationOptions.single;    			
+				return single;    			
 			case "sfdp": 
-				return MetricsCalculationOptions.sfdp;	
+				return sfdp;	
 			case "out":
-				return MetricsCalculationOptions.output;
+				return output;
 			case "verbose":
-				return MetricsCalculationOptions.verbose;
+				return verbose;
+			case "manualTau":
+				return manualTau;	
+			case "bT": return bendTransfer;
+			//case "vT": return vanillaTuning;				
 			default: return null;			
 			}			
 		}
@@ -269,7 +278,7 @@ public class DefaultRun {
 		System.setProperty("awt.useSystemAAFontSettings", "lcd");
 		System.setProperty("swing.aatext", "true");
 
-		System.out.println("MultiDynNoSlyce Demo");
+		System.out.println("MultiDynNoS Demo");
 
 		if (args.length == 0) {
 			showHelp();
@@ -307,23 +316,25 @@ public class DefaultRun {
 			String selectedGraph = args[1];
 			boolean customGraph = false;
 
+			Mode loadMode = Mode.plain;
+			String experimentClass = null;
 			if(preloadedGraphs.containsKey(selectedGraph)) {
 				try {
 					switch(preloadedGraphs.get(selectedGraph)) {
 					case 0: 
-						data = new VanDeBunt().parse(Mode.keepAppearedNode); break;
+						loadMode = Mode.keepAppearedNode; experimentClass = "Bunt"; data = new VanDeBunt().parse(loadMode); break;
 					case 1: 
-						data = new NewcombFraternity().parse(Mode.keepAppearedNode); break;
+						loadMode = Mode.keepAppearedNode; experimentClass = "Newcomb"; data = new NewcombFraternity().parse(loadMode); break;
 					case 2: 
-						data = new InfoVisCitations().parse(Mode.keepAppearedNode); break;
-					case 3: data = new RugbyTweets().parse(Mode.keepAppearedNode); break;
-					case 4: data = new DialogSequences().parse(Mode.keepAppearedNode); break;
-					case 5: data = new CollegeMsg().parse(Mode.keepAppearedNode); break;
-					case 6: data = new RealityMining().parse(Mode.keepAppearedNode); break;
-					case 7: data = new BitcoinAlpha().parse(Mode.keepAppearedNode); break;
-					case 8: data = new BitcoinOTC().parse(Mode.keepAppearedNode); break;
-					case 9: data = new Mooc().parse(Mode.keepAppearedNode); break;
-					case 10: data = new RampInfectionMap().parse(Mode.keepAppearedNode); break;
+						experimentClass = "InfoVis"; data = new InfoVisCitations().parse(loadMode); break;
+					case 3: loadMode = Mode.keepAppearedNode; experimentClass = "Rugby";  data = new RugbyTweets().parse(loadMode); break;
+					case 4: loadMode = Mode.keepAppearedNode; experimentClass = "Pride";  data = new DialogSequences().parse(loadMode); break;
+					case 5: loadMode = Mode.keepAppearedNode; experimentClass = "College";  data = new CollegeMsg().parse(loadMode); break;
+					case 6: loadMode = Mode.keepAppearedNode; experimentClass = "RealMining";  data = new RealityMining().parse(loadMode); break;
+					case 7: loadMode = Mode.keepAppearedNode; experimentClass = "BitAlpha";  data = new BitcoinAlpha().parse(loadMode); break;
+					case 8: loadMode = Mode.keepAppearedNode; experimentClass = "BitOTC";  data = new BitcoinOTC().parse(loadMode); break;
+					case 9: loadMode = Mode.keepAppearedNode; experimentClass = "MOOC";   data = new Mooc().parse(loadMode); break;
+					case 10: loadMode = Mode.keepAppearedNode; experimentClass = "RampInfectionMap";  data = new RampInfectionMap().parse(loadMode); break;
 					default: break;
 					}
 				}catch (Exception e) {
@@ -342,24 +353,76 @@ public class DefaultRun {
 
 			AvailableMethods selectedMethod = AvailableMethods.parse(customGraph ? args[4] : args[2]);
 
-			switch(selectedMethod) {
-			case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data); break;
-			case sfdp: drawingAlgorithm = new SFDPRun(args, data); break;
-			default: drawingAlgorithm = new MultiDynNoSliceRun(args, data); break;
-			}
-
-			drawingAlgorithm.computeDrawing();
 
 			switch(selectedMode) {
-			case animate: drawingAlgorithm.animateGraph(); break;
-			default: drawingAlgorithm.plotSpaceTimeCube(); break;			
+			case animate: 
+				switch(selectedMethod) {
+				case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
+				case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
+				default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
+				}
+				drawingAlgorithm.computeDrawing();
+				drawingAlgorithm.animateGraph(); break;
+			case plotSlices: 
+				if(customGraph) {
+					System.out.println("At the moment the plotSlices option only work with preloaded graphs.");
+					System.exit(1);
+				}			
+				
+				String welcomeMessage = "Plot Slices selected -- At the moment only works with MultiLevel Layout";
+				String path = ".";
+
+				HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
+
+				for(int i = 1; i < args.length; i++) {
+					String[] split = args[i].split("--"); 
+					if(split.length == 1)
+						continue;
+					switch(MetricsCalculationOptions.parseMode(split[1])) {			
+					case manualTau: {
+						multiLevelOptions.add(MetricsCalculationOptions.manualTau); welcomeMessage += "\nSet ManualTau"; break;
+					}
+					case bendTransfer: {
+						multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); welcomeMessage += "\nBend Transfer Enabled"; break;
+					}
+//					case vanillaTuning: {
+//						multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); welcomeMessage += "\nVanilla Tuning Selected"; break;
+//					}
+					case verbose: {
+						Logger.setLog(true);
+					}
+					case output: {
+						if(i+1 < args.length) {
+							i++;
+							path = args[i];
+						}
+						break;
+					} 
+					default:
+						break;	
+					}
+				}
+
+				Logger.getInstance().log(welcomeMessage);
+
+				((Experiment) Class.forName("ocotillo.Experiment$"+experimentClass).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions)).probeLayout(path);
+				break;
+			default: 
+				switch(selectedMethod) {
+				case dynnos: drawingAlgorithm = new DynNoSliceRun(args, data, loadMode); break;
+				case sfdp: drawingAlgorithm = new SFDPRun(args, data, loadMode); break;
+				default: drawingAlgorithm = new MultiDynNoSliceRun(args, data, loadMode); break;
+				}
+				drawingAlgorithm.computeDrawing();
+				drawingAlgorithm.plotSpaceTimeCube(); break;			
 			}
 
-			drawingAlgorithm.saveOutput();
+			//drawingAlgorithm.saveOutput();
 
 			break;
 
 		}
+
 		case computeMetrics: {
 			List<String> lines = new ArrayList<>();
 			String outputFolder = System.getProperty("user.dir");
@@ -368,31 +431,35 @@ public class DefaultRun {
 			Boolean executeSingle = false;
 			Boolean executeVisone = false;
 			Boolean verbose = false;
-			Boolean plotSliceSize = false;
-			//			Boolean dumpSlicesPicture = true;
 
+			String experimentPrefix = "";
+			String welcomeMessage = "";
+			
 			HashSet<String> expNames = new HashSet<String>();
-			HashSet<String> smallerDatasets = new HashSet<String>();
-//			smallerDatasets.add("Bunt");
-//			smallerDatasets.add("Newcomb");
-//			smallerDatasets.add("InfoVis");
-			smallerDatasets.add("Rugby");
-//			smallerDatasets.add("Pride");
+			ArrayList<String> smallerDatasets = new ArrayList<String>();
+			smallerDatasets.add("Bunt");
+			smallerDatasets.add("Newcomb");
+			smallerDatasets.add("InfoVis");	
+			smallerDatasets.add("Rugby");				
+			smallerDatasets.add("Pride");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 			largerDatasets.add("RealMining");
-			largerDatasets.add("BitOTC");
 			largerDatasets.add("MOOC");
-			largerDatasets.add("BitAlpha");  
 			largerDatasets.add("College");
 			largerDatasets.add("RampInfectionMap");
 
+//			largerDatasets.add("BitOTC");			
+//			largerDatasets.add("BitAlpha");  
+			
 			HashMap<String, String> visoneTimes = new HashMap<String, String>();
 
-			HashSet<String> discreteExperiment = new HashSet<String>();
+			ArrayList<String> discreteExperiment = new ArrayList<String>();
 			discreteExperiment.add("Bunt");
 			discreteExperiment.add("Newcomb");
-			discreteExperiment.add("InfoVis");
+			discreteExperiment.add("InfoVis");					
+
+			HashSet<MetricsCalculationOptions> multiLevelOptions = new HashSet<MetricsCalculationOptions>();		
 
 			for(int i = 1; i < args.length; i++) {
 				switch(MetricsCalculationOptions.parseMode(args[i].split("--")[1])) {
@@ -400,12 +467,12 @@ public class DefaultRun {
 				case larger: expNames.addAll(largerDatasets); break;
 				case single: {
 					if(lines.isEmpty())
-						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					executeSingle = true; break;
 				}
 				case multi: {
 					if(lines.isEmpty())
-						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
+						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					executeMulti = true; break;
 				}
 				case sfdp: {
@@ -414,14 +481,6 @@ public class DefaultRun {
 					executeSFDP = true; break;
 				}
 				case verbose: verbose = true; break;
-				//				case discrete: {
-				//					discreteExperiment.add("Bunt");
-				//					discreteExperiment.add("Newcomb");
-				//					discreteExperiment.add("InfoVis");
-				//					//                    	discreteExperiment.add("Rugby");
-				//					//                    	discreteExperiment.add("Pride");     
-				//					break;
-				//				}
 				case output: {
 					if(i+1 < args.length) {
 						i++;
@@ -440,62 +499,81 @@ public class DefaultRun {
 						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
 					break;
 				}
-				default: break;
-				//                	else if(args[i].equals("--dump"))
-				//						dumpSlicesPicture = true;
-
-
-				}               
-			}
-				LocalDateTime ld = LocalDateTime.now();
-				String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
-				String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
-				time = time.replace(':', '-');
-
-				String fileName = "Experiment_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
-
-				for(String graphName : expNames) {
-					System.out.println("\n### Starting " + graphName + " Experiment ###");
-					if(executeVisone && visoneTimes.containsKey(graphName)) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
-								);
-					}
-					if(executeSingle) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
-								);                		
-					}if(executeMulti) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
-								);                		
-					}
-					if(executeSFDP) {
-						lines.addAll(
-								((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
-								);                		
-					}               	
-
+				case manualTau: {
+					multiLevelOptions.add(MetricsCalculationOptions.manualTau); experimentPrefix += "manualTau_"; welcomeMessage += "\nSet ManualTau"; break;
 				}
+				case bendTransfer: {
+					multiLevelOptions.add(MetricsCalculationOptions.bendTransfer); experimentPrefix += "bendTransfer_"; welcomeMessage += "\nBend Transfer Enabled"; break;
+				}
+//				case vanillaTuning: {
+//					multiLevelOptions.add(MetricsCalculationOptions.vanillaTuning); experimentPrefix += "multiVanillaTuning_"; break;
+//				}				
+				default: break;
+				}               
+			}						
 
-				//			for (String line : lines) {
-				//				System.out.println(line);
-				//			}
+			Logger.setLog(verbose);
+			Logger.getInstance().log("Selected Options:" + welcomeMessage);
 
-				if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
-					outputFolder += File.separator; 
+			LocalDateTime ld = LocalDateTime.now();
+			String date = ld.format(DateTimeFormatter.BASIC_ISO_DATE);
+			String time = ld.format(DateTimeFormatter.ISO_LOCAL_TIME);
+			time = time.replace(':', '-');
 
-				ParserTools.writeFileLines(lines,
-						new File(outputFolder + fileName));
+			String fileName = "Experiment_" + experimentPrefix + "_" + date + "_" + time + (executeMulti ? "_wMulti" : "") + "_data.csv";
 
-				System.out.println("\n##### Experiments complete! #####");
+			for(String graphName : expNames) {
+				System.out.println("\n### Starting " + graphName + " Experiment ###");
+				if(executeVisone && visoneTimes.containsKey(graphName)) {
+					lines.addAll(
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
+							);
+				}
+				if(executeSingle) {
+					Experiment exp;
+					try {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions));
+					}catch(NoSuchMethodException nse) {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						Logger.getInstance().log("Reverting to original constructor");
+					}
+					lines.addAll(
+							exp.computeDynNoSliceMetrics(discreteExperiment.contains(graphName))
+							);                		
+				}if(executeMulti) {
+					Experiment exp;
+					try {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(multiLevelOptions));
+					}catch(NoSuchMethodException nse) {
+						exp = ((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance());
+						Logger.getInstance().log("Reverting to original constructor");							
+					}						
+					lines.addAll(
+							exp.computeMultiLevelMetrics(discreteExperiment.contains(graphName), verbose)
+							);                		
+				}
+				if(executeSFDP) {
+					lines.addAll(
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeSFDPMetrics()
+							);                		
+				}               	
 
-				System.exit(0);
-				return;
 			}
+
+			if(outputFolder.charAt(outputFolder.length() - 1) != File.separatorChar)
+				outputFolder += File.separator; 
+
+			ParserTools.writeFileLines(lines,
+					new File(outputFolder + fileName));
+
+			System.out.println("\n##### Experiments complete! #####");
+
+			System.exit(0);
+			return;
+		}
 
 		}
-		
+
 	}
 
 	private static void showHelp() {
@@ -534,52 +612,4 @@ public class DefaultRun {
 		MetricsCalculationOptions.printHelp();		
 	}
 
-	public static void discretisationTest() {
-		DyDataSet dataset = DyGraphSamples.discretisationExample();
-
-		DyQuickView initialView = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		initialView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		initialView.showNewWindow();
-
-		List<Double> snapshotTimes = new ArrayList<>();
-		snapshotTimes.add(25.0);
-		snapshotTimes.add(50.0);
-		snapshotTimes.add(75.0);
-		snapshotTimes.add(100.0);
-		DyGraph discreteGraph = DyGraphDiscretiser.discretiseWithSnapTimes(dataset.dygraph, snapshotTimes);
-
-		DyModularFdl discreteAlgorithm = new DyModularFdlBuilder(discreteGraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPreMovmement(new DyModularPreMovement.ForbidTimeShitfing())
-				.build();
-
-		discreteAlgorithm.iterate(100);
-
-		DyQuickView discreteView = new DyQuickView(discreteGraph, dataset.suggestedInterval.leftBound());
-		discreteView.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		discreteView.showNewWindow();
-
-		DyModularFdl algorithm = new DyModularFdlBuilder(dataset.dygraph, dataset.suggestedTimeFactor)
-				.withForce(new DyModularForce.TimeStraightning(5))
-				.withForce(new DyModularForce.Gravity())
-				.withForce(new DyModularForce.MentalMapPreservation(2))
-				.withForce(new DyModularForce.ConnectionAttraction(5))
-				.withForce(new DyModularForce.EdgeRepulsion(5))
-				.withConstraint(new ModularConstraint.DecreasingMaxMovement(10))
-				.withConstraint(new ModularConstraint.MovementAcceleration(10, Geom.e3D))
-				.withPostProcessing(new DyModularPostProcessing.FlexibleTimeTrajectories(7, 8))
-				.build();
-
-		algorithm.iterate(100);
-
-		DyQuickView view = new DyQuickView(dataset.dygraph, dataset.suggestedInterval.leftBound());
-		view.setAnimation(new Animation(dataset.suggestedInterval, Duration.ofSeconds(10)));
-		view.showNewWindow();
-	}
 }

@@ -22,7 +22,9 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing.FlexibleTimeTrajectories;
 import ocotillo.geometry.Geom;
 import ocotillo.graph.layout.fdl.modular.ModularConstraint;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 
 /**
  * DynnoSlice execution with custom data.
@@ -34,16 +36,21 @@ public class DynNoSliceRun extends Run{
      *
      * @param the preloaded graph dataset.
      * @param delta the delta parameter.
-     * @param tau the tau parameter.
+     * @param timeFactor the tau parameter.
      * @param output the path of the output file.
      * @param graphpreloaded if the graph has already been loaded (no need to parse from command line input)
      */
-    public DynNoSliceRun(String[] argv, DyDataSet selectedDataSet) {    	
-    	super(argv, selectedDataSet);
+    public DynNoSliceRun(String[] argv, DyDataSet selectedDataSet, Mode loadMode) {    	
+    	super(argv, selectedDataSet, loadMode);
     }
 	
 	@Override
 	protected DyGraph run() {
+		
+		System.out.println("Running DynNoSlice");
+		
+		long initEpoch = System.currentTimeMillis();
+		
         DyModularFdl algorithm = new DyModularFdl.DyModularFdlBuilder(dygraph, tau)
                 .withForce(new DyModularForce.TimeStraightning(delta))
                 .withForce(new DyModularForce.Gravity())
@@ -54,7 +61,13 @@ public class DynNoSliceRun extends Run{
                 .withPostProcessing(new FlexibleTimeTrajectories(delta * 1.5, delta * 2.0, Geom.e3D))
                 .build();
 
+        	Logger.getInstance().log("Starting layout");
+        
         	algorithm.iterate(defaultNumberOfIterations);
+        	
+        	long endEpoch = System.currentTimeMillis();
+        	
+        	System.out.println("Elapsed: " + (int)(endEpoch - initEpoch)/1000 + "s");
         	
         	return dygraph;
         }

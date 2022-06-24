@@ -37,6 +37,7 @@ import ocotillo.graph.layout.fdl.modular.ModularStatistics;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
+import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
 import ocotillo.multilevel.MultilevelMetrics.MultiLevelPreProcessTime;
@@ -48,26 +49,48 @@ import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.logger.Logger;
 import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
+import ocotillo.run.Run;
 
 public class MultiLevelDynNoSlice {
+	
+	public enum LIMIT_MINIMUM_TUNING {
+		
+		NO_LIMIT,
+		LIMITED;
+		
+		public double getSelectedMinimum(String option) {
+			if(this.equals(NO_LIMIT))
+				return Double.MIN_VALUE;
+			else
+				switch(option) {
+				case INITIAL_MAX_MOVEMENT: return 3;
+				case MAX_ITERATIONS: return MIN_ITERATIONS_DEFAULT;
+				default: return Double.MIN_VALUE;
+				}
+		}
+		
+	}
 
-	private final double tau;
+	public final double tau;
 	private final double delta;
 
 	public static final String NOT_NUKE_HIERARCHY = "notNuke";
 	public static final String DESIRED_DISTANCE = "ddistance";
-	//public static final double DESIRED_DISTANCE_DEFAULT = CustomRun.defaultDelta;
 	public static final String INITIAL_MAX_MOVEMENT = "mMovement";
-	//public static final double INITIAL_MAX_MOVEMENT_DEFAULT = 2*CustomRun.defaultDelta;
 	public static final String CONTRACT_DISTANCE = "cdistance";
-	//public static final double CONTRACT_DISTANCE_DEFAULT = 1.5*CustomRun.defaultDelta;	
 	public static final String EXPAND_DISTANCE = "edistance";
-	//public static final double EXPAND_DISTANCE_DEFAULT = 2*CustomRun.defaultDelta;	
 	public static final String MAX_ITERATIONS = "mIterations";	
 	public static final double MAX_ITERATIONS_DEFAULT = 75;	
-
+	public static final double MIN_ITERATIONS_DEFAULT = 20;	
+	
+	public static final double DEFAULT_TUNING_SLOPE = -0.07;
+	
 	public static final String LOG_OPTION = "LogProgressInConsole";
 	public static final String FLEXIBLE_TRAJECTORIES = "FLEXIBLE_TRAJECTORIES";
+	public static final int TRAJECTORY_OPTIMIZATION_INTERVAL = 30;
+	
+	public static final String BEND_TRANSFER = "EnableBendTransfer";
+	public static final String LIMIT_MINIMUM_TUNING = "MinimumTuning";
 
 	DyGraph dynamicGraph;
 
@@ -121,18 +144,12 @@ public class MultiLevelDynNoSlice {
 
 	}	
 
-	public MultiLevelDynNoSlice defaultLayoutParameters() {
+	public MultiLevelDynNoSlice defaultLayoutParameters(LIMIT_MINIMUM_TUNING limit) {
 		addLayoutParameter(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new MultiLevelCoolingStrategy.IdentityCoolingStrategy()))
-		.addLayoutParameter(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
+		.addLayoutParameter(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(DEFAULT_TUNING_SLOPE), limit.getSelectedMinimum(INITIAL_MAX_MOVEMENT)))
 		.addLayoutParameter(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new MultiLevelCoolingStrategy.IdentityCoolingStrategy()))
 		.addLayoutParameter(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new MultiLevelCoolingStrategy.IdentityCoolingStrategy()))
-		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
-		
-//		addLayoutParameter(DESIRED_DISTANCE, new DynamicLayoutParameter(delta, new LinearCoolingStrategy(-.07)))
-//		.addLayoutParameter(INITIAL_MAX_MOVEMENT, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
-//		.addLayoutParameter(CONTRACT_DISTANCE, new DynamicLayoutParameter(1.5*delta, new LinearCoolingStrategy(-.07)))
-//		.addLayoutParameter(EXPAND_DISTANCE, new DynamicLayoutParameter(2*delta, new LinearCoolingStrategy(-.07)))
-//		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(-.07)));
+		.addLayoutParameter(MAX_ITERATIONS, new DynamicLayoutParameter(MAX_ITERATIONS_DEFAULT, new LinearCoolingStrategy(DEFAULT_TUNING_SLOPE), limit.getSelectedMinimum(MAX_ITERATIONS)));
 		return this;
 	}
 	
@@ -148,13 +165,11 @@ public class MultiLevelDynNoSlice {
 
 	public MultiLevelDynNoSlice setCoarsener(GraphCoarsener gc) {
 		this.gc = gc;
-		System.out.println("Coarsening | Selected " + this.gc.getDescription());
 		return this;
 	}
 
 	public MultiLevelDynNoSlice setPlacementStrategy(MultilevelNodePlacementStrategy mpc) {
-		placement = mpc;
-		System.out.println("Placement | Selected " + this.placement.getDescription());		
+		placement = mpc;	
 		return this;
 	}
 
@@ -169,11 +184,15 @@ public class MultiLevelDynNoSlice {
 		if(optionsMap.containsKey(LOG_OPTION)) {
 			Object eleme = optionsMap.get(LOG_OPTION);
 			if(eleme instanceof Boolean)
-				logger = Logger.getInstance((boolean)eleme);
+				Logger.setLog((boolean)eleme);
 			else
-				logger = Logger.getInstance();
-		}else
-			logger = Logger.getInstance();
+				Logger.setLog(false);
+		}
+		
+		logger = Logger.getInstance();
+		
+		logger.log("Coarsening | Selected " + this.gc.getDescription());
+		logger.log("Placement | Selected " + this.placement.getDescription());	
 
 		return this;
 	}
@@ -207,7 +226,7 @@ public class MultiLevelDynNoSlice {
 	public void nodesFirstPlacement() {
 		DyGraph currentGraph = gc.getCoarsestGraph();		
 		Graph initialPositionedGraph = computeStaticLayout(flattener.flattenDyGraph(currentGraph));
-		placement.placeVertices(currentGraph, initialPositionedGraph);
+		placement.transferCoordinatesFromStaticGraph(currentGraph, initialPositionedGraph);
 	}
 
 	public DyGraph runMultiLevelLayout() {
@@ -255,30 +274,38 @@ public class MultiLevelDynNoSlice {
 
 		Iterator<DyGraph> hierarchy = gc.getGraphIterator();
 
-		DyGraph currentGraph = hierarchy.next(); //gc.getCoarsestGraph();	
-
-		//LayoutTime lt = new LayoutTime(); 
+		DyGraph currentGraph = hierarchy.next(); 
 
 		logger.log("Working on level " + (gc.getHierarchyDepth() - current_iteration));
 		printParameters();
-		computeDynamicLayout(currentGraph);
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
+		if(currentGraph.nodes().size() > 1)		
+			computeDynamicLayout(currentGraph);
+		
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
 		endTime = System.nanoTime();
 		addedNanos += endTime - startTime;				
 		computationStats.runAtIterationEnd(Duration.ofNanos(endTime - startTime));
-		logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");
+		logger.log("Elapsed: " + new DecimalFormat("#.00").format((endTime - startTime)/Math.pow(10, 9)) + "s");		
 		startTime = endTime;
+		//Run.animateGraphOnWindow(currentGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+
 		current_iteration++;
-		logger.log("Round complete!");
+		logger.log("Round complete!");		
 		
-		//while(currentGraph.parentGraph() != null) {
 		while(hierarchy.hasNext()) {
 			updateThermostats();
 			DyGraph finerGraph = placeVertices(/*currentGraph.parentGraph()*/ hierarchy.next(), currentGraph);
+			
+			//Run.animateGraphOnWindow(finerGraph, dynamicGraph.getComputedSuggestedInterval().leftBound(), dynamicGraph.getComputedSuggestedInterval(), "Level " + (gc.getHierarchyDepth() - current_iteration));
+			
 			endTime = System.nanoTime();
 			addedNanos += endTime - startTime;    		
 			pt.values().add(endTime - startTime);
 			startTime = endTime;
-//
+
 			logger.log("Working on level " + (gc.getHierarchyDepth() - current_iteration));
 			printParameters();
 
@@ -306,6 +333,7 @@ public class MultiLevelDynNoSlice {
 	}
 
 	private void printParameters() {
+		//double iterations = Math.max(Math.ceil(parametersMap.get(MAX_ITERATIONS).getCurrentValue()), MIN_ITERATIONS_DEFAULT);
 		logger.log("\tParameters:\n"
 				+"\t\tDecreasingMaxMovement: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue() + "\n"
 				+"\t\tMovementAcceleration: " + parametersMap.get(INITIAL_MAX_MOVEMENT).getCurrentValue() + "\n"
@@ -338,7 +366,7 @@ public class MultiLevelDynNoSlice {
 
 		if(fdlPostProcessingOptions != null)
 			for(MultiLevelDrawingOption<ModularPostProcessing> opt : fdlPostProcessingOptions){
-				if(opt.active(gc.getHierarchyDepth() - current_iteration))
+				if(opt.active(gc.getHierarchyDepth() - current_iteration)/* gc.getHierarchyDepth() - current_iteration == 0 */)
 					algorithmBuilder.withPostProcessing(opt.getValue(current_iteration, gc.getHierarchyDepth() - current_iteration, delta, tau, parametersMap.get(INITIAL_MAX_MOVEMENT), parametersMap.get(CONTRACT_DISTANCE), parametersMap.get(EXPAND_DISTANCE)));
 			}
 
@@ -349,7 +377,7 @@ public class MultiLevelDynNoSlice {
 			}
 
 		currentAlgorithm = algorithmBuilder.build();
-
+		
 		currentAlgorithm.iterate((int) Math.ceil(parametersMap.get(MAX_ITERATIONS).getCurrentValue()));		
 		
 		synchronizer = currentAlgorithm.getSyncro();

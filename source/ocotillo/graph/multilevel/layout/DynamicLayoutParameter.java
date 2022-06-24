@@ -22,17 +22,28 @@ import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
 public class DynamicLayoutParameter {
 
 	private MultiLevelCoolingStrategy cooling;
+	protected final double minimumValue; //USED TO LIMIT THE MINIMUM VALUE
+
 	private double currentValue;
 	private double initialValue;
-	
+
 	public DynamicLayoutParameter(double initialValue, MultiLevelCoolingStrategy mc) {
 		this.currentValue = initialValue;
 		this.initialValue = initialValue;
 		cooling = mc;
+		minimumValue =  Double.MIN_VALUE;
+	}
+	
+	public DynamicLayoutParameter(double initialValue, MultiLevelCoolingStrategy mc, double minimumValue) {
+		this.currentValue = initialValue;
+		this.initialValue = initialValue;
+		cooling = mc;
+		this.minimumValue =  minimumValue;
 	}
 	
 	public DynamicLayoutParameter coolDown(int iteration) {
-		currentValue *= cooling.getNextValue(iteration);		
+		double tmpCurrentValue = currentValue * cooling.getNextValue(iteration);		
+		currentValue = tmpCurrentValue > minimumValue ? tmpCurrentValue : currentValue; 
 		return this;
 	}
 	

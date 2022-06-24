@@ -2,6 +2,8 @@
 
 MultiDynNoS is the first multi-level event based graph drawing algorithm. 
 
+The following links apply for the previously published short paper version of this research.
+
 [Link to the Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
 
 [Link to the Paper](https://www.cvast.tuwien.ac.at/multidynnos)
@@ -11,8 +13,8 @@ MultiDynNoS is the first multi-level event based graph drawing algorithm.
 
 #### Requirements
 
-- **Build**: To build MultiDynNos, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNos looks for a Windows Linux Subsystem (WLS) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
+- **Build**: To build MultiDynNoS, Maven is required.
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks for a Windows Subsystem for Linux (WSL) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
 
 #### Build
 
@@ -29,7 +31,7 @@ Building the software will produce, in the **target** folder, several files. The
 ```
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar
 ```
-This software has **two** modes: **Layout** and **Metrics**.
+This software has **three** modes: **Layout**, **Metrics**, and **Plot Slices**.
 
 #### Layout Mode:
 It is used to run DynNoSlice or MultiDynNoS on a single graph. The result can be plotted as a space time cube or shown as animation on a new window.
@@ -40,11 +42,18 @@ To run the system in this mode, please run:
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT> <OPTIONS>
 ```
 
+As an example, to show the animation of RAMP graph using MultiDynNoS, the command would be the following:
+
+```
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
+```
+
 | Mode | Command Line Argument | Description |
 | ------ | ------ | ------ |
 | Animate | ```animate``` | Provides a 30 seconds animation of the resulting layout. |
 | Cube | ```showcube``` | Shows the trajectories of the nodes in a space time cube. |
 | Metrics | ```metrics``` | Boots the system in compute metric mode. |
+| Plot Slices | ```dump``` | Selects the Plot Slices mode. |
 | Help | ```help``` | Shows a complete but compact definition of the system usage.
 
 | Graph | Command Line option | Description | Reference |
@@ -57,15 +66,13 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | Rugby-Tweets | ```rugby``` | Is a network derived from over 3,000 tweets involving teams in the "Guinness Pro12" rugby competition. | [*](https://ieeexplore.ieee.org/abstract/document/8580419/)
 | *Larger Graphs* | ------ | ------ | ------ | 
 | MOOC | ```mooc``` | This dataset represents the actions taken by users on a popular massive open online class platform. | [*](https://dl.acm.org/doi/abs/10.1145/3292500.3330895?casa_token=nUM3JyeDa24AAAAA:eSXXwXuBdb0Nz2hU-prOM53jKea12sxcLEuz3WRpWTeZ-PZN5dZMdfWZjerfObhnBaJt9CgLcpUd)
-| Bitcoin Alpha | ```bitalpha``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin Alpha. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
-| Bitcoin OTC | ```bitotc``` | This is who-trusts-whom network of people who trade using Bitcoin on a platform called Bitcoin OTC. | [*](https://dl.acm.org/doi/abs/10.1145/3159652.3159729?casa_token=-Eq2DzUJbx0AAAAA:hsRT2pEMP0EGk0psofnx84bhGe2Rc_aTaSlbgef_YTCONlsOQqubXvnFzfRFWwXczNBTdD251NvL)
 | College Message | ```college``` | SThis dataset is comprised of private messages sent on an online social network at the University of California, Irvine. | [*](https://asistdl.onlinelibrary.wiley.com/doi/abs/10.1002/asi.21015?casa_token=hJRB2bR4UvEAAAAA:Twq4CupkDrrejnj9KnOOXssiA_8Agx_sqAjc_oh-qeYDTp1jp1f6XAbNnFp69M_OuOnz50dSEwJprFg)
 | Reality Mining | ```reality``` | This data comes from The Reality Mining study. | [*](https://link.springer.com/content/pdf/10.1007/s00779-005-0046-3.pdf)
 | Ramp Infection Map | ```ramp``` | Contact-tracing Network. | [*](https://github.com/ScottishCovidResponse/Contact-Tracing-Model)
 | *Custom Graph* | ```custom``` | See below for how to run the system with custom graphs. | ------ |
 
 
-**Timesliced graph*
+**Timesliced graphs*
 
 | Layout | Command Line Argument | Description |
 | ------ | ------ | ------ |
@@ -73,16 +80,12 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT>
 | DynNoSlice | ```single``` | Run a single level event-based layout on the selected graph. |
 | SFDP | ```sfdp``` | Run the sfdp layout algorithm on the selected graph. |
 
-As an example, to show the animation of RAMP graph using Multi-DynNoSlice, the command would be the following:
-
-```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
-```
-
 | Options | Command Line Argument | Description |
 | ------ | ------ | ------ |
 | Delta | ```-d <value>``` | Run the layout with a custom delta. |
-| Tau | ```-t <value>``` | Run the layout with a custom tau. |
+| CLI Tau | ```-t <value>``` | Run the layout with a custom tau. |
+| ManualTau | ```-T``` | Run the layout with the ManualTau found in the dataset class (if available). If not specified, defaults to automatically computed Tau. |
+| Bend Transfer | ```-bT``` | Enables MultiDynNoSlice bend transfer extension |
 | Text Out | ```-o /path/to/graph``` | If specified, the output graph will be converted to text file and saved where specified.
 
 ##### Custom Graph:
@@ -112,11 +115,12 @@ Edge dataset example:
 
 It is possible to pan and rotate the space time cube and animation by dragging with the mouse left and right buttons respectively. In animation mode, press ```P``` to play the animation and ```S``` to stop it.
 
-#### Metrics Mode: 
-It is used to compute the stress, movement, and crowing metrics for the selected layout methods and graph typologies. To run it, please run the following command:
+#### Metrics Mode:
+
+When used, it will run the metrics to reproduce the experiments in the paper. It is run with the following:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics <OPTIONS>
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics [Metrics Options]
 ```
 
 | Option name | Command Line Argument | Description |
@@ -127,11 +131,12 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics <OPTIONS>
 | Single | ```--single``` | Executes the experiment using DynNoSlice |
 | Visone | ```--visone``` | Computes metrics for stored Visone graphs |
 | SFDP | ```--sfdp``` | Flattens graphs and executes the experiment using SFDP |
-| Jaccard* | ```--jaccard``` | Computes Jaccard similarity with uniform timeslicing|
-| Verbose | ```--verbose``` | Extra output on console during computation |
-| Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. |
+| ManualTau | ```--manualTau``` | Run the experiments with the ManualTau found in the dataset class (if available). Defaults to automatically computed Tau. |
+| Bend Transfer | ```--bT``` | Enables MultiDynNoSlice bend transfer extension (MultiDynNoS only) |
+| Verbose | ```--verbose``` | Extra output on console during computation (MultiDynNoS only) |
+| Output | ```--out /path/desired/``` | The path where to save the resulting statistics file. Defaults to working directory. (MultiDynNoS only) |
 
-More than one option can be selected. For example, to compute the metrics for both small and large graphs using visone and MultiDynNos, the resulting command is as follows:
+More than one option can be selected. For example, to compute the metrics for both small and large graphs using Visone and MultiDynNoS, the resulting command is as follows:
 
 ```
 $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smaller --multi --visone --out /path/to/file
@@ -139,13 +144,21 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smal
 
 At least one graph category and one layout method must be selected for the experiment to run, except for options marked by an asterisk (*): in that case, only the graph category is needed and layout options will be ignored.
 
+
+#### Plot Slices Mode (experimental):
+
+When used, it will create a specified number of GML files that correspond to the evolution of the network over time. For example, if 5 slices are requested, the same number of GML files will be created, each representing the layout of the network at 1/5 intervals. Only the nodes and edges that are currently present in the selected interval will be included. Please note that this only works with MultiDynNoS and with the preloaded graphs.
+
+```
+$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar dump [Metrics Options]
+```
+
+The same options of the metrics mode apply in this case as well.
+
 # Todos
 
  - Write MORE Tests
  
-# Known issues
-
-In some systems, due to folder protection, running the jar from the ```target``` folder directly might impede the correct loading of the dataset files. If you get null input streams exception when trying to load a dataset, please move the jar files somewhere else (e.g., Documents folder) before trying again.
 
 # Acknowledgments
 

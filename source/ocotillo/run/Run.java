@@ -24,10 +24,12 @@ import ocotillo.graph.Node;
 import ocotillo.graph.StdAttribute;
 import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.gui.quickview.QuickView;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.customrun.EdgeAppearance;
 import ocotillo.run.customrun.NodeAppearance;
 import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.Commons.DyDataSet;
+import ocotillo.samples.parsers.Commons.Mode;
 import ocotillo.serialization.ParserTools;
 
 public abstract class Run {
@@ -46,17 +48,22 @@ public abstract class Run {
 	protected final double delta;
 	protected final double tau;
 	protected final String output;
-	protected final double staticTiming;
-	protected final Interval suggestedInterval;
+	protected double staticTiming;
+	protected Interval suggestedInterval;
 	protected final String graphName;
+	protected boolean bendTransfer = false;
+	protected boolean vanillaTuning = false;
+	
+	Logger logger;
 
-	public Run(String[] argv, DyDataSet requestedDataSet) {
-
-		System.out.println(getDescription() + " layout selected");
-
+	public Run(String[] argv, DyDataSet requestedDataSet, Mode loadMode) {
+		
 		double delta = defaultDelta;
 		double tau = defaultTau;
 		String output = defaultOutput;
+		boolean autoTau = true;
+		boolean cliTau = false;
+		boolean verbose = false;
 
 		if(requestedDataSet == null) {
 			System.out.println("Loading user defined graph");
@@ -78,18 +85,15 @@ public abstract class Run {
 
 			dygraph = createDynamicGraph(NodeAppearance.parseDataSet(nodeDataSetLines), EdgeAppearance.parseDataSet(edgeDataSetLines));
 
-			suggestedInterval = Interval.newClosed(0, 30);
-			staticTiming = suggestedInterval.leftBound();
 			graphName = "Custom Graph";
-			System.out.println("Loading Done");
+			System.out.println("Custom Graph Loading Done");
 		}else{
 			dygraph = requestedDataSet.dygraph;
-			tau = requestedDataSet.suggestedTimeFactor;
-			suggestedInterval = requestedDataSet.suggestedInterval;
-			staticTiming = requestedDataSet.suggestedInterval.leftBound();	
 			graphName = argv[1];
 		}		
-
+		
+		String welcomeMessage = "";
+		
 		for(int i=0; i<argv.length; i++) {
 			try {
 				switch(AvailableDrawingOption.parse(argv[i].split("-")[1])) {
@@ -97,10 +101,10 @@ public abstract class Run {
 					try {				
 						double possibleDelta = Double.parseDouble(argv[i+1]);
 						delta = possibleDelta > 0 ? possibleDelta : defaultDelta;
-						System.out.println("Set delta " + delta);
+						welcomeMessage += "Set delta " + delta + " from CLI\n" ;
 					} catch (Exception e) {
-						//					System.err.println("Cannot parse delta correctly. \n");
-						//					showHelp();
+						System.err.println("Cannot parse delta correctly. Reverting to default. \n");
+						//showHelp();
 					} 				
 					break;
 				}
@@ -108,16 +112,30 @@ public abstract class Run {
 					try {
 						double possibleTau = Double.parseDouble(argv[i+1]);
 						tau = possibleTau >= 0 ? possibleTau : defaultTau;
-						System.out.println("Set tau " + tau);
+						cliTau = true;
+						welcomeMessage += "Set tau " + tau + " from CLI\n";
 					} catch (Exception e) {
-						//System.err.println("Cannot parse tau correctly. \n");
+						System.err.println("Cannot parse CLI tau correctly - switching to computed Tau. \n");
+						cliTau = false;
 						//showHelp();								
 					}
 					break;
 				}
 				case text: {
-					output = argv[i+1];
+					output = argv[i+1]; break;
+				} 
+				case autoTau: {
+					autoTau = false; welcomeMessage += "ManualTau selected\n"; break;
 				}
+				case verbose: {
+					verbose = true; break;
+				}
+				case bendTransfer: {
+					bendTransfer = true; welcomeMessage += "Bend Transfer Active\n"; break;
+				}
+//				case vanillaTuning: {
+//					vanillaTuning = true; System.out.println("Vanilla Tuning Active"); break;
+//				}
 				//			case o: {
 				//				output = argv[i+1];
 				//			}
@@ -125,10 +143,30 @@ public abstract class Run {
 				}
 			}catch (IndexOutOfBoundsException ie) {}
 		}
-
-		this.tau = tau;
+			
+		if(cliTau) {
+			this.tau = tau;
+			this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, null);			
+		}else
+			if(!autoTau) {
+				this.suggestedInterval = requestedDataSet.getSuggestedInterval(false, loadMode);
+				this.tau = requestedDataSet.getSuggestedTimeFactor(false, loadMode);
+				welcomeMessage += "Set ManualTau from dataset: " + this.tau + "\n";
+			} else {
+				double manualTau = requestedDataSet.getSuggestedTimeFactor(true, loadMode);		
+				this.tau = manualTau;
+				suggestedInterval = requestedDataSet.getSuggestedInterval(true, loadMode);
+				welcomeMessage += "Computed AutoTau: " + manualTau + "\n";
+			}
+				
 		this.delta = delta;
+		this.staticTiming = this.suggestedInterval.leftBound();
 		this.output = output;
+		
+		Logger.setLog(verbose);
+		
+		Logger.getInstance().log(welcomeMessage);
+		Logger.getInstance().log(getDescription() + " layout selected");
 
 		completeSetup();
 
@@ -146,16 +184,15 @@ public abstract class Run {
 	protected abstract DyGraph run();
 
 	public void animateGraph() {
-		System.out.println("Opening animation window...");		
 		animateGraphOnWindow(drawnGraph, staticTiming, suggestedInterval, graphName);
 	}
 
 	public void plotSpaceTimeCube() {
-		System.out.println("Loading space-time cube...");				
 		showGraphOnWindow(drawnGraph, staticTiming, graphName);
 	}
 
-	protected static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+	public static void animateGraphOnWindow(DyGraph graph, double timing, Interval interval, String graphName) {
+		System.out.println("Opening animation window...");		
 
 		DyQuickView dyWindow = new DyQuickView(graph, timing, graphName + " animation");
 		dyWindow.setAnimation(new Animation(interval, Duration.ofSeconds(30)));
@@ -163,7 +200,8 @@ public abstract class Run {
 		dyWindow.showNewWindow();
 	}
 
-	protected void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+	public static void showGraphOnWindow(DyGraph graph, double timing, String graphName) {
+		System.out.println("Visualizing space-time cube...");				
 
 		SpaceTimeCubeSynchroniser stcs = new StcsBuilder(graph, timing).build();
 		QuickView window = new QuickView(stcs.mirrorGraph(), graphName + " space-time cube");
@@ -350,7 +388,10 @@ public abstract class Run {
 		//		nodes,
 		//		edges,
 		text,
-		tau;
+		autoTau,
+		tau, 
+		verbose, bendTransfer;
+		//, vanillaTuning;
 
 		public static void printHelp() {
 
@@ -366,13 +407,22 @@ public abstract class Run {
 			switch(option) {
 			case delta: return new CMDLineOption("Delta", "-d", "Specifies a user defined delta value.");
 			case tau: 
-				return new CMDLineOption("Tau", "-t", "Specifies a user defined tau value");	
+				return new CMDLineOption("Manual Tau", "-t", "Specifies a user defined tau value on the command line.");	
 			case text: 
-				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    										
+				return new CMDLineOption("Text-Out", "-o", "If present specifies the path in which to save the output graph to a text file");    	
+			case autoTau:
+				return new CMDLineOption("ManualTau", "-T", "If included in the dataset code, that specific TAU will be used."
+										+ " If absent, tau will be calculated automatically."); 
+			case verbose:	
+					return new CMDLineOption("Verbose", "-v", "Prints extra information about the drawing process on the console.");
+			case bendTransfer:	
+				return new CMDLineOption("Bend Transfer (MultiDynNoS only)", "-bT", "Enables Bend Transfer (default Disabled).");
+//			case vanillaTuning:	
+//				return new CMDLineOption("Use Vanilla Tuning (MultiDynNoS only)", "-vT", "Sets layout tuning to vanilla MultiDynNoS.");
 				//			case nodes: 
 				//				return new CMDLineOption("Nodeset", "-n", "Specifies the path to the user specified node set");
 				//			case edges: 
-				//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");				
+				//				return new CMDLineOption("Edgeset", "-e", "Specifies the path to the user specified edge set");					
 			default: return null;
 			}
 		}
@@ -380,10 +430,14 @@ public abstract class Run {
 		public static AvailableDrawingOption parse(String arg) {
 			switch(arg) {
 			case "d": return delta;
+			case "bT": return bendTransfer;
+			//case "vT": return vanillaTuning;
 			case "t": return tau;
-			//			case "n:": return nodes;
-			//			case "e:": return edges;
+			//			case "-n:": return nodes;
+			//			case "-e:": return edges;
 			case "o": return text;
+			case "T": return autoTau;
+			case "v": return verbose;
 			default: return null;
 			}
 		}

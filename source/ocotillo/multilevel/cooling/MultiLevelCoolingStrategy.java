@@ -49,21 +49,31 @@ public abstract class MultiLevelCoolingStrategy {
 	public static class LinearCoolingStrategy extends MultiLevelCoolingStrategy{
 
 		public static final double DEFAULT_M = -1;
+		public static final double DEFAULT_Y = 1;
 		private final double m;
+		private final double y;
 		
 		public LinearCoolingStrategy() {
 			super();
 			m = DEFAULT_M;
+			y = DEFAULT_Y;
 		}
 		
 		public LinearCoolingStrategy(double m) {
 			super();
 			this.m  = m;
+			y = DEFAULT_Y;
 		}
 
+		public LinearCoolingStrategy(double m, double y) {
+			super();
+			this.m  = m;
+			this.y = y;
+		}
+		
 		@Override
 		protected double cooldownCurrentValue(int iteration) {
-			return m*iteration + 1;
+			return m*iteration + y;
 		}	
 	}
 	
