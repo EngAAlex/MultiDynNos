@@ -17,7 +17,7 @@ Short paper code is available in this repository as an alternate branch. The fol
 #### Requirements
 
 - **Build**: To build MultiDynNoS, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks for a Windows Subsystem for Linux (WSL) install. Please modify **COMMAND_LINES** variables in **SFDPExecutor** class if needed to point at the command to run Graphviz on your machine.
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks the GraphViz "fdp" and "sfdp" executable in PATH system variable. Please modify the ```graphviz.prefix``` variable in file ```resources/multidynnos.properties``` if in need to add a prefix before compiling. By using a prefix you can point at a specific location on disk (if you don't have/want GraphViz on your PATH); you can also run GraphViz installed on the Windows Subsystem for Linux by using the "wsl" (no quotes) prefix.
 
 #### Build
 

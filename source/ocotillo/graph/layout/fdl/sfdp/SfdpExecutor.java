@@ -21,6 +21,7 @@ import ocotillo.graph.Graph;
 import ocotillo.graph.Node;
 import ocotillo.graph.NodeAttribute;
 import ocotillo.graph.StdAttribute;
+import ocotillo.multilevel.logger.Logger;
 import ocotillo.serialization.dot.DotReader;
 import ocotillo.serialization.dot.DotReader.DotReaderBuilder;
 import ocotillo.serialization.dot.DotValueConverter;
@@ -31,9 +32,14 @@ import ocotillo.serialization.dot.DotValueConverter.SizeConverter;
 import ocotillo.serialization.dot.DotValueConverter.SizeDimensionConverter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.PumpStreamHandler;
@@ -42,22 +48,27 @@ import org.apache.commons.exec.PumpStreamHandler;
  * Executor for GraphViz's Scalable Force Directed Placement algorithm.
  */
 public class SfdpExecutor {
+
+	private final static String PROPERTIES_PATH = "resources/multidynnos.properties";
 	
-	private final static String FDP_LINE = "wsl fdp";
-	private final static String SFDP_LINE = "wsl sfdp";
+	private final static String FDP_LINE = "fdp";
+	private final static String SFDP_LINE = "sfdp";
+	private final static String DEFAULT_PREFIX = "";
 	
+	protected static Logger log = Logger.getInstance();
+
 	public enum AVAILABLE_STATIC_LAYOUTS{
 		fdp,
 		sfdp;
-		
+
 		public static String parse(AVAILABLE_STATIC_LAYOUTS c) {
 			switch(c) {
 			case fdp: return FDP_LINE;
-			case sfdp: return SFDP_LINE;
+			case sfdp: 
 			default: return SFDP_LINE;
 			}
 		}
-		
+
 		public static String toString(AVAILABLE_STATIC_LAYOUTS c) {
 			switch(c) {
 			case fdp: return "FDP";
@@ -69,195 +80,216 @@ public class SfdpExecutor {
 
 	public final static AVAILABLE_STATIC_LAYOUTS DEFAULT_COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.sfdp;
 	private final String COMMAND_LINE;
-	
-	
-    private final String[] arguments;
-    private final DotReader dotReader;
-    private final DotWriter dotWriter;
 
-    /**
-     * Builds a sfdp executor.
-     */
-    public static class SfdpBuilder {
 
-        private String[] arguments;
-        private DotReader dotReader;
-        private DotWriter dotWriter;
-        private AVAILABLE_STATIC_LAYOUTS commandLine = DEFAULT_COMMAND_LINE;        
+	private final String[] arguments;
+	private final DotReader dotReader;
+	private final DotWriter dotWriter;
 
-        /**
-         * Constructs a SfdpBuilder.
-         */
-        public SfdpBuilder() {
-            arguments = new String[]{};
+	/**
+	 * Builds a sfdp executor.
+	 */
+	public static class SfdpBuilder {
 
-            DotReaderBuilder readerBuilder = new DotReaderBuilder();
-            readerBuilder.nodeAttributes
-                    .convert("pos", StdAttribute.nodePosition, new PositionConverter())
-                    .convert("width,height", StdAttribute.nodeSize, new SizeConverter());
-            dotReader = readerBuilder.build();
+		private String[] arguments;
+		private DotReader dotReader;
+		private DotWriter dotWriter;
+		private AVAILABLE_STATIC_LAYOUTS commandLine = DEFAULT_COMMAND_LINE;        
 
-            DotWriterBuilder writerBuilder = new DotWriterBuilder();
-            writerBuilder.nodeAttributes
-                    .convert(StdAttribute.nodePosition, "pos")
-                    .convert(StdAttribute.nodeSize, "width", new SizeDimensionConverter(0))
-                    .convert(StdAttribute.nodeSize, "height", new SizeDimensionConverter(1));
-            
-            writerBuilder.edgeAttributes
-            		.convert(StdAttribute.weight, "weight", new DotValueConverter.DoubleConverter());
-            dotWriter = writerBuilder.build();
-        }
+		/**
+		 * Constructs a SfdpBuilder.
+		 */
+		public SfdpBuilder() {
+			arguments = new String[]{};
 
-        /**
-         * Specifies the arguments to be used for the algorithm.
-         *
-         * @param arguments the arguments.
-         * @return the builder.
-         */
-        public SfdpBuilder withArguments(String[] arguments) {
-            this.arguments = arguments;
-            return this;
-        }
+			DotReaderBuilder readerBuilder = new DotReaderBuilder();
+			readerBuilder.nodeAttributes
+			.convert("pos", StdAttribute.nodePosition, new PositionConverter())
+			.convert("width,height", StdAttribute.nodeSize, new SizeConverter());
+			dotReader = readerBuilder.build();
 
-        /**
-         * Indicates which dot reader to use to convert the algorithm output
-         * into graph positions.
-         *
-         * @param dotReader the dot reader.
-         * @return the builder.
-         */
-        public SfdpBuilder withDotReader(DotReader dotReader) {
-            this.dotReader = dotReader;
-            return this;
-        }
+			DotWriterBuilder writerBuilder = new DotWriterBuilder();
+			writerBuilder.nodeAttributes
+			.convert(StdAttribute.nodePosition, "pos")
+			.convert(StdAttribute.nodeSize, "width", new SizeDimensionConverter(0))
+			.convert(StdAttribute.nodeSize, "height", new SizeDimensionConverter(1));
 
-        /**
-         * Indicates which dot reader to use to convert the current graph into
-         * dot input.
-         *
-         * @param dotWriter the dot writer.
-         * @return the builder.
-         */
-        public SfdpBuilder withDotWriter(DotWriter dotWriter) {
-            this.dotWriter = dotWriter;
-            return this;
-        }
-        
-        public SfdpBuilder withCommandLine(AVAILABLE_STATIC_LAYOUTS commandLine) {
-        	this.commandLine = commandLine;
-        	return this;
-        }
+			writerBuilder.edgeAttributes
+			.convert(StdAttribute.weight, "weight", new DotValueConverter.DoubleConverter());
+			dotWriter = writerBuilder.build();
+		}
 
-        /**
-         * Builds a sfdp executor.
-         *
-         * @return the sfdp executor.
-         */
-        public SfdpExecutor build() {
-            return new SfdpExecutor(arguments, dotReader, dotWriter, commandLine);
-        }
-    }
+		/**
+		 * Specifies the arguments to be used for the algorithm.
+		 *
+		 * @param arguments the arguments.
+		 * @return the builder.
+		 */
+		public SfdpBuilder withArguments(String[] arguments) {
+			this.arguments = arguments;
+			return this;
+		}
 
-    /**
-     * Constructs a sfdp executor.
-     *
-     * @param arguments the arguments.
-     * @param dotReader the dot reader.
-     * @param dotWriter the dot writer.
-     */
-    private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter, AVAILABLE_STATIC_LAYOUTS commandLine) {
-        this.COMMAND_LINE = AVAILABLE_STATIC_LAYOUTS.parse(commandLine); 
-        this.arguments = arguments;
-        this.dotReader = dotReader;
-        this.dotWriter = dotWriter;
-    	checkExecutable();        
-    }
+		/**
+		 * Indicates which dot reader to use to convert the algorithm output
+		 * into graph positions.
+		 *
+		 * @param dotReader the dot reader.
+		 * @return the builder.
+		 */
+		public SfdpBuilder withDotReader(DotReader dotReader) {
+			this.dotReader = dotReader;
+			return this;
+		}
 
-    /**
-     * Checks if the executable exists.
-     */
-    private void checkExecutable() {
-        try {
-            DefaultExecutor executor = new DefaultExecutor();
-            executor.setStreamHandler(new PumpStreamHandler(new ByteArrayOutputStream()));
-            executor.execute(CommandLine.parse(COMMAND_LINE + " -V"));
-        } catch (IOException ex) {
-            throw new IllegalStateException("sfdp executable has not been found.");
-        }
-    }
+		/**
+		 * Indicates which dot reader to use to convert the current graph into
+		 * dot input.
+		 *
+		 * @param dotWriter the dot writer.
+		 * @return the builder.
+		 */
+		public SfdpBuilder withDotWriter(DotWriter dotWriter) {
+			this.dotWriter = dotWriter;
+			return this;
+		}
 
-    /**
-     * Runs the algorithm to compute the new positions for the given graph.
-     *
-     * @param graph the graph.
-     */
-    public void execute(Graph graph) {
-        List<String> dotInput = dotWriter.writeGraph(graph);
-        List<String> dotOutput = run(dotInput);
-        Graph generatedGraph = dotReader.parseFile(dotOutput);
-        NodeAttribute<Coordinates> newPositions = generatedGraph.nodeAttribute(StdAttribute.nodePosition);
-        NodeAttribute<Coordinates> positions = graph.nodeAttribute(StdAttribute.nodePosition);
-        for(Node node : graph.nodes()){
-            Node correspondingNode = generatedGraph.getNode(node.id());
-            positions.set(node, newPositions.get(correspondingNode));
-        }
-    }
+		public SfdpBuilder withCommandLine(AVAILABLE_STATIC_LAYOUTS commandLine) {
+			this.commandLine = commandLine;
+			return this;
+		}
 
-    /**
-     * Runs the algorithm.
-     *
-     * @param dotInput the dot input.
-     * @return the dot output.
-     */
-    private List<String> run(List<String> dotInput) {
-        for (String argment : arguments) {
-            assert (argment.startsWith("-") && !argment.startsWith("-o") && !argment.startsWith("-O")) : "Arguments that control the input/ouput streams cannot be used here.";
-        }
+		/**
+		 * Builds a sfdp executor.
+		 *
+		 * @return the sfdp executor.
+		 */
+		public SfdpExecutor build() {
+			return new SfdpExecutor(arguments, dotReader, dotWriter, commandLine);
+		}
+	}
 
-        CommandLine cmdLine = new CommandLine(CommandLine.parse(COMMAND_LINE));
-        cmdLine.addArguments(arguments);
+	/**
+	 * Constructs a sfdp executor.
+	 *
+	 * @param arguments the arguments.
+	 * @param dotReader the dot reader.
+	 * @param dotWriter the dot writer.
+	 */
+	private SfdpExecutor(String[] arguments, DotReader dotReader, DotWriter dotWriter, AVAILABLE_STATIC_LAYOUTS commandLine) {
 
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(listToString(dotInput).getBytes());
-        ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		Properties props = new Properties();
+		String prefix = DEFAULT_PREFIX;
+		try {
+			InputStream stream = getClass().getResourceAsStream(PROPERTIES_PATH);
+			if(stream == null)
+				stream = new FileInputStream(new File(PROPERTIES_PATH));
+			props.load(stream);
+			
+			prefix=props.getProperty("graphviz.prefix");
+			if(prefix == null)
+				throw new Exception();
+		}catch(Exception e) {
+			//log.log(e.getMessage());
+			log.log("Could not load prefix, switching to default");
+			prefix = DEFAULT_PREFIX;
+		}
 
-        try {
-            DefaultExecutor executor = new DefaultExecutor();
-            executor.setStreamHandler(new PumpStreamHandler(outputStream, errorStream, inputStream));
-            executor.execute(cmdLine);
-        } catch (IOException ex) {
-            System.err.println("ERROR: " + errorStream.toString() + "\n");
-            System.out.println("OUTPUT: " + outputStream.toString() + "\n");
-            ex.printStackTrace();            
-            throw new IllegalStateException("Error while executing sfdp.");
-        }
+		if(prefix.length() > 0 && !Character.isWhitespace(prefix.charAt(prefix.length()-1)))
+			prefix += " ";
+		this.COMMAND_LINE = prefix + AVAILABLE_STATIC_LAYOUTS.parse(commandLine);
+		log.log(this.COMMAND_LINE);
+		this.arguments = arguments;
+		this.dotReader = dotReader;
+		this.dotWriter = dotWriter;
+		checkExecutable();        
+	}
 
-        return stringToList(outputStream.toString());
-    }
+	/**
+	 * Checks if the executable exists.
+	 */
+	private void checkExecutable() {
+		try {
+			DefaultExecutor executor = new DefaultExecutor();
+			executor.setStreamHandler(new PumpStreamHandler(new ByteArrayOutputStream()));
+			executor.execute(CommandLine.parse(COMMAND_LINE + " -V"));
+		} catch (IOException ex) {
+			throw new IllegalStateException("sfdp executable has not been found.");
+		}
+	}
 
-    /**
-     * Converts a list of lines into a multi-line string.
-     *
-     * @param list the list of lines.
-     * @return the multi-line string.
-     */
-    private static String listToString(List<String> list) {
-        StringBuilder builder = new StringBuilder();
-        for (String string : list) {
-            builder.append(string);
-            builder.append("\n");
-        }
-        return builder.toString();
-    }
+	/**
+	 * Runs the algorithm to compute the new positions for the given graph.
+	 *
+	 * @param graph the graph.
+	 */
+	public void execute(Graph graph) {
+		List<String> dotInput = dotWriter.writeGraph(graph);
+		List<String> dotOutput = run(dotInput);
+		Graph generatedGraph = dotReader.parseFile(dotOutput);
+		NodeAttribute<Coordinates> newPositions = generatedGraph.nodeAttribute(StdAttribute.nodePosition);
+		NodeAttribute<Coordinates> positions = graph.nodeAttribute(StdAttribute.nodePosition);
+		for(Node node : graph.nodes()){
+			Node correspondingNode = generatedGraph.getNode(node.id());
+			positions.set(node, newPositions.get(correspondingNode));
+		}
+	}
 
-    /**
-     * Converts a multi-line string into a list of lines.
-     *
-     * @param string the multi-line string.
-     * @return the list of lines.
-     */
-    private static List<String> stringToList(String string) {
-        return Arrays.asList(string.split("\n"));
-    }
+	/**
+	 * Runs the algorithm.
+	 *
+	 * @param dotInput the dot input.
+	 * @return the dot output.
+	 */
+	private List<String> run(List<String> dotInput) {
+		for (String argment : arguments) {
+			assert (argment.startsWith("-") && !argment.startsWith("-o") && !argment.startsWith("-O")) : "Arguments that control the input/ouput streams cannot be used here.";
+		}
+
+		CommandLine cmdLine = new CommandLine(CommandLine.parse(COMMAND_LINE));
+		cmdLine.addArguments(arguments);
+
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(listToString(dotInput).getBytes());
+		ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+		try {
+			DefaultExecutor executor = new DefaultExecutor();
+			executor.setStreamHandler(new PumpStreamHandler(outputStream, errorStream, inputStream));
+			executor.execute(cmdLine);
+		} catch (IOException ex) {
+			System.err.println("ERROR: " + errorStream.toString() + "\n");
+			System.out.println("OUTPUT: " + outputStream.toString() + "\n");
+			ex.printStackTrace();            
+			throw new IllegalStateException("Error while executing sfdp.");
+		}
+
+		return stringToList(outputStream.toString());
+	}
+
+	/**
+	 * Converts a list of lines into a multi-line string.
+	 *
+	 * @param list the list of lines.
+	 * @return the multi-line string.
+	 */
+	private static String listToString(List<String> list) {
+		StringBuilder builder = new StringBuilder();
+		for (String string : list) {
+			builder.append(string);
+			builder.append("\n");
+		}
+		return builder.toString();
+	}
+
+	/**
+	 * Converts a multi-line string into a list of lines.
+	 *
+	 * @param string the multi-line string.
+	 * @return the list of lines.
+	 */
+	private static List<String> stringToList(String string) {
+		return Arrays.asList(string.split("\n"));
+	}
 
 }
