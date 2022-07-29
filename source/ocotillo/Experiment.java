@@ -18,8 +18,10 @@
 package ocotillo;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
@@ -40,7 +42,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import javax.swing.WindowConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -67,7 +68,6 @@ import ocotillo.dygraph.layout.fdl.modular.DyModularFdl;
 import ocotillo.dygraph.layout.fdl.modular.DyModularForce;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPostProcessing;
 import ocotillo.dygraph.layout.fdl.modular.DyModularPreMovement;
-import ocotillo.dygraph.rendering.Animation;
 import ocotillo.export.GMLOutputWriter;
 import ocotillo.geometry.Coordinates;
 import ocotillo.geometry.Geom;
@@ -89,13 +89,11 @@ import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.AVAILABLE_STATIC_LAYOUTS;
 import ocotillo.graph.layout.fdl.sfdp.SfdpExecutor.SfdpBuilder;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice;
 import ocotillo.graph.multilevel.layout.MultiLevelDynNoSlice.LIMIT_MINIMUM_TUNING;
-import ocotillo.gui.quickview.DyQuickView;
 import ocotillo.multilevel.MultilevelMetrics.CoarseningTime;
 import ocotillo.multilevel.MultilevelMetrics.HierarchyDepth;
 import ocotillo.multilevel.coarsening.GraphCoarsener;
 import ocotillo.multilevel.coarsening.IndependentSet;
 import ocotillo.multilevel.coarsening.SolarMerger;
-import ocotillo.multilevel.cooling.MultiLevelCoolingStrategy;
 import ocotillo.multilevel.flattener.DyGraphFlattener;
 import ocotillo.multilevel.flattener.DyGraphFlattener.StaticSumPresenceFlattener;
 import ocotillo.multilevel.logger.Logger;
@@ -103,9 +101,6 @@ import ocotillo.multilevel.options.MultiLevelDrawingOption;
 import ocotillo.multilevel.placement.MultilevelNodePlacementStrategy;
 import ocotillo.multilevel.placement.WeightedBarycenterPlacementStrategy;
 import ocotillo.run.Run;
-import ocotillo.run.Run.AvailableDrawingOption;
-import ocotillo.samples.parsers.BitcoinAlpha;
-import ocotillo.samples.parsers.BitcoinOTC;
 import ocotillo.samples.parsers.CollegeMsg;
 import ocotillo.samples.parsers.Commons;
 import ocotillo.samples.parsers.Commons.Mode;
@@ -860,7 +855,14 @@ public abstract class Experiment {
 
 	private List<Map<Node, Coordinates>> readNodePositions(String directory, DyGraph discreteGraph, NodeMap map){
 		List<Map<Node, Coordinates>> nodePositions = new ArrayList<>();
-		ZipInputStream visoneInputStream = new ZipInputStream(Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip"));
+		InputStream is = Experiment.class.getClassLoader().getResourceAsStream(directory + "/visoneAfter/visoneAfter.zip");
+		if(is == null)
+			try {
+			is = new FileInputStream(directory + "/visoneAfter/visoneAfter.zip");
+			}catch(Exception e) {
+				throw new IllegalStateException("Cannot read the zip file.");				
+			}
+		ZipInputStream visoneInputStream = new ZipInputStream(is);		 
 		try {		
 			ZipEntry zie = visoneInputStream.getNextEntry();
 			while(zie != null){
@@ -904,6 +906,7 @@ public abstract class Experiment {
 			if(visoneInputStream != null)
 				try {
 					visoneInputStream.close();
+					ex.printStackTrace();
 				} catch (IOException e) {}			
 			throw new IllegalStateException("Cannot read the xml file.");
 		}		

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import ocotillo.DefaultRun.MetricsCalculationOptions;
 import ocotillo.multilevel.logger.Logger;
 import ocotillo.run.DynNoSliceRun;
 import ocotillo.run.MultiDynNoSliceRun;
@@ -525,8 +526,10 @@ public class DefaultRun {
 			for(String graphName : expNames) {
 				System.out.println("\n### Starting " + graphName + " Experiment ###");
 				if(executeVisone && visoneTimes.containsKey(graphName)) {
+					HashSet<MetricsCalculationOptions> vis_multilevelOptions = new HashSet<>(multiLevelOptions);
+					vis_multilevelOptions.add(MetricsCalculationOptions.manualTau); //forces manualTau
 					lines.addAll(
-							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor().newInstance()).computeVisoneMetrics(visoneTimes.get(graphName))
+							((Experiment) Class.forName("ocotillo.Experiment$"+graphName).getDeclaredConstructor(new Class[] {HashSet.class}).newInstance(vis_multilevelOptions)).computeVisoneMetrics(visoneTimes.get(graphName))
 							);
 				}
 				if(executeSingle) {
