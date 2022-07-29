@@ -2,13 +2,13 @@
 
 MultiDynNoS is the first multi-level event based graph drawing algorithm. 
 
-This code and the following links apply to the CGF journal version of the MultiDynNoS research, which has been recently accepted and now under production. Preprint will be coming soon.
+This code and the following links apply to the CGF journal version of the MultiDynNoS research, available as [Open Access](https://onlinelibrary.wiley.com/doi/10.1111/cgf.14615)
 
-[Link to the Video](https://youtu.be/LM1b2KPDNVw)
+[Link to the supplemental Video](https://youtu.be/LM1b2KPDNVw)
 
 Short paper code is available in this repository as an alternate branch. The following links point to the short paper video and paper.
 
-[Link to the Short Paper Video](https://www.youtube.com/watch?v=nnQwiNTurXc)
+[Link to the Short Paper Video](https://www.youtube.com/watch?v=nnQwiNTurXc) -- 
 [Link to the Short Paper](https://www.cvast.tuwien.ac.at/multidynnos)
 
 
