@@ -3,11 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ocotillo</groupId>
-	<artifactId>multi-dynnoslice</artifactId>
+	<artifactId>multidynnos</artifactId>
 	<version>1.0.0</version>
 	<name>Multi-DynNoSlice demo</name>
 	<properties>
-		<java.version>14</java.version>
+		<java.version>11</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 	    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>

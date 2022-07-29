@@ -17,11 +17,18 @@ Short paper code is available in this repository as an alternate branch. The fol
 #### Requirements
 
 - **Build**: To build MultiDynNoS, Maven is required.
-- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks the GraphViz "fdp" and "sfdp" executable in PATH system variable. Please modify the ```graphviz.prefix``` variable in file ```resources/multidynnos.properties``` if in need to add a prefix before compiling. By using a prefix you can point at a specific location on disk (if you don't have/want GraphViz on your PATH); you can also run GraphViz installed on the Windows Subsystem for Linux by using the "wsl" (no quotes) prefix.
+- **Layout**: To produce its layouts, MultiDynNoS requires a version of [GraphViz](https://graphviz.org/documentation/) installed on the system. By default, MultiDynNoS looks the GraphViz "fdp" and "sfdp" executable in PATH system variable. Please modify the ```graphviz.prefix``` variable in file ```resources/multidynnos.properties``` if in need to add a prefix before compiling. By using a prefix you can point at a specific location on disk (if you don't have/want GraphViz on your PATH); you can also run GraphViz installed on the Windows Subsystem for Linux by using the "wsl" (no quotes) prefix. You do not need any modification if you run the included setup script.
 
 #### Build
 
-Clone the repository and navigate to the root folder of the project. Build the software by running:
+Clone the repository and navigate to the root folder of the repository. You can install the dependencies and build the software by navigating to the ```scripts``` folder and running the following:
+
+```
+$ sh install_script.sh
+```
+
+
+You can also build the software by running the following command in the root folder of the repository.
 
 ```
 $ mvn clean package -DskipTests
@@ -29,11 +36,12 @@ $ mvn clean package -DskipTests
 
 # Usage
 
-Building the software will produce, in the **target** folder, several files. The build that contains the software, its dependencies, and its data is **multi-dynnoslice-1.0.0-complete.jar**. To show a quick help description, please run the following command:
+Building the software will produce, in the **target** folder, several files. The build that contains the software, its dependencies, and its data is **multidynnos-1.0.0-complete.jar**. To show a quick help description, please run the following command:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar
 ```
+
 This software has **three** modes: **Layout**, **Metrics**, and **Plot Slices**.
 
 #### Layout Mode:
@@ -42,13 +50,13 @@ It is used to run DynNoSlice or MultiDynNoS on a single graph. The result can be
 To run the system in this mode, please run:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT> <OPTIONS>
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar <MODE> <GRAPH> <LAYOUT> <OPTIONS>
 ```
 
 As an example, to show the animation of RAMP graph using MultiDynNoS, the command would be the following:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar animate ramp multi
 ```
 
 | Mode | Command Line Argument | Description |
@@ -96,7 +104,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate ramp multi
 To run the system with a user-provided graph, please use the following syntax:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar animate custom /path/to/node/file /path/to/edge/file <LAYOUT> <OPTIONS>
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar animate custom /path/to/node/file /path/to/edge/file <LAYOUT> <OPTIONS>
 ```
 
 With ```<LAYOUT>``` and ```<OPTIONS>``` the same as above. An example of node and edge files can be found below.
@@ -123,7 +131,7 @@ It is possible to pan and rotate the space time cube and animation by dragging w
 When used, it will run the metrics to reproduce the experiments in the paper. It is run with the following:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics [Metrics Options]
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar metrics [Metrics Options]
 ```
 
 | Option name | Command Line Argument | Description |
@@ -142,7 +150,7 @@ $ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics [Metrics Option
 More than one option can be selected. For example, to compute the metrics for both small and large graphs using Visone and MultiDynNoS, the resulting command is as follows:
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar metrics --larger --smaller --multi --visone --out /path/to/file
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar metrics --larger --smaller --multi --visone --out /path/to/file
 ```
 
 At least one graph category and one layout method must be selected for the experiment to run, except for options marked by an asterisk (*): in that case, only the graph category is needed and layout options will be ignored.
@@ -153,7 +161,7 @@ At least one graph category and one layout method must be selected for the exper
 When used, it will create a specified number of GML files that correspond to the evolution of the network over time. For example, if 5 slices are requested, the same number of GML files will be created, each representing the layout of the network at 1/5 intervals. Only the nodes and edges that are currently present in the selected interval will be included. Please note that this only works with MultiDynNoS and with the preloaded graphs.
 
 ```
-$ java -jar /path/to/multi-dynnoslice-1.0.0-complete.jar dump [Metrics Options]
+$ java -jar /path/to/multidynnos-1.0.0-complete.jar dump [Metrics Options]
 ```
 
 The same options of the metrics mode apply in this case as well.
