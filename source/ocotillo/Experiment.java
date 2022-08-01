@@ -405,7 +405,7 @@ public abstract class Experiment {
 
 			double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 			applyIdealScaling(visoneGraph, visoneScaling);
-			lines.add(name + STAT_SEPARATOR + "visone" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
+			lines.add(name + STAT_SEPARATOR + "visone" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + STAT_SEPARATOR  + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
 							visoneGraph, dataset.getSuggestedTimeFactor(false, null)).build()));
 		}catch (URISyntaxException uri) {
@@ -515,7 +515,10 @@ public abstract class Experiment {
 			sfdpInstance.execute(flattened);
 
 			long epochEnd = System.currentTimeMillis();
-
+			double sfdpTime = (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d);
+			
+			System.out.println("\t\t\tDone in " + (int)sfdpTime + "s, computing metrics.");
+			
 			DyGraph sfdpCont = getContinuousCopy();
 			copyNodeLayoutFromTo(flattened, sfdpCont);
 
@@ -528,7 +531,7 @@ public abstract class Experiment {
 			DyGraph sfdpDisc = discretise();
 			copyNodeLayoutFromTo(sfdpCont, sfdpDisc);
 
-			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + (Duration.ofMillis(epochEnd - epochStart).toMillis() / 1000.0d) + STAT_SEPARATOR + 1 / sfdpScaling + STAT_SEPARATOR
+			String line = name + STAT_SEPARATOR + "sfdp" + STAT_SEPARATOR + sfdpTime + STAT_SEPARATOR + STAT_SEPARATOR + STAT_SEPARATOR  + 1 / sfdpScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(sfdpCont, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
 							sfdpDisc, dataset.getSuggestedTimeFactor(automaticTau, loadMode)).build());
 

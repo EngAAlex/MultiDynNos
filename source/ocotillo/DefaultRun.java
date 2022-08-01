@@ -497,7 +497,7 @@ public class DefaultRun {
 					visoneTimes.put("Rugby", "0.079");
 					visoneTimes.put("Pride", "3.391");
 					if(lines.isEmpty())
-						lines.add("Graph;Type;Time;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");										
+						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					break;
 				}
 				case manualTau: {
