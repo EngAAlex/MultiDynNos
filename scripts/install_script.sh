@@ -21,5 +21,5 @@ echo
 mvn clean package -DskipTests
 
 echo 
-echo "#### ALL DONE. MultiDynNoS is ready to run. Run java -jar target/multidynnos-1.0.0-complete.jar for help text."
+echo "#### ALL DONE. MultiDynNoS is ready to run. The compiled binary is available in the ../target folder. Run java -jar ../target/multidynnos-1.0.0-complete.jar for help text."
 echo

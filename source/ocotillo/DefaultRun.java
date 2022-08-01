@@ -442,7 +442,7 @@ public class DefaultRun {
 			smallerDatasets.add("Newcomb");
 			smallerDatasets.add("InfoVis");	
 			smallerDatasets.add("Rugby");				
-			smallerDatasets.add("Pride");
+			smallerDatasets.add("Dialogs");
 
 			HashSet<String> largerDatasets = new HashSet<String>();
 			largerDatasets.add("RealMining");
@@ -495,7 +495,7 @@ public class DefaultRun {
 					visoneTimes.put("Newcomb", "0.109");
 					visoneTimes.put("InfoVis", "77.430");
 					visoneTimes.put("Rugby", "0.079");
-					visoneTimes.put("Pride", "3.391");
+					visoneTimes.put("Dialogs", "3.391");
 					if(lines.isEmpty())
 						lines.add("Graph;Type;Time;Tau_sugg;Tau_used;Scaling;StressOn;StressOff;Movement;Crowding;Coarsening_Depth;Coarsening_Time;Events_Processed");					
 					break;
