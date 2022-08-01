@@ -405,7 +405,7 @@ public abstract class Experiment {
 
 			double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 			applyIdealScaling(visoneGraph, visoneScaling);
-			lines.add(name + STAT_SEPARATOR + "v" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
+			lines.add(name + STAT_SEPARATOR + "visone" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
 							visoneGraph, dataset.getSuggestedTimeFactor(false, null)).build()));
 		}catch (URISyntaxException uri) {
@@ -443,7 +443,7 @@ public abstract class Experiment {
 				applyIdealScaling(discSyncro, discreteScaling);
 				DyGraph contDiscrete = getContinuousCopy();
 				copyNodeLayoutFromTo(discGraph, contDiscrete);
-				lines.add(name + STAT_SEPARATOR + "d" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
+				lines.add(name + STAT_SEPARATOR + "singled" + STAT_SEPARATOR + discTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
 				+ STAT_SEPARATOR + discAlgorithm.tau + STAT_SEPARATOR + 1 / discreteScaling + STAT_SEPARATOR
 				+ computeOtherMetrics(discGraph, snapTimes, discSyncro));
 			}catch (InterruptedException | ExecutionException e) {
@@ -480,7 +480,7 @@ public abstract class Experiment {
 				DyGraph discContinuous = discretise();
 				copyNodeLayoutFromTo(contGraph, discContinuous);
 
-				String line = name + STAT_SEPARATOR + "c" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
+				String line = name + STAT_SEPARATOR + "singlec" + STAT_SEPARATOR + contTime + STAT_SEPARATOR + dataset.getSuggestedTimeFactor(false, null) 
 				+ STAT_SEPARATOR + contAlgorithm.tau + STAT_SEPARATOR + 1 / continuousScaling + STAT_SEPARATOR
 				+ computeOtherMetrics(contGraph, snapTimes, contSyncro);
 
@@ -1063,14 +1063,14 @@ public abstract class Experiment {
 	/**
 	 * Experiment with the Pride and Prejudice dataset.
 	 */
-	public static class Pride extends Experiment {
+	public static class Dialogs extends Experiment {
 
-		public Pride() throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
+		public Dialogs() throws Exception{
+			super("Dialogs", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d);
 		}
 
-		public Pride(HashSet<MetricsCalculationOptions> opts) throws Exception{
-			super("Pride", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
+		public Dialogs(HashSet<MetricsCalculationOptions> opts) throws Exception{
+			super("Dialogs", "data/DialogSequences/Pride_and_Prejudice", DialogSequences.class, Commons.Mode.keepAppearedNode, 5.0d, opts);
 		}		
 
 		@Override
