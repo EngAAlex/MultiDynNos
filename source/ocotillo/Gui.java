@@ -115,7 +115,7 @@ public class Gui extends JFrame {
 			System.err.println("Could not load graph!");
 		}
 		try {
-			addExperiment(new Experiment.Pride());
+			addExperiment(new Experiment.Dialogs());
 		}catch(Exception e) {
 			System.err.println("Could not load graph!");
 		}

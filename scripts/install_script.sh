@@ -5,6 +5,8 @@ echo
 
 echo Installing Prerequisites...
 
+cd ..
+
 sudo apt-get update -qq
 sudo apt-get install -y maven graphviz openjdk-11-jdk
 
