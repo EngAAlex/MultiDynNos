@@ -77,7 +77,6 @@ public class DialogSequences extends PreloadedGraphParser{
 	 * @return the dynamic dataset.
 	 */
 	public DyDataSet parse(Mode mode) throws URISyntaxException {
-		//        File file = new File("data/DialogSequences/Pride_and_Prejudice/");
 		InputStream fileStream = DialogSequences.class.getClassLoader().getResourceAsStream(dataPath);        
 		DialogDataset dataset;	
 		try {
@@ -94,7 +93,6 @@ public class DialogSequences extends PreloadedGraphParser{
 	        return dyDataSet;
 			
 		} catch (IOException e) {
-//			System.out.println("Error while reading stream!");
 			throw new URISyntaxException(dataPath, "Stream reading error");
 		} catch (Exception e) {
 			System.out.println("General Error while reading stream!");

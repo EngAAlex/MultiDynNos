@@ -400,14 +400,14 @@ public abstract class Experiment {
 			List<Double> snapTimes = readSnapTimes(discretise());
 
 			visoneGraph = exportImportVisone(directory);
-			contVisone = getContinuousCopy();
-			copyNodeLayoutFromTo(visoneGraph, contVisone);
-
 			double visoneScaling = computeIdealScaling(visoneGraph, snapTimes);
 			applyIdealScaling(visoneGraph, visoneScaling);
+
+			contVisone = getContinuousCopy();
+			copyNodeLayoutFromTo(visoneGraph, contVisone);
 			lines.add(name + STAT_SEPARATOR + "visone" + STAT_SEPARATOR + visoneTime + STAT_SEPARATOR + STAT_SEPARATOR  + STAT_SEPARATOR + 1 / visoneScaling + STAT_SEPARATOR
 					+ computeOtherMetrics(contVisone, snapTimes, new SpaceTimeCubeSynchroniser.StcsBuilder(
-							visoneGraph, dataset.getSuggestedTimeFactor(false, null)).build()));
+							contVisone, dataset.getSuggestedTimeFactor(false, null)).build()));
 		}catch (URISyntaxException uri) {
 			System.err.println("Could not load graph!");
 		}
