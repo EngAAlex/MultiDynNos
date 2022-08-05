@@ -14,6 +14,10 @@ Short paper code is available in this repository as an alternate branch. The fol
 
 # Installation
 
+#### Compatibility
+
+As the code runs in Java, it is compatible with all the platforms for which a JDK is available. Its non-Java dependency (GraphViz) also is compatible with all major operating systems: for Linux, packages exist for the majority of distributions; for Windows are available both .exe installers or zip files for portable installations (see [GraphViz official documentation](https://graphviz.org/documentation/)). In the following, all code has been tested on *Windows 10 & 11* and *Ubuntu 22.04*.
+
 #### Requirements
 
 - **Build**: To build MultiDynNoS, Maven is required.
@@ -36,11 +40,13 @@ $ mvn clean package -DskipTests
 
 # Usage
 
-Building the software will produce, in the **target** folder, several files. The build that contains the software, its dependencies, and its data is **multidynnos-1.0.0-complete.jar**. To show a quick help description, please run the following command:
+Building the software will produce, in the **target** folder of the repository, several files. The build that contains the software, its dependencies, and its data is **multidynnos-1.0.0-complete.jar**. To show a quick help description, please run the following command:
 
 ```
-$ java -jar /path/to/multidynnos-1.0.0-complete.jar
+$ java -jar /path/to/target/multidynnos-1.0.0-complete.jar
 ```
+
+Once compiled, the jar file can be moved and run anywhere on the system.
 
 ## Small Metric script
 
@@ -49,6 +55,8 @@ To replicate the results in Table 1 of the paper, once the system is built you c
 ```
 $ sh small_metrics.sh
 ```
+
+The command into the script is the same on Windows (just copy it and run it in the same folder where the MultiDynNoS jar is present).
 
 It should take about 15-25 minutes depending on the available computing power. The result will be a csv file, in the root folder of the repository, which replicates the results in Table 1. Please note that running times might differ also significantly from the ones reported in the paper, but that is due to the different hardware the algorithm is run on. The relative running time differences between the different approaches (i.e., one being faster/slower than other), however, should stay the same. The quality metrics (stress, movement, crowding) should stay very close to the ones reported in the paper, except for some small differences due to some randomness in the drawing process.
 
