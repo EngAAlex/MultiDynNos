@@ -185,7 +185,7 @@ The same options of the metrics mode apply in this case as well.
 
 # Acknowledgments
 
-Contains original (*DynNoSlice*)[https://cs.swan.ac.uk/~dynnoslice/index.html] software by Paolo Simonetto.
+Contains original [*DynNoSlice*](https://cs.swan.ac.uk/~dynnoslice/index.html) software by Paolo Simonetto.
 
 License
 ----
