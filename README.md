@@ -28,7 +28,7 @@ $ sh install_script.sh
 ```
 
 
-You can also build the software by running the following command in the root folder of the repository.
+You can also build the software manually by running the following command in the root folder of the repository.
 
 ```
 $ mvn clean package -DskipTests
@@ -41,6 +41,18 @@ Building the software will produce, in the **target** folder, several files. The
 ```
 $ java -jar /path/to/multidynnos-1.0.0-complete.jar
 ```
+
+## Small Metric script
+
+To replicate the results in Table 1 of the paper, once the system is built you can run the script in the ```scripts``` folder:
+
+```
+$ sh small_metrics.sh
+```
+
+It should take about 15-25 minutes depending on the available computing power. The result will be a csv file, in the root folder of the repository, which replicates the results in Table 1. Please note that running times might differ also significantly from the ones reported in the paper, but that is due to the different hardware the algorithm is run on. The relative running time differences between the different approaches (i.e., one being faster/slower than other), however, should stay the same. The quality metrics (stress, movement, crowding) should stay very close to the ones reported in the paper, except for some small differences due to some randomness in the drawing process.
+
+## Complete guide
 
 This software has **three** modes: **Layout**, **Metrics**, and **Plot Slices**.
 
@@ -173,7 +185,7 @@ The same options of the metrics mode apply in this case as well.
 
 # Acknowledgments
 
-Contains original *DynNoSlice* software by Paolo Simonetto.
+Contains original (*DynNoSlice*)[https://cs.swan.ac.uk/~dynnoslice/index.html] software by Paolo Simonetto.
 
 License
 ----
